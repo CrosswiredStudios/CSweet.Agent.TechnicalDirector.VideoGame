@@ -4,37 +4,76 @@
   "kind": "agent",
   "rolePolicy": {
     "profile": "individual-contributor.v1",
-    "declaredRoleKeys": ["game-technical-director"],
-    "specializationKeys": ["video-game-development", "technical-feasibility", "runtime-architecture", "engine-integration", "performance-budgets", "technical-decomposition"]
+    "declaredRoleKeys": [
+      "game-technical-director"
+    ],
+    "specializationKeys": [
+      "video-game-development",
+      "technical-feasibility",
+      "runtime-architecture",
+      "engine-integration",
+      "performance-budgets",
+      "technical-decomposition"
+    ]
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Video Game Technical Director",
-  "version": "2.1.1",
-  "publisher": { "id": "com.csweet", "name": "C-Sweet" },
+  "version": "2.3.0",
+  "publisher": {
+    "id": "com.csweet",
+    "name": "C-Sweet"
+  },
   "runtime": {
     "type": "dotnet-project",
     "projectPath": "src/CSweet.Agent.TechnicalDirector.VideoGame/CSweet.Agent.TechnicalDirector.VideoGame.csproj",
     "targetFramework": "net10.0",
-    "defaultActivationMode": "OnDemand",
+    "defaultActivationMode": "AlwaysOn",
     "defaultTickFrequencySeconds": 300,
     "supportsMultipleInstallations": true,
     "maximumConcurrentJobs": 1
   },
-  "protocol": { "minimumVersion": "2.0", "maximumVersion": "2.x" },
+  "protocol": {
+    "minimumVersion": "2.0",
+    "maximumVersion": "2.x"
+  },
   "provides": [
     {
       "name": "work.execution.run.v1",
       "description": "Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.",
       "inputSchema": {
         "type": "object",
-        "required": ["sprintExecutionId", "itemExecutionId", "stageExecutionId", "attemptId", "organizationId", "boardId", "sprintId", "itemId", "assignmentRevision", "boardKey", "itemIdentifier", "policyRevisionId", "stageKey", "traversal", "attempt", "deadline", "instructions", "item", "input", "priorOutcomes", "evidence"],
+        "required": [
+          "sprintExecutionId",
+          "itemExecutionId",
+          "stageExecutionId",
+          "attemptId",
+          "organizationId",
+          "boardId",
+          "sprintId",
+          "itemId",
+          "assignmentRevision",
+          "boardKey",
+          "itemIdentifier",
+          "policyRevisionId",
+          "stageKey",
+          "traversal",
+          "attempt",
+          "deadline",
+          "instructions",
+          "item",
+          "input",
+          "priorOutcomes",
+          "evidence"
+        ],
         "properties": {},
         "additionalProperties": true
       },
       "outputSchema": {
         "type": "object",
         "properties": {
-          "message": { "type": "string" }
+          "message": {
+            "type": "string"
+          }
         },
         "required": [],
         "additionalProperties": true
@@ -46,8 +85,14 @@
     {
       "name": "agent.configuration.describe.v1",
       "description": "Describe specialist configuration.",
-      "inputSchema": { "type": "object", "additionalProperties": true },
-      "outputSchema": { "type": "object", "additionalProperties": true },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "executionTimeoutSeconds": 30,
       "idempotency": "none",
       "riskClass": "standard"
@@ -55,38 +100,125 @@
     {
       "name": "agent.configuration.update.v1",
       "description": "Update specialist configuration.",
-      "inputSchema": { "type": "object", "additionalProperties": true },
-      "outputSchema": { "type": "object", "additionalProperties": true },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "executionTimeoutSeconds": 30,
       "idempotency": "work-item",
       "riskClass": "standard"
     }
   ],
   "requires": [
-    { "name": "platform.llm.chat-stream.v1", "scope": "organization", "purpose": "Produce grounded role-owned deliverables from exact project evidence." },
-    { "name": "work.item.read", "scope": "organization", "purpose": "Read only the authoritative assigned board item." },
-    { "name": "work.item.comment", "scope": "organization", "purpose": "Record progress, blockers, findings, and evidence on the authoritative item." },
-    { "name": "platform.artifact.read.v1", "scope": "organization", "purpose": "Read authorized exact document revisions and hashes." },
-    { "name": "platform.artifact.create.v1", "scope": "organization", "purpose": "Create the role-owned durable deliverable." },
-    { "name": "platform.artifact.submit.v1", "scope": "organization", "purpose": "Submit the exact deliverable revision for accountable review." },
-    { "name": "communication.coordination.read.v1", "scope": "team", "purpose": "Read planning and estimation coordination." },
-    { "name": "communication.coordination.respond.v1", "scope": "team", "purpose": "Respond with technical feasibility, decomposition, and estimate evidence." },
-    { "name": "platform.agent-operating-state.read.v1", "scope": "organization", "purpose": "Recover project/work-item state and duplicate-delivery outcomes after restart." },
-    { "name": "platform.agent-operating-state.write.v1", "scope": "organization", "purpose": "Persist revision-safe state isolated by Workstream and authoritative work item." }
+    {
+      "name": "platform.llm.chat-stream.v1",
+      "scope": "organization",
+      "purpose": "Produce grounded role-owned deliverables from exact project evidence."
+    },
+    {
+      "name": "work.item.read",
+      "scope": "organization",
+      "purpose": "Read only the authoritative assigned board item."
+    },
+    {
+      "name": "work.item.comment",
+      "scope": "organization",
+      "purpose": "Record progress, blockers, findings, and evidence on the authoritative item."
+    },
+    {
+      "name": "platform.artifact.read.v1",
+      "scope": "organization",
+      "purpose": "Read authorized exact document revisions and hashes."
+    },
+    {
+      "name": "platform.artifact.create.v1",
+      "scope": "organization",
+      "purpose": "Create the role-owned durable deliverable."
+    },
+    {
+      "name": "platform.artifact.submit.v1",
+      "scope": "organization",
+      "purpose": "Submit the exact deliverable revision for accountable review."
+    },
+    {
+      "name": "communication.coordination.read.v1",
+      "scope": "team",
+      "purpose": "Read planning and estimation coordination."
+    },
+    {
+      "name": "communication.coordination.respond.v1",
+      "scope": "team",
+      "purpose": "Respond with technical feasibility, decomposition, and estimate evidence."
+    },
+    {
+      "name": "platform.agent-operating-state.read.v1",
+      "scope": "organization",
+      "purpose": "Recover project/work-item state and duplicate-delivery outcomes after restart."
+    },
+    {
+      "name": "platform.agent-operating-state.write.v1",
+      "scope": "organization",
+      "purpose": "Persist revision-safe state isolated by Workstream and authoritative work item."
+    },
+    {
+      "name": "platform.artifact-package.read.v1",
+      "scope": "organization",
+      "purpose": "Verify the exact accepted planning package before producing a scope-specific technical backlog."
+    },
+    {
+      "name": "source-control.repository.provision.v2",
+      "scope": "organization",
+      "purpose": "Request the product repository through business provisioning policy and recover its status."
+    },
+    {
+      "name": "source-control.repository.team-options.v2",
+      "scope": "team",
+      "purpose": "Verify the provisioned repository is accessible to the product team."
+    }
   ],
-  "events": { "subscribes": ["com.csweet.agent.coordination.turn-requested.v1"] },
+  "events": {
+    "subscribes": [
+      "com.csweet.agent.coordination.turn-requested.v1",
+      "com.csweet.agent.attention.review-due.v1"
+    ]
+  },
   "configuration": [
-    { "key": "llmProviderId", "type": "provider", "label": "LLM provider", "required": true, "secret": false },
-    { "key": "llmModel", "type": "model", "label": "Model", "required": true, "secret": false, "dependsOnFieldKey": "llmProviderId" }
+    {
+      "key": "llmProviderId",
+      "type": "provider",
+      "label": "LLM provider",
+      "required": true,
+      "secret": false
+    },
+    {
+      "key": "llmModel",
+      "type": "model",
+      "label": "Model",
+      "required": true,
+      "secret": false,
+      "dependsOnFieldKey": "llmProviderId"
+    }
   ],
   "credentials": [],
-  "webAccess": { "mode": "None", "rules": [] },
+  "webAccess": {
+    "mode": "None",
+    "rules": []
+  },
   "ui": [],
   "catalog": {
     "summary": "Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.",
     "category": "Engineering",
-    "role": { "key": "game-technical-director", "name": "Video Game Technical Director" },
-    "license": { "spdxId": "MIT" },
+    "role": {
+      "key": "game-technical-director",
+      "name": "Video Game Technical Director"
+    },
+    "license": {
+      "spdxId": "MIT"
+    },
     "iconUrls": [],
     "roleAliases": [],
     "keywords": [],
