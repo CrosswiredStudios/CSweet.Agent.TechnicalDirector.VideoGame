@@ -34,7 +34,7 @@ Built with `CSweet.Agent.SDK` 3.28.0 and the bundled video-game extension source
 
 Game-specific payload helpers and decision logic live in the bundled `extensions/video-game` source snapshot under the publisher-owned `CrosswiredStudios.VideoGame` namespace. They are compiled into this agent, not published as C-Sweet platform contracts. The snapshot has versioned SHA-256 provenance and needs no sibling checkout or domain NuGet feed. C-Sweet handles generic coordination envelopes and profile metadata; agent permissions and existing wire type IDs remain unchanged.
 
-## Scope-specific planning (2.3.0)
+## Scope-specific planning (2.3.1)
 
 Planning coordination verifies every accepted package revision and digest, reads the actual game brief,
 and uses the configured brokered model to propose a proportional backlog through packaging and QA.
@@ -44,7 +44,7 @@ questions are returned to the Producer rather than silently decided. No fixed st
 
 ## Product repository ownership
 
-Version 2.3.0 makes the Technical Director responsible for repository setup and branch/integration standards.
+Version 2.3.1 makes the Technical Director responsible for repository setup and branch/integration standards.
 After verifying an accepted production planning package it requests a repository for that workstream,
 using the business default template/provider and a stable product idempotency key. The host associates
 the provisioning record with the product and grants its team repository access. Names use the workstream

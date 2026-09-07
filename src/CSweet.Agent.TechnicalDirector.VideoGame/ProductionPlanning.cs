@@ -19,7 +19,7 @@ public sealed partial class SpecialistAgent
         if (cycle is null || artifact.Key != cycle.PlanningFingerprint || request.WorkContext?.WorkstreamId != cycle.WorkstreamId)
             return AgentCoordinationTurnResult.Blocked("Planning requires the exact workstream and planning fingerprint.");
         var package = await context.Platform.Artifacts.GetPackageAsync(cycle.ApprovedPackageId, cancellationToken);
-        if (package.Status != "Accepted" || package.Version != cycle.ApprovedPackageVersion)
+        if (package.Status is not ("Accepted" or "Approved") || package.Version != cycle.ApprovedPackageVersion)
             return AgentCoordinationTurnResult.Blocked("Planning inputs are not accepted or their version changed.");
         var grounding = new List<string>();
         var members = new List<ArtifactPackageMemberDigest>();
