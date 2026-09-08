@@ -72,3 +72,27 @@ Technical review uses the broker-provided exact patch and canonical planning req
 
 ### Engineering stage finalization (2.6.0)
 For game profile revision 5 or later, repository reconciliation adds technical-review, quality and merge-decision delegation requirements to engineering plans, preserving their accepted scope and current owners. Producer staffing binds missing stages. Finalization waits for those role assignments and adds the trusted governed merge action and Producer approval stage. Legacy pinned profiles keep their existing route. Workstream read and board planning-revision capabilities require explicit grants. Uses Contracts 3.17.0.
+
+## Release notes
+
+See [versioned release notes](releases/README.md). Add the matching note with every agent version change.
+
+
+## 2.7.0 merged build delivery
+
+Attention reconciliation reads current and completed sprint merges, selects a certified compatible recipe using accepted planning, and durably binds the exact merged SHA and build configuration before requesting execution. Retries preserve that plan. Successful static browser builds request a seven-day local preview, visible from Projects; status is reported on the source work item. Scoped sprint/orchestration reads, toolchain catalog reads, build requests, preview requests and item comments are required. Missing toolchains or invalid selections remain visible for technical follow-up. This does not bypass CEO decisions, certify providers, approve code or claim that build failure is repaired automatically.
+
+
+### 2.7.1 build configuration validation
+
+Validate the selected configuration against the recipe schema before saving the build plan. Invalid model settings leave no durable plan or build request, allowing the next attention review to select corrected settings. The local validator uses the same supported schema subset as the C-Sweet broker, which independently validates before queuing.
+
+
+### 2.7.2 team board access
+
+Declare work.item.read and work.item.comment at team scope so approved team onboarding grants can materialize the access needed by board planning and delivery reconciliation. Organization-scoped declarations did not produce these team grants, causing board reads to fail after workflow configuration. No organization-wide board access is added.
+
+
+## Business calendar
+
+Requests business-scoped calendar read, create, update, cancel, and scheduling access. Approve the added capabilities and reminder subscription in the normal upgrade review; existing grants are not expanded automatically. Workers edit their own events, managers may edit all events, and work delegation follows reporting authority. Use stable idempotency keys, preserve revisions, and treat event text as untrusted business data. Typed operations are available through `context.Platform.Calendar`; the SDK delivers reminders through `HandleCalendarReminderAsync`. Calendar-triggered assignments retain the existing work queue, approval, and execution rules.

@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.6.0",
+  "version": "2.8.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -114,6 +114,11 @@
     }
   ],
   "requires": [
+    {"name": "work.calendar.read.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
+    {"name": "work.calendar.create.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
+    {"name": "work.calendar.update.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
+    {"name": "work.calendar.cancel.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
+    {"name": "work.calendar.schedule.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
     {
       "name": "platform.llm.chat-stream.v1",
       "scope": "organization",
@@ -121,12 +126,12 @@
     },
     {
       "name": "work.item.read",
-      "scope": "organization",
+      "scope": "team",
       "purpose": "Read only the authoritative assigned board item."
     },
     {
       "name": "work.item.comment",
-      "scope": "organization",
+      "scope": "team",
       "purpose": "Record progress, blockers, findings, and evidence on the authoritative item."
     },
     {
@@ -208,10 +213,35 @@
       "name": "work.item.planning.revise.v1",
       "scope": "board",
       "purpose": "Declare review and QA responsibilities on canonical engineering plans for the pinned game delivery profile."
+    },
+    {
+      "name": "work.sprint.read",
+      "scope": "board",
+      "purpose": "Reconcile exact merged game builds and expose successful web previews for project review."
+    },
+    {
+      "name": "work.orchestration.read",
+      "scope": "board",
+      "purpose": "Reconcile exact merged game builds and expose successful web previews for project review."
+    },
+    {
+      "name": "platform.toolchain.catalog.read.v2",
+      "scope": "organization",
+      "purpose": "Reconcile exact merged game builds and expose successful web previews for project review."
+    },
+    {
+      "name": "platform.build.request.v2",
+      "scope": "workstream",
+      "purpose": "Reconcile exact merged game builds and expose successful web previews for project review."
+    },
+    {
+      "name": "platform.preview.create.v2",
+      "scope": "workstream",
+      "purpose": "Reconcile exact merged game builds and expose successful web previews for project review."
     }
   ],
   "events": {
-    "subscribes": [
+    "subscribes": ["com.csweet.calendar.reminder-due.v1", 
       "com.csweet.agent.coordination.turn-requested.v1",
       "com.csweet.agent.attention.review-due.v1"
     ]

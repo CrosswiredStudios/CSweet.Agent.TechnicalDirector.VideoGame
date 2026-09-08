@@ -1,3 +1,4 @@
+using CSweet.WorkManagement.Contracts;
 using CSweet.Agent.SDK;
 using CrosswiredStudios.VideoGame.AgentKit;
 
@@ -19,6 +20,12 @@ public sealed class ManifestTests
         Assert.DoesNotContain(manifest.Requires, x => x.Name == GitWorkspaceCapabilities.Publish);
         Assert.Contains(manifest.Requires, x => x.Name == PlatformCapabilities.WorkstreamRead && x.Scope == "workstream");
         Assert.Contains(manifest.Requires, x => x.Name == "work.item.planning.revise.v1" && x.Scope == "board");
+        foreach (var capability in new[] { PlatformCapabilities.ToolchainCatalogRead, PlatformCapabilities.BuildRequest,
+            PlatformCapabilities.PreviewCreate, WorkItemCapabilities.Comment, WorkManagementCapabilityNames.SprintRead,
+            WorkManagementCapabilityNames.OrchestrationRead })
+            Assert.Contains(manifest.Requires, x => x.Name == capability);
+        foreach (var name in new[] { "work.item.read", "work.item.comment" })
+            Assert.Contains(manifest.Requires, x => x.Name == name && x.Scope == "team");
         Assert.Equal(agent.AgentId, manifest.Id);
         Assert.Equal(agent.Version, manifest.Version);
         Assert.Contains(agent.PrimaryCapability, manifest.Capabilities);
