@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.3.2",
+  "version": "2.6.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -178,6 +178,36 @@
       "name": "source-control.repository.team-options.v2",
       "scope": "team",
       "purpose": "Verify the provisioned repository is accessible to the product team."
+    },
+    {
+      "name": "work.board.read",
+      "scope": "board",
+      "purpose": "Discover engineering tickets on the assigned workstream board."
+    },
+    {
+      "name": "work.item.delivery.finalize",
+      "scope": "board",
+      "purpose": "Attach the ready team repository to approved engineering planning without changing scope or role assignments."
+    },
+    {
+      "name": "git.merge.review.v2",
+      "scope": "work-item",
+      "purpose": "Review and authorize only the exact candidate assigned to the active technical review stage."
+    },
+    {
+      "name": "git.merge.authorize.v2",
+      "scope": "work-item",
+      "purpose": "Review and authorize only the exact candidate assigned to the active technical review stage."
+    },
+    {
+      "name": "platform.workstream.read.v1",
+      "scope": "workstream",
+      "purpose": "Declare review and QA responsibilities on canonical engineering plans for the pinned game delivery profile."
+    },
+    {
+      "name": "work.item.planning.revise.v1",
+      "scope": "board",
+      "purpose": "Declare review and QA responsibilities on canonical engineering plans for the pinned game delivery profile."
     }
   ],
   "events": {

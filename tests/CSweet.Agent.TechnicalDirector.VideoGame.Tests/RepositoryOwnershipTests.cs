@@ -28,6 +28,8 @@ public sealed class RepositoryOwnershipTests
                     return Task.FromResult(new RepositoryProvisioningResult(Guid.NewGuid(), "Completed", repository, null, null)); })
             .RegisterCapability<TeamRepositoryOptionsRequest, IReadOnlyList<TeamRepositoryOption>>(SourceControlCapabilities.TeamRepositoryOptions,
                 (_, _) => Task.FromResult<IReadOnlyList<TeamRepositoryOption>>([new(repository, "game", "InternalGit", "internal/game", "main", "InternalGit")]));
+        runtime.RegisterCapability<System.Text.Json.JsonElement, IReadOnlyList<WorkBoardSummary>>(WorkBoardCapabilities.Read,
+            (_, _) => Task.FromResult<IReadOnlyList<WorkBoardSummary>>([]));
         var review = new AgentAttentionReviewContext(Guid.NewGuid(), now, now.AddMinutes(5), "Recovered");
         await new SpecialistAgent().HandleAttentionReviewAsync(review, runtime.CreateContext(), default);
         Assert.Equal("Ready", state.Payload.Deserialize<SpecialistAgent.RepositoryPortfolio>()!.Projects[workstream].Status);

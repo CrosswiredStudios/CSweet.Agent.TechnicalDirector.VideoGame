@@ -67,7 +67,11 @@ public sealed partial class SpecialistAgent
     {
         var state = await context.Platform.ReadOperatingStateAsync<RepositoryPortfolio>(RepositoryStateKey, cancellationToken);
         if (state is null) return;
-        foreach (var setup in state.Payload.Projects.Values.Where(x => x.Status != "Ready"))
-            await SaveRepositoryAsync(await ReconcileRepositoryAsync(setup, context, cancellationToken), context, cancellationToken);
+        foreach (var saved in state.Payload.Projects.Values)
+        {
+            var setup = saved.Status == "Ready" ? saved : await ReconcileRepositoryAsync(saved, context, cancellationToken);
+            if (saved.Status != "Ready") await SaveRepositoryAsync(setup, context, cancellationToken);
+            await FinalizeEngineeringTicketsAsync(setup, context, cancellationToken);
+        }
     }
 }

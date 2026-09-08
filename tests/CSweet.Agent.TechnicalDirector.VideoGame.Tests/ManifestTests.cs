@@ -14,6 +14,11 @@ public sealed class ManifestTests
         var manifest = await AgentManifestLoader.LoadAsync(path, CancellationToken.None);
         var agent = new SpecialistAgent();
 
+        foreach (var capability in new[] { GitMergeCapabilities.Review, GitMergeCapabilities.Authorize })
+            Assert.Contains(manifest.Requires, x => x.Name == capability && x.Scope == "work-item");
+        Assert.DoesNotContain(manifest.Requires, x => x.Name == GitWorkspaceCapabilities.Publish);
+        Assert.Contains(manifest.Requires, x => x.Name == PlatformCapabilities.WorkstreamRead && x.Scope == "workstream");
+        Assert.Contains(manifest.Requires, x => x.Name == "work.item.planning.revise.v1" && x.Scope == "board");
         Assert.Equal(agent.AgentId, manifest.Id);
         Assert.Equal(agent.Version, manifest.Version);
         Assert.Contains(agent.PrimaryCapability, manifest.Capabilities);

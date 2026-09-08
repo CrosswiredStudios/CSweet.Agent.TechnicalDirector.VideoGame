@@ -62,3 +62,13 @@ This does not grant merge authorization or bypass the governed work execution/pu
 ## Provider queue handling
 
 Uses SDK 3.31.1 for acknowledged LLM waiting, conversation activity, and host-authoritative deadline updates. Deploy the matching C-Sweet AgentHost and reimport this package to enable the private polling protocol.
+
+## Engineering ticket delivery (2.6.0)
+
+Repository attention reviews now attach ready repository and default-branch configuration to staffed, provenance-bound game-engineer tickets on the same team and workstream. Existing planning, dependencies, accountability and stage assignments are preserved; already finalized and completed tickets are skipped. Board-read and delivery-finalization permissions are requested at board scope. Host authorization and planning approval checks still apply. This does not configure downstream code review or QA stages, which remain separate required work.
+
+### Technical code review (2.6.0)
+Technical review uses the broker-provided exact patch and canonical planning requirements to produce an evidence-backed approval or actionable rejection. Final merge authorization requires a prior technical approval of that publication and SHA plus passing broker QA evidence. Results are stored per execution attempt for replay. The two work-item Git capabilities require host assignment-scoped grants. No source edits, direct Git operations, or merge execution occur in this agent. Compatible profile and stage assignments are still required.
+
+### Engineering stage finalization (2.6.0)
+For game profile revision 5 or later, repository reconciliation adds technical-review, quality and merge-decision delegation requirements to engineering plans, preserving their accepted scope and current owners. Producer staffing binds missing stages. Finalization waits for those role assignments and adds the trusted governed merge action and Producer approval stage. Legacy pinned profiles keep their existing route. Workstream read and board planning-revision capabilities require explicit grants. Uses Contracts 3.17.0.
