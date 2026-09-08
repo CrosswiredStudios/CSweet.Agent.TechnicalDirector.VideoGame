@@ -17,7 +17,7 @@
     ]
   },
   "id": "com.csweet.video-game-technical-director",
-  "name": "Video Game Technical Director",
+  "name": "Victor Lin",
   "version": "2.3.2",
   "publisher": {
     "id": "com.csweet",
@@ -210,6 +210,9 @@
   },
   "ui": [],
   "catalog": {
+    "imageUrl": "https://raw.githubusercontent.com/CrosswiredStudios/CSweet.Agent.TechnicalDirector.VideoGame/main/assets/branding/portrait-v1.jpg",
+    "companyLogoUrl": "https://raw.githubusercontent.com/CrosswiredStudios/CSweet.Agent.TechnicalDirector.VideoGame/main/assets/branding/csweet-icon.svg",
+    "accentColor": "#304E59",
     "summary": "Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.",
     "category": "Engineering",
     "role": {
