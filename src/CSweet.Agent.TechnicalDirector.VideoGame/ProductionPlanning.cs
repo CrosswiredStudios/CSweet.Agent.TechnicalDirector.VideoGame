@@ -40,7 +40,7 @@ public sealed partial class SpecialistAgent
             new AgentLlmInvocationContext(null, null, "video-game-technical-planning")));
         var roles = Constants(typeof(VideoGameRoleKeys));
         var skills = Constants(typeof(VideoGameSpecializationKeys));
-        var response = await client.GetResponseAsync([
+        var generated = await GeneratePlanningAsync(async (messages, token) => (await client.GetResponseAsync(messages, cancellationToken: token)).Text, [
             new ChatMessage(ChatRole.System, """
                 Decompose the accepted brief into a lean delivery backlog through a packaged runnable game and
                 independent QA. Size the work and specialist roles to actual requirements and anticipated workload.
@@ -50,7 +50,7 @@ public sealed partial class SpecialistAgent
                 Own the product Git repository, branch/integration standards and review criteria. Use the supplied
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
-                Return ONLY JSON with deliveryItems, feasibilityFindings, technicalConstraints and openFeasibilityDecisions.
+                Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings).
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run.v1"]), dependencyProposalKeys (array), parentProposalKey (nullable).
@@ -64,11 +64,7 @@ public sealed partial class SpecialistAgent
                 """),
             new ChatMessage(ChatRole.User, $"Repository setup: {JsonSerializer.Serialize(repository)}\nRoles: {JsonSerializer.Serialize(roles)}\nSkills: {JsonSerializer.Serialize(skills)}\nAccepted inputs:\n{string.Join("\n\n", grounding)}")
         ], cancellationToken: cancellationToken);
-        PlanningOutput? output;
-        try { output = JsonSerializer.Deserialize<PlanningOutput>(response.Text, new JsonSerializerOptions(JsonSerializerDefaults.Web)); }
-        catch (JsonException) { return AgentCoordinationTurnResult.Blocked("Technical planning returned invalid JSON; revise the proposal."); }
-        if (output is null || !IsValidPlan(output.DeliveryItems))
-            return AgentCoordinationTurnResult.Blocked("Technical planning contains invalid roles, skills, dependencies or untestable work.");
+        if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],
             $"Repository setup: {repository.Status}; repository={repository.RepositoryId}; approval={repository.ApprovalId}; {repository.Remediation}"] };
         var digest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(output))).ToLowerInvariant();
@@ -112,7 +108,7 @@ public sealed partial class SpecialistAgent
         return true;
     }
 
-    private sealed record PlanningOutput(IReadOnlyList<GameProposedWorkItemV1> DeliveryItems,
+    internal sealed record PlanningOutput(IReadOnlyList<GameProposedWorkItemV1> DeliveryItems,
         IReadOnlyList<string>? FeasibilityFindings, IReadOnlyList<string>? TechnicalConstraints,
         IReadOnlyList<string>? OpenFeasibilityDecisions);
 }
