@@ -27,7 +27,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.31.1 and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.40.0 and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds
@@ -61,7 +61,7 @@ This does not grant merge authorization or bypass the governed work execution/pu
 
 ## Provider queue handling
 
-Uses SDK 3.31.1 for acknowledged LLM waiting, conversation activity, and host-authoritative deadline updates. Deploy the matching C-Sweet AgentHost and reimport this package to enable the private polling protocol.
+Uses SDK 3.40.0 for acknowledged LLM waiting, conversation activity, and host-authoritative deadline updates. Deploy the matching C-Sweet AgentHost and reimport this package to enable the private polling protocol.
 
 ## Engineering ticket delivery (2.6.0)
 
@@ -96,3 +96,5 @@ Declare work.item.read and work.item.comment at team scope so approved team onbo
 ## Business calendar
 
 Requests business-scoped calendar read, create, update, cancel, and scheduling access. Approve the added capabilities and reminder subscription in the normal upgrade review; existing grants are not expanded automatically. Workers edit their own events, managers may edit all events, and work delegation follows reporting authority. Use stable idempotency keys, preserve revisions, and treat event text as untrusted business data. Typed operations are available through `context.Platform.Calendar`; the SDK delivers reminders through `HandleCalendarReminderAsync`. Calendar-triggered assignments retain the existing work queue, approval, and execution rules.
+
+Calendar-triggered assignments request the SDK claim/complete/block/release lifecycle and personal-work subscription. Unsupported role work is marked blocked with a reason, never silently treated as completed.
