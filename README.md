@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.10.2`
+- Version: `2.10.3`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -27,8 +27,9 @@ The installation settings **Maximum context-window tokens** (`maxContextWindowTo
 220,000) and **Maximum output tokens** (`maxOutputTokens`, default 32,000) configure the Technical
 Director's planning ceiling and per-response output budget for technical planning, candidate
 review, build selection, and specialist work. The output budget includes model reasoning and must
-remain below the context ceiling. These settings do not enlarge the selected model's actual context
-window or override a lower provider output limit.
+remain below the context ceiling. The agent imposes no fixed maximum, so both values can match the
+selected model. These settings do not enlarge the model's actual context window or override the
+provider profile's authoritative execution ceiling.
 
 ## Install
 
