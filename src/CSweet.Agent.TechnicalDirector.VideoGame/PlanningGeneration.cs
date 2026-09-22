@@ -25,7 +25,7 @@ public sealed partial class SpecialistAgent
     {
         var messages = initialMessages.ToList();
         string issue = "No proposal returned.";
-        for (var attempt = 0; attempt < 2; attempt++)
+        for (var attempt = 0; attempt < 3; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var text = await generate(messages, cancellationToken);
@@ -48,7 +48,19 @@ public sealed partial class SpecialistAgent
                 messages.Add(new(ChatRole.Assistant, text));
                 messages.Add(new(ChatRole.User, $"Correct your proposal: {issue} Preserve the accepted project scope and all required work. Return the complete corrected proposal, without Markdown or commentary."));
             }
+            else if (attempt == 1)
+            {
+                // Do not feed two large malformed responses back into the model. A fresh,
+                // compact pass is bounded and still must satisfy the full plan validator.
+                messages = initialMessages.ToList();
+                messages.Add(new(ChatRole.User,
+                    $"The prior responses did not validate ({issue}). Regenerate from the accepted scope. " +
+                    "Return one complete JSON object with at most 20 concise deliveryItems. " +
+                    "Preserve all accepted deliverables in a lean Epic > Story > Task hierarchy, " +
+                    "including separate testable engineer and QA tasks. Do not omit required work, " +
+                    "invent approvals, or add Markdown/commentary."));
+            }
         }
-        return (null, $"Technical planning could not produce a valid proposal after two attempts. {issue}");
+        return (null, $"Technical planning could not produce a valid proposal after three attempts. {issue}");
     }
 }

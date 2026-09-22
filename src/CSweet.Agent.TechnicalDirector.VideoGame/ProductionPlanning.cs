@@ -54,7 +54,7 @@ public sealed partial class SpecialistAgent
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run.v1"]), dependencyProposalKeys (array), parentProposalKey (nullable).
-                Build a small Epic > Story > Task hierarchy: at least one milestone, one feature or
+                Prefer a compact proposal of at most 20 items. Build a small Epic > Story > Task hierarchy: at least one milestone, one feature or
                 content story, and separate engineering and QA tasks. Milestones have no parent;
                 every feature/content item belongs to a milestone, and every executable item belongs
                 to a feature/content item. Split the playable game into small independently testable

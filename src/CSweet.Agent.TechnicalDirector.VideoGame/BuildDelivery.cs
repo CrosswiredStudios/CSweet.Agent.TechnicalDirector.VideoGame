@@ -24,7 +24,22 @@ public sealed partial class SpecialistAgent
             var detail = await context.Platform.Work.ReadBoardAsync(board.Id, token);
             foreach (var sprint in await context.Platform.Work.ListSprintsAsync(board.Id, token))
             {
-                var execution = await context.Platform.Work.ReadOrchestrationAsync(new(board.Id, SprintId: sprint.Id), token);
+                // A planned sprint has no execution or merged work to build yet.
+                if (sprint.Status == "Planned") continue;
+                WorkSprintExecutionResponse? execution;
+                try
+                {
+                    execution = await context.Platform.Work.ReadOrchestrationAsync(new(board.Id, SprintId: sprint.Id), token);
+                }
+                catch (PlatformCapabilityException error) when (
+                    error.Capability == WorkOrchestrationCapabilities.Read &&
+                    error.Code == PlatformCapabilityErrorCode.ValidationFailed &&
+                    error.Message == "The work-management capability returned an empty response.")
+                {
+                    // The platform returns null when an execution does not exist; the current
+                    // SDK deserializer reports that nullable result as an empty response.
+                    continue;
+                }
                 if (execution is null) continue;
                 foreach (var flow in execution.Items)
                 {

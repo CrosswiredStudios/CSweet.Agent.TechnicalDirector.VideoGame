@@ -7,6 +7,42 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 public sealed class BuildDeliveryTests
 {
     [Theory]
+    [InlineData("Planned", 0)]
+    [InlineData("Active", 1)]
+    public async Task AttentionTreatsMissingSprintExecutionAsNoBuildWork(string sprintStatus, int expectedReads)
+    {
+        var workstream = Guid.NewGuid(); var team = Guid.NewGuid(); var repository = Guid.NewGuid();
+        var boardId = Guid.NewGuid(); var sprintId = Guid.NewGuid(); var now = DateTimeOffset.UtcNow;
+        var portfolio = new SpecialistAgent.RepositoryPortfolio(new Dictionary<Guid, SpecialistAgent.RepositorySetup>
+            { [workstream] = new(workstream, team, "Ready", repository) });
+        var state = new AgentOperatingStateResponse(Guid.NewGuid(), "technical-director:repositories", "test", 1,
+            "Active", new Dictionary<string, string>(), [], "fingerprint", [], Guid.NewGuid(),
+            JsonSerializer.SerializeToElement(portfolio), 1, now, now);
+        var board = new WorkBoardSummary(boardId, "Game", "Delivery", false, false, 1, [])
+            { WorkstreamId = workstream, TeamId = team };
+        var reads = 0;
+        var runtime = new AgentTestRuntime()
+            .RegisterCapability<AgentOperatingStateReadRequest, AgentOperatingStateReadResponse>(
+                PlatformCapabilities.AgentOperatingStateRead,
+                (_, _) => Task.FromResult(new AgentOperatingStateReadResponse(state)))
+            .RegisterCapability<WorkBoardListRequest, IReadOnlyList<WorkBoardSummary>>(WorkBoardCapabilities.Read,
+                (_, _) => Task.FromResult<IReadOnlyList<WorkBoardSummary>>([board]))
+            .RegisterCapability<WorkBoardReference, WorkBoardDetail>(WorkItemCapabilities.Read,
+                (_, _) => Task.FromResult(new WorkBoardDetail(board, [], [])))
+            .RegisterCapability<WorkBoardReference, IReadOnlyList<WorkSprint>>(WorkSprintCapabilities.Read,
+                (_, _) => Task.FromResult<IReadOnlyList<WorkSprint>>([new(sprintId, boardId, "First", "Goal", sprintStatus,
+                    null, null, null, null, null, 1, 1, 1, 1, 1)]))
+            .RegisterCapability<ReadWorkOrchestrationRequest, WorkSprintExecutionResponse?>(
+                WorkOrchestrationCapabilities.Read,
+                (_, _) => { reads++; return Task.FromResult<WorkSprintExecutionResponse?>(null); });
+
+        await new SpecialistAgent().HandleAttentionReviewAsync(
+            new(Guid.NewGuid(), now, now.AddMinutes(5), "Review"), runtime.CreateContext(), default);
+
+        Assert.Equal(expectedReads, reads);
+    }
+
+    [Theory]
     [InlineData("Succeeded")]
     [InlineData("completed-sprint-attention")]
     [InlineData("Queued")]

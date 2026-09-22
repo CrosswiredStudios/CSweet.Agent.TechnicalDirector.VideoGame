@@ -51,8 +51,9 @@ public sealed class ProductionPlanningTests
     [InlineData("malformed", 2, true)]
     [InlineData("wrong-shape", 2, true)]
     [InlineData("invalid-plan", 2, true)]
-    [InlineData("persistent", 2, false)]
-    public async Task Corrects_bad_output_once_and_preserves_validation(string scenario, int expectedCalls, bool succeeds)
+    [InlineData("compact-pass", 3, true)]
+    [InlineData("persistent", 3, false)]
+    public async Task Corrects_bad_output_with_bounded_compact_fallback_and_preserves_validation(string scenario, int expectedCalls, bool succeeds)
     {
         var calls = 0;
         var valid = System.Text.Json.JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(
@@ -66,13 +67,19 @@ public sealed class ProductionPlanningTests
                 Assert.Equal(Microsoft.Extensions.AI.ChatRole.Assistant, messages[1].Role);
                 Assert.Contains("Correct your proposal:", messages[2].Text);
             }
-            return Task.FromResult(scenario == "persistent" ? "{" : calls == 2 || scenario == "valid" ? valid :
+            if (calls == 3)
+            {
+                Assert.Equal(2, messages.Count);
+                Assert.Contains("at most 20 concise deliveryItems", messages[1].Text);
+            }
+            return Task.FromResult(scenario == "persistent" || scenario == "compact-pass" && calls < 3 ? "{" :
+                calls >= 2 || scenario == "valid" ? valid :
                 scenario == "wrong-shape" ? "{\"deliveryItems\":[],\"feasibilityFindings\":[{}]}" :
                 scenario == "invalid-plan" ? "{\"deliveryItems\":[]}" : "{");
         }, [new(Microsoft.Extensions.AI.ChatRole.User, "Accepted scope")], default);
         Assert.Equal(expectedCalls, calls);
         Assert.Equal(succeeds, result.Output is not null);
-        if (!succeeds) Assert.Contains("after two attempts", result.Error);
+        if (!succeeds) Assert.Contains("after three attempts", result.Error);
     }
 
     [Fact]
