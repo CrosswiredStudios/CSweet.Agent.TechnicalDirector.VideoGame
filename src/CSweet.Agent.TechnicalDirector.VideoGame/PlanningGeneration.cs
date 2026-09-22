@@ -19,7 +19,7 @@ public sealed partial class SpecialistAgent
             {
                 var output = JsonSerializer.Deserialize<PlanningOutput>(text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
                 if (output is not null && IsValidPlan(output.DeliveryItems)) return (output, null);
-                issue = "The plan must contain 1–200 testable items, unique keys, allowed roles/types/skills, and resolvable acyclic parents and dependencies.";
+                issue = "The plan must contain an Epic > Story > Task hierarchy with separate engineer and QA tasks, testable criteria, unique keys, allowed roles/types/skills, and resolvable acyclic parents and dependencies.";
             }
             catch (JsonException exception)
             {

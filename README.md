@@ -2,10 +2,12 @@
 
 Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.
 
+Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
+
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `1.0.0`
+- Version: `2.10.1`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none

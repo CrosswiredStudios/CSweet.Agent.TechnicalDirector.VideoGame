@@ -7,18 +7,26 @@ public sealed class ProductionPlanningTests
     [Fact]
     public void Lean_plan_can_cover_engineering_and_qa_without_studio_specialists()
     {
-        var engineer = Item("implementation", VideoGameRoleKeys.Engineer);
-        var qa = Item("qa", VideoGameRoleKeys.QualityAssurance) with { DependencyProposalKeys = [engineer.ProposalKey] };
-        Assert.True(SpecialistAgent.IsValidPlan([engineer, qa]));
+        Assert.True(SpecialistAgent.IsValidPlan(Hierarchy()));
     }
     [Fact]
     public void Rejects_cycles_unknown_roles_and_untestable_tasks()
     {
-        var item = Item("implementation", VideoGameRoleKeys.Engineer);
-        Assert.False(SpecialistAgent.IsValidPlan([item with { DependencyProposalKeys = [item.ProposalKey] }]));
-        Assert.False(SpecialistAgent.IsValidPlan([item with { AccountableRoleKey = "invented-role" }]));
-        Assert.False(SpecialistAgent.IsValidPlan([item with { AcceptanceCriteria = [] }]));
-        Assert.False(SpecialistAgent.IsValidPlan([item with { DependencyProposalKeys = ["missing"] }]));
+        var plan = Hierarchy();
+        Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { DependencyProposalKeys = [plan[2].ProposalKey] }, plan[3]]));
+        Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { AccountableRoleKey = "invented-role" }, plan[3]]));
+        Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { AcceptanceCriteria = [] }, plan[3]]));
+        Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { DependencyProposalKeys = ["missing"] }, plan[3]]));
+    }
+    [Fact]
+    public void Requires_epic_story_and_separate_testable_engineering_and_qa_tasks()
+    {
+        var plan = Hierarchy();
+        Assert.False(SpecialistAgent.IsValidPlan(plan.Skip(1).ToArray()));
+        Assert.False(SpecialistAgent.IsValidPlan([plan[0], .. plan.Skip(2)]));
+        Assert.False(SpecialistAgent.IsValidPlan(plan.Take(3).ToArray()));
+        Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { ParentProposalKey = plan[0].ProposalKey }, plan[3]]));
+        Assert.False(SpecialistAgent.IsValidPlan([plan[0], plan[1] with { ParentProposalKey = null }, plan[2], plan[3]]));
     }
     [Theory]
     [InlineData("valid", 1, true)]
@@ -30,7 +38,7 @@ public sealed class ProductionPlanningTests
     {
         var calls = 0;
         var valid = System.Text.Json.JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(
-            [Item("implementation", VideoGameRoleKeys.Engineer)], [], [], []));
+            Hierarchy(), [], [], []));
         var result = await SpecialistAgent.GeneratePlanningAsync((messages, token) =>
         {
             calls++;
@@ -59,6 +67,18 @@ public sealed class ProductionPlanningTests
             throw new OperationCanceledException();
         }, [], default));
         Assert.Equal(1, calls);
+    }
+    private static GameProposedWorkItemV1[] Hierarchy()
+    {
+        var epic = Item("epic", VideoGameRoleKeys.TechnicalDirector) with
+        { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Milestone };
+        var story = Item("story", VideoGameRoleKeys.Engineer) with
+        { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Feature, ParentProposalKey = epic.ProposalKey };
+        var engineer = Item("implementation", VideoGameRoleKeys.Engineer) with
+        { ParentProposalKey = story.ProposalKey };
+        var qa = Item("qa", VideoGameRoleKeys.QualityAssurance) with
+        { ParentProposalKey = story.ProposalKey, DependencyProposalKeys = [engineer.ProposalKey] };
+        return [epic, story, engineer, qa];
     }
     private static GameProposedWorkItemV1 Item(string key, string role) => new(key, VideoGameWorkItemTypeKeys.Task,
         "Implement playable movement", "Deliver the accepted movement behavior", ["Input changes player position"], role,

@@ -54,8 +54,14 @@ public sealed partial class SpecialistAgent
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run.v1"]), dependencyProposalKeys (array), parentProposalKey (nullable).
-                Types: video-game.milestone.v1, video-game.feature.v1, video-game.content.v1 are containers;
-                video-game.task.v1, video-game.bug.v1, video-game.research-spike.v1 are executable.
+                Build a small Epic > Story > Task hierarchy: at least one milestone, one feature or
+                content story, and separate engineering and QA tasks. Milestones have no parent;
+                every feature/content item belongs to a milestone, and every executable item belongs
+                to a feature/content item. Split the playable game into small independently testable
+                increments instead of one broad implementation task. Include only work the accepted
+                scope needs. Types: video-game.milestone.v1 is an epic; video-game.feature.v1 and
+                video-game.content.v1 are stories; video-game.task.v1, video-game.bug.v1,
+                video-game.research-spike.v1 are executable tasks.
                 Use only supplied roles and skills. All parents and dependencies resolve within deliveryItems, without cycles.
                 Every leaf needs testable criteria and one accountable role. Preserve the accepted creative direction;
                 list unresolved creative or feasibility questions in openFeasibilityDecisions. The Producer will
@@ -97,6 +103,19 @@ public sealed partial class SpecialistAgent
             x.RequiredCapabilityKeys is null || x.RequiredCapabilityKeys.Any(k => k != "work.execution.run.v1") ||
             x.DependencyProposalKeys is null || x.DependencyProposalKeys.Any(k => !keys.Contains(k)) ||
             (x.ParentProposalKey is not null && !keys.Contains(x.ParentProposalKey)))) return false;
+        var byKey = items.ToDictionary(x => x.ProposalKey, StringComparer.Ordinal);
+        var stories = new HashSet<string>([VideoGameWorkItemTypeKeys.Feature, VideoGameWorkItemTypeKeys.Content], StringComparer.Ordinal);
+        if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone) ||
+            !items.Any(x => stories.Contains(x.WorkItemTypeKey)) ||
+            !items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.Engineer) ||
+            !items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance) ||
+            items.Any(x => x.WorkItemTypeKey switch
+            {
+                VideoGameWorkItemTypeKeys.Milestone => x.ParentProposalKey is not null,
+                VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content =>
+                    x.ParentProposalKey is null || byKey[x.ParentProposalKey].WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone,
+                _ => x.ParentProposalKey is null || !stories.Contains(byKey[x.ParentProposalKey].WorkItemTypeKey)
+            })) return false;
         var resolved = new HashSet<string>();
         while (resolved.Count < items.Count)
         {
