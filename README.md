@@ -21,13 +21,20 @@ dotnet run --project src/CSweet.Agent.TechnicalDirector.VideoGame -- --self-test
 
 The tests run entirely in memory and require no C-Sweet instance or credentials.
 
+The installation settings **Maximum context-window tokens** (`maxContextWindowTokens`, default
+220,000) and **Maximum output tokens** (`maxOutputTokens`, default 32,000) configure the Technical
+Director's planning ceiling and per-response output budget for technical planning, candidate
+review, build selection, and specialist work. The output budget includes model reasoning and must
+remain below the context ceiling. These settings do not enlarge the selected model's actual context
+window or override a lower provider output limit.
+
 ## Install
 
 Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commit in C-Sweet, or
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.40.0 and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.47.0, `CSweet.WorkManagement.Contracts` 3.23.0, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds

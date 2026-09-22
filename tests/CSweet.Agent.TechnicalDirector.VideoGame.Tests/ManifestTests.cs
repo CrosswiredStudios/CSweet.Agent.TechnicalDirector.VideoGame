@@ -1,6 +1,7 @@
 using CSweet.WorkManagement.Contracts;
 using CSweet.Agent.SDK;
 using CrosswiredStudios.VideoGame.AgentKit;
+using System.Text.Json;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
@@ -28,6 +29,14 @@ public sealed class ManifestTests
             Assert.Contains(manifest.Requires, x => x.Name == name && x.Scope == "team");
         Assert.Equal(agent.AgentId, manifest.Id);
         Assert.Equal(agent.Version, manifest.Version);
+        Assert.Equal(agent.Version, typeof(SpecialistAgent).Assembly.GetName().Version?.ToString(3));
+        var contextWindow = Assert.Single(manifest.Configuration,
+            field => field.Key == "maxContextWindowTokens");
+        var outputTokens = Assert.Single(manifest.Configuration,
+            field => field.Key == "maxOutputTokens");
+        Assert.Equal(220_000, contextWindow.DefaultValue!.Value.GetInt32());
+        Assert.Equal(32_000, outputTokens.DefaultValue!.Value.GetInt32());
+        Assert.Equal("maxContextWindowTokens", outputTokens.LessThanFieldKey);
         Assert.Contains(agent.PrimaryCapability, manifest.Capabilities);
         Assert.Empty(VideoGameSpecialistConformance.ValidateManifest(
             path, agent.AgentId, agent.DeclaredRoleKey, agent.PrimaryCapability));
@@ -36,6 +45,24 @@ public sealed class ManifestTests
         Assert.True(File.Exists(Path.Combine(
             root,
             manifest.Runtime.ProjectPath!.Replace('/', Path.DirectorySeparatorChar))));
+    }
+
+    [Fact]
+    public void Output_budget_uses_configuration_and_stays_below_context_window()
+    {
+        Assert.Equal(32_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
+            new Dictionary<string, JsonElement>())));
+        Assert.Equal(16_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
+            new Dictionary<string, JsonElement>
+            {
+                ["maxOutputTokens"] = JsonSerializer.SerializeToElement(16_000)
+            })));
+        Assert.Equal(24_999, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
+            new Dictionary<string, JsonElement>
+            {
+                ["maxContextWindowTokens"] = JsonSerializer.SerializeToElement(25_000),
+                ["maxOutputTokens"] = JsonSerializer.SerializeToElement(32_000)
+            })));
     }
 
     private static string RepositoryRoot()

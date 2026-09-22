@@ -49,7 +49,7 @@ public sealed partial class SpecialistAgent
                         requires specific actionable findings. This review does not authorize a merge or replace QA.
                         """),
                     new ChatMessage(ChatRole.User, JsonSerializer.Serialize(new { input.Planning, Candidate = candidate }, ReviewJson))
-                ], cancellationToken: token);
+                ], ResponseOptions(), token);
                 decision = JsonSerializer.Deserialize<GameTechnicalDecision>(response.Text, ReviewJson)
                     ?? throw new InvalidOperationException("Technical review returned no decision.");
                 ValidateTechnicalDecision(decision, candidate.CandidateCommitSha);
