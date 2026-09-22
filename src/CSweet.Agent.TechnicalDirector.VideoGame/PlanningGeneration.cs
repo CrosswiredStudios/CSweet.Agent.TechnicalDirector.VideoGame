@@ -1,10 +1,24 @@
 using System.Text.Json;
+using CrosswiredStudios.VideoGame.Contracts;
 using Microsoft.Extensions.AI;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
+    internal static GameProposedWorkItemV1 NormalizeCoreRoleSkills(GameProposedWorkItemV1 item)
+    {
+        if (item.AccountableRoleKey is not (VideoGameRoleKeys.Engineer or VideoGameRoleKeys.QualityAssurance) ||
+            item.RequiredSpecializationKeys is null || item.PreferredSpecializationKeys is null)
+            return item;
+        return item with
+        {
+            RequiredSpecializationKeys = [],
+            PreferredSpecializationKeys = item.RequiredSpecializationKeys
+                .Concat(item.PreferredSpecializationKeys).Distinct(StringComparer.Ordinal).ToArray()
+        };
+    }
+
     internal static async Task<(PlanningOutput? Output, string? Error)> GeneratePlanningAsync(
         Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<string>> generate,
         IReadOnlyList<ChatMessage> initialMessages, CancellationToken cancellationToken)
@@ -18,7 +32,11 @@ public sealed partial class SpecialistAgent
             try
             {
                 var output = JsonSerializer.Deserialize<PlanningOutput>(text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-                if (output is not null && IsValidPlan(output.DeliveryItems)) return (output, null);
+                if (output?.DeliveryItems is { } items)
+                {
+                    output = output with { DeliveryItems = items.Select(NormalizeCoreRoleSkills).ToArray() };
+                    if (IsValidPlan(output.DeliveryItems)) return (output, null);
+                }
                 issue = "The plan must contain an Epic > Story > Task hierarchy with separate engineer and QA tasks, testable criteria, unique keys, allowed roles/types/skills, and resolvable acyclic parents and dependencies.";
             }
             catch (JsonException exception)

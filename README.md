@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.10.1`
+- Version: `2.10.2`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -36,7 +36,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.47.0, `CSweet.WorkManagement.Contracts` 3.23.0, and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.52.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds

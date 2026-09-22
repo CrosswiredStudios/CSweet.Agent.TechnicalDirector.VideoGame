@@ -62,7 +62,11 @@ public sealed partial class SpecialistAgent
                 scope needs. Types: video-game.milestone.v1 is an epic; video-game.feature.v1 and
                 video-game.content.v1 are stories; video-game.task.v1, video-game.bug.v1,
                 video-game.research-spike.v1 are executable tasks.
-                Use only supplied roles and skills. All parents and dependencies resolve within deliveryItems, without cycles.
+                Use only supplied roles and skills. Game engineer and game QA are work labels within
+                the software-developer and software-qa core roles. Put game-domain skills in
+                preferredSpecializationKeys so a user-selected agent from the same core role can
+                accept the work. Keep work.execution.run.v1 mandatory. All parents and dependencies
+                resolve within deliveryItems, without cycles.
                 Every leaf needs testable criteria and one accountable role. Preserve the accepted creative direction;
                 list unresolved creative or feasibility questions in openFeasibilityDecisions. The Producer will
                 escalate those questions to the Creative Director; do not silently decide them.
@@ -97,8 +101,6 @@ public sealed partial class SpecialistAgent
             !roles.Contains(x.AccountableRoleKey) || !types.Contains(x.WorkItemTypeKey) ||
             x.RequiredSpecializationKeys is null ||
             x.RequiredSpecializationKeys.Any(k => !skills.Contains(k)) ||
-            (x.WorkItemTypeKey is VideoGameWorkItemTypeKeys.Task or VideoGameWorkItemTypeKeys.Bug or VideoGameWorkItemTypeKeys.ResearchSpike &&
-                !x.RequiredSpecializationKeys.Any(k => k != VideoGameSpecializationKeys.Development)) ||
             x.PreferredSpecializationKeys is null || x.PreferredSpecializationKeys.Any(k => !skills.Contains(k)) ||
             x.RequiredCapabilityKeys is null || x.RequiredCapabilityKeys.Any(k => k != "work.execution.run.v1") ||
             x.DependencyProposalKeys is null || x.DependencyProposalKeys.Any(k => !keys.Contains(k)) ||

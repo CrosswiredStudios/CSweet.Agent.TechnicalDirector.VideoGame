@@ -9,6 +9,24 @@ public sealed class ProductionPlanningTests
     {
         Assert.True(SpecialistAgent.IsValidPlan(Hierarchy()));
     }
+    [Theory]
+    [InlineData(VideoGameRoleKeys.Engineer)]
+    [InlineData(VideoGameRoleKeys.QualityAssurance)]
+    public void DomainSkillsArePreferredForCoreSoftwareRoles(string role)
+    {
+        var item = Item("work", role) with
+        {
+            RequiredSpecializationKeys = [VideoGameSpecializationKeys.Development],
+            PreferredSpecializationKeys = [VideoGameSpecializationKeys.Gameplay]
+        };
+
+        var normalized = SpecialistAgent.NormalizeCoreRoleSkills(item);
+
+        Assert.Empty(normalized.RequiredSpecializationKeys);
+        Assert.Equal([VideoGameSpecializationKeys.Development, VideoGameSpecializationKeys.Gameplay],
+            normalized.PreferredSpecializationKeys);
+    }
+
     [Fact]
     public void Rejects_cycles_unknown_roles_and_untestable_tasks()
     {
