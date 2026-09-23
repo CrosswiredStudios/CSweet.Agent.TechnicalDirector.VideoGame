@@ -93,6 +93,36 @@ public sealed class ProductionPlanningTests
         }, [], default));
         Assert.Equal(1, calls);
     }
+
+    [Fact]
+    public async Task Invalid_leaf_repair_cannot_replace_the_accepted_container_outline()
+    {
+        var calls = 0;
+        var original = Hierarchy();
+        var invalidLeaf = original.ToArray();
+        invalidLeaf[2] = invalidLeaf[2] with { DependencyProposalKeys = [invalidLeaf[2].ProposalKey] };
+        var renamed = original.ToArray();
+        renamed[0] = renamed[0] with { ProposalKey = "replacement-epic", Title = "Replacement MVP" };
+        renamed[1] = renamed[1] with { ParentProposalKey = "replacement-epic" };
+        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+
+        var result = await SpecialistAgent.GeneratePlanningAsync((messages, token) =>
+        {
+            calls++;
+            if (calls > 1)
+            {
+                Assert.Contains("Accepted container outline (immutable)", messages[^1].Text);
+                Assert.Contains("epic", messages[^1].Text);
+            }
+            var items = calls switch { 1 => invalidLeaf, 2 => renamed, _ => original };
+            return Task.FromResult(System.Text.Json.JsonSerializer.Serialize(
+                new SpecialistAgent.PlanningOutput(items, [], [], []), options));
+        }, [new(Microsoft.Extensions.AI.ChatRole.User, "Accepted scope")], default);
+
+        Assert.Equal(3, calls);
+        Assert.Equal("epic", result.Output!.DeliveryItems[0].ProposalKey);
+    }
+
     private static GameProposedWorkItemV1[] Hierarchy()
     {
         var epic = Item("epic", VideoGameRoleKeys.TechnicalDirector) with

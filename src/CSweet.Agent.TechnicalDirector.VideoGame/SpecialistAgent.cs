@@ -10,7 +10,7 @@ public sealed partial class SpecialistAgent : VideoGameSpecialistAgentBase
     internal const int DefaultOutputTokens = 32_000;
     private const int MinimumOutputTokens = 2_048;
     public override string AgentId => "com.csweet.video-game-technical-director";
-    public override string Version => "2.10.4";
+    public override string Version => "2.10.5";
     protected override string RoleKey => "game-technical-director";
     protected override string ArtifactTypeKey => "video-game.technical-design.v1";
     protected override string RolePrompt => "Own the product Git repository, branch and integration standards, repository readiness, and technical review criteria. Own engine and toolchain feasibility, runtime architecture, performance budgets, technical standards, integration boundaries, and technical approvals. Require measured evidence and executable constraints.";
