@@ -12,6 +12,9 @@ public sealed partial class SpecialistAgent
     public override async Task<AgentCoordinationTurnResult> HandleCoordinationTurnAsync(
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact?.Type == ProjectDeliveryPlanning.RequestType)
+            return await ProjectDeliveryPlanning.PlanAsync(request, context,
+                context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a planning provider."), Settings.GetString("llmModel"))), cancellationToken);
         var artifact = request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact;
         if (artifact?.Type != "video-game.production.planning-cycle.v1")
             return await base.HandleCoordinationTurnAsync(request, context, cancellationToken);

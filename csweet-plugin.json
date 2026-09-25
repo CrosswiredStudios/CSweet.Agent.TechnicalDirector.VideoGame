@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.10.5",
+  "version": "2.11.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -114,11 +114,51 @@
     }
   ],
   "requires": [
-    {"name":"work.personal-todo.claim.v1","scope":"organization","purpose":"SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."},{"name":"work.personal-todo.complete.v1","scope":"organization","purpose":"SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."},{"name":"work.personal-todo.block.v1","scope":"organization","purpose":"SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."},{"name":"work.personal-todo.release.v1","scope":"organization","purpose":"SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."},{"name": "work.calendar.read.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
-    {"name": "work.calendar.create.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
-    {"name": "work.calendar.update.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
-    {"name": "work.calendar.cancel.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
-    {"name": "work.calendar.schedule.v1", "scope": "organization", "purpose": "Operate the business calendar within event ownership and reporting authority."},
+    {
+      "name": "work.personal-todo.claim.v1",
+      "scope": "organization",
+      "purpose": "SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."
+    },
+    {
+      "name": "work.personal-todo.complete.v1",
+      "scope": "organization",
+      "purpose": "SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."
+    },
+    {
+      "name": "work.personal-todo.block.v1",
+      "scope": "organization",
+      "purpose": "SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."
+    },
+    {
+      "name": "work.personal-todo.release.v1",
+      "scope": "organization",
+      "purpose": "SDK lifecycle for calendar-triggered personal assignments; existing execution restrictions remain."
+    },
+    {
+      "name": "work.calendar.read.v1",
+      "scope": "organization",
+      "purpose": "Operate the business calendar within event ownership and reporting authority."
+    },
+    {
+      "name": "work.calendar.create.v1",
+      "scope": "organization",
+      "purpose": "Operate the business calendar within event ownership and reporting authority."
+    },
+    {
+      "name": "work.calendar.update.v1",
+      "scope": "organization",
+      "purpose": "Operate the business calendar within event ownership and reporting authority."
+    },
+    {
+      "name": "work.calendar.cancel.v1",
+      "scope": "organization",
+      "purpose": "Operate the business calendar within event ownership and reporting authority."
+    },
+    {
+      "name": "work.calendar.schedule.v1",
+      "scope": "organization",
+      "purpose": "Operate the business calendar within event ownership and reporting authority."
+    },
     {
       "name": "platform.llm.chat-stream.v1",
       "scope": "organization",
@@ -251,7 +291,9 @@
     }
   ],
   "events": {
-    "subscribes": ["com.csweet.calendar.reminder-due.v1", "com.csweet.work.personal-todo.available.v1", 
+    "subscribes": [
+      "com.csweet.calendar.reminder-due.v1",
+      "com.csweet.work.personal-todo.available.v1",
       "com.csweet.agent.coordination.turn-requested.v1",
       "com.csweet.agent.attention.review-due.v1"
     ]

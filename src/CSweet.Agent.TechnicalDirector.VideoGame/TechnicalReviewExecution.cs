@@ -16,6 +16,9 @@ public sealed partial class SpecialistAgent
         if (request.Capability != WorkManagementCapabilityNames.ExecutionRunV1)
             return await base.ExecuteCapabilityCoreAsync(request, context, token);
         var assignment = DeserializePayload<WorkExecutionAssignmentV1>(request.Arguments);
+        if (ProjectDeliveryReview.Supports(assignment) && assignment!.StageKey == "quality")
+            return await ProjectDeliveryReview.ExecuteAsync(assignment, context,
+                context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a review provider."), Settings.GetString("llmModel"))), false, token);
         if (assignment?.StageKey is not ("technical-review" or "merge-decision"))
             return await base.ExecuteCapabilityCoreAsync(request, context, token);
         try

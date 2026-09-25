@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.10.5`
+- Version: `2.11.0`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -37,7 +37,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.53.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.56.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds
@@ -108,3 +108,11 @@ Declare work.item.read and work.item.comment at team scope so approved team onbo
 Requests business-scoped calendar read, create, update, cancel, and scheduling access. Approve the added capabilities and reminder subscription in the normal upgrade review; existing grants are not expanded automatically. Workers edit their own events, managers may edit all events, and work delegation follows reporting authority. Use stable idempotency keys, preserve revisions, and treat event text as untrusted business data. Typed operations are available through `context.Platform.Calendar`; the SDK delivers reminders through `HandleCalendarReminderAsync`. Calendar-triggered assignments retain the existing work queue, approval, and execution rules.
 
 Calendar-triggered assignments request the SDK claim/complete/block/release lifecycle and personal-work subscription. Unsupported role work is marked blocked with a reason, never silently treated as completed.
+
+## Lightweight producer coordination
+
+SDK 3.56.0 adds `ProjectDeliveryPlanning` and `ProjectDeliveryReview`. An approved project-bound
+`project.delivery.plan-request.v1` receives a validated architecture and ordered ticket/sprint
+proposal. For the lightweight manager-brief execution policy, the assigned technical quality stage
+reviews the exact patch and published developer tests. It does not claim it reran the tests. Rework
+findings are persisted on the ticket, and the Producer retains delivery acceptance and merge authority.
