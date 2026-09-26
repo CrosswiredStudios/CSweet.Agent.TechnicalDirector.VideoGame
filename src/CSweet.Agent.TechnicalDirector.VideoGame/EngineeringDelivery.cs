@@ -5,7 +5,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
-    private static async Task FinalizeEngineeringTicketsAsync(RepositorySetup setup, AgentRuntimeContext context, CancellationToken token)
+    private static async Task FinalizeExecutableTicketsAsync(RepositorySetup setup, AgentRuntimeContext context, CancellationToken token)
     {
         if (setup.Status != "Ready" || setup.RepositoryId is null || string.IsNullOrWhiteSpace(setup.DefaultBranch)) return;
         var boards = await context.Platform.Work.ListBoardsAsync(cancellationToken: token);
@@ -15,38 +15,49 @@ public sealed partial class SpecialistAgent
             if (board.Items.Count == 0) continue;
             var workstream = await context.Platform.ReadWorkstreamAsync(new(setup.WorkstreamId), token);
             var reviewedDelivery = workstream.ProfileKey == "video-game-production.v2" && workstream.ProfileVersion >= 5;
-            foreach (var original in board.Items)
+            var plannedSprints = (await context.Platform.Work.ListSprintsAsync(summary.Id, token))
+                .Where(x => x.Status == "Planned").Select(x => x.Id).ToHashSet();
+            foreach (var original in board.Items.Where(x => x.SprintId is null || plannedSprints.Contains(x.SprintId.Value)))
             {
                 var item = original;
                 if (reviewedDelivery && EngineeringPlanningRequest(summary.Id, item) is { } planning)
                     item = await context.Platform.Work.RevisePlanningAsync(planning, token);
-                var request = EngineeringDeliveryRequest(summary.Id, item, setup, reviewedDelivery);
+                var request = DeliveryFinalizationRequest(summary.Id, item, setup, reviewedDelivery);
                 if (request is not null) await context.Platform.Work.FinalizeItemDeliveryAsync(request, token);
             }
         }
     }
 
-    internal static FinalizeWorkItemDeliveryRequest? EngineeringDeliveryRequest(Guid boardId, WorkItem item, RepositorySetup setup, bool reviewedDelivery = false)
+    internal static FinalizeWorkItemDeliveryRequest? DeliveryFinalizationRequest(Guid boardId, WorkItem item, RepositorySetup setup, bool reviewedDelivery = false)
     {
+        var primaryRole = item.StageAssignments.SingleOrDefault(x => x.StageKey == "specialist-execution")?.Requirements?.RequiredRoleKey;
         if (setup.Status != "Ready" || setup.RepositoryId is not { } repository || string.IsNullOrWhiteSpace(setup.DefaultBranch) ||
-            item.Delivery is not null || item.ExecutionMode != WorkItemExecutionModes.Executable || item.Planning is null ||
+            item.ExecutionMode != WorkItemExecutionModes.Executable || item.Planning is null ||
             item.ProposalProvenance is null || item.AccountableOrganizationUserId is not { } accountable ||
-            item.Status is "Done" or "Completed" || !item.StageAssignments.Any(x => x.Requirements?.RequiredRoleKey == "game-engineer")) return null;
+            item.Status is "Done" or "Completed" or "InProgress" or "Running" or "Cancelled" || string.IsNullOrWhiteSpace(primaryRole)) return null;
         var plan = item.Planning;
+        if (item.Delivery is { } current && current.RepositoryId == repository && current.BaseBranch == setup.DefaultBranch &&
+            current.Requirements.SequenceEqual(plan.Requirements) && current.AcceptanceCriteria.SequenceEqual(plan.AcceptanceCriteria) &&
+            (current.Constraints ?? []).SequenceEqual(plan.Constraints ?? []) &&
+            current.DependencyItemIds.SequenceEqual(plan.DependencyItemIds)) return null;
         var assignments = item.StageAssignments.ToList();
-        if (reviewedDelivery)
+        if (reviewedDelivery && RoleTaxonomy.SatisfiesRole([primaryRole], "game-engineer"))
         {
             if (ReviewDelegations.Any(r => !plan.DelegationRecommendations.Any(x => x.StageKey == r.StageKey && x.RequiredRoleKey == r.RequiredRoleKey)) ||
                 ReviewDelegations.Any(r => !assignments.Any(x => x.StageKey == r.StageKey && x.AgentInstallationId is not null &&
                     x.Requirements?.RequiredRoleKey == r.RequiredRoleKey && x.SelectionEvidence is not null))) return null;
             if (!assignments.Any(x => x.StageKey == "governed-merge"))
                 assignments.Add(new WorkStageAssignment("governed-merge", "PlatformAction", null, null, "source-control.merge.execute.v2"));
-            if (!assignments.Any(x => x.StageKey == "producer-review"))
-                assignments.Add(new WorkStageAssignment("producer-review", "BoardManager", null, null));
         }
-        return new FinalizeWorkItemDeliveryRequest(boardId, item.Id,
-            new WorkItemDeliverySpecification(repository, plan.Requirements, plan.AcceptanceCriteria, plan.Constraints)
-            { BaseBranch = setup.DefaultBranch, DependencyItemIds = plan.DependencyItemIds }, accountable, assignments,
+        // Document-producing specialists follow the profile's completed -> producer-review path.
+        if (reviewedDelivery && !assignments.Any(x => x.StageKey == "producer-review"))
+            assignments.Add(new WorkStageAssignment("producer-review", "BoardManager", null, null));
+        var delivery = (item.Delivery ?? new WorkItemDeliverySpecification(repository, plan.Requirements, plan.AcceptanceCriteria, plan.Constraints)) with
+        {
+            RepositoryId = repository, BaseBranch = setup.DefaultBranch, Requirements = plan.Requirements,
+            AcceptanceCriteria = plan.AcceptanceCriteria, Constraints = plan.Constraints, DependencyItemIds = plan.DependencyItemIds
+        };
+        return new FinalizeWorkItemDeliveryRequest(boardId, item.Id, delivery, accountable, assignments,
             item.Revision, $"game-delivery:{item.Id:N}:{item.Revision}:{repository:N}");
     }
 
@@ -63,7 +74,7 @@ public sealed partial class SpecialistAgent
     internal static ReviseWorkItemPlanningRequest? EngineeringPlanningRequest(Guid boardId, WorkItem item)
     {
         if (item.Delivery is not null || item.ExecutionMode != WorkItemExecutionModes.Executable || item.Planning is null ||
-            item.ProposalProvenance is null || item.Status is "Done" or "Completed" ||
+            item.ProposalProvenance is null || item.Status is "Done" or "Completed" or "Running" or "InProgress" or "Cancelled" ||
             !item.Planning.DelegationRecommendations.Any(x => x.StageKey == "specialist-execution" && x.RequiredRoleKey == "game-engineer")) return null;
         var recommendations = item.Planning.DelegationRecommendations.ToList();
         var missing = ReviewDelegations.Where(r => !recommendations.Any(x => x.StageKey == r.StageKey)).ToArray();
