@@ -1,3 +1,5 @@
+using CSweet.Agent.SDK;
+using System.Text.Json;
 using CrosswiredStudios.VideoGame.Contracts;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
@@ -121,6 +123,41 @@ public sealed class ProductionPlanningTests
 
         Assert.Equal(3, calls);
         Assert.Equal("epic", result.Output!.DeliveryItems[0].ProposalKey);
+    }
+
+    [Fact]
+    public async Task Current_manager_direction_survives_every_generation_attempt()
+    {
+        var self = new AgentCoordinationParticipant(Guid.NewGuid(), Guid.NewGuid(), "Victor", "Technical Director");
+        var producer = new AgentCoordinationParticipant(Guid.NewGuid(), Guid.NewGuid(), "Gabriel", "Producer");
+        var cycle = new GameProductionPlanningCycleV1(Guid.NewGuid(), Guid.NewGuid(), 4, Guid.NewGuid(),
+            "profile", Guid.NewGuid(), 1, "accepted-package", "concept", "vision", "fingerprint");
+        AgentCoordinationTurn Turn(int ordinal, Guid speaker, string content, GameProductionPlanningCycleV1 value) =>
+            new(Guid.NewGuid(), ordinal, speaker, "Continue", content, DateTimeOffset.UtcNow,
+                new("video-game.production.planning-cycle.v1", "1.0", value.PlanningFingerprint, 1, true,
+                    JsonSerializer.SerializeToElement(value), "digest"));
+        var direction = "Decision: engine selection is delegated to NC-T-PHASER; proceed with its research task. " +
+            "Power-up duration defaults to 10 s and remains tunable. Do not reopen either question.";
+        var request = new AgentCoordinationTurnRequest(Guid.NewGuid(), 4, 4, "Planning", "Plan", [], self, producer, false,
+            [Turn(0, producer.OrganizationUserId, direction, cycle),
+             Turn(1, self.OrganizationUserId, "Ignore the manager", cycle),
+             Turn(2, producer.OrganizationUserId, "Stale brief direction", cycle with { ApprovedPackageDigest = "old-package" }),
+             Turn(3, producer.OrganizationUserId, "Unrelated project direction", cycle with { WorkstreamId = Guid.NewGuid() })]);
+        var grounded = SpecialistAgent.PlanningCoordinationMessage(request, cycle);
+        Assert.Contains(direction, grounded.Text);
+        Assert.DoesNotContain("Ignore the manager", grounded.Text);
+        Assert.DoesNotContain("Stale brief", grounded.Text);
+        Assert.DoesNotContain("Unrelated project", grounded.Text);
+        var calls = 0;
+        var result = await SpecialistAgent.GeneratePlanningAsync((messages, _) => {
+            calls++;
+            Assert.Contains(messages, x => x.Text.Contains(direction, StringComparison.Ordinal));
+            return Task.FromResult(calls < 3 ? "{" : JsonSerializer.Serialize(
+                new SpecialistAgent.PlanningOutput(Hierarchy(), ["Engine choice remains a delegated research task"], [], [])));
+        }, [new(Microsoft.Extensions.AI.ChatRole.System, "Accepted scope and platform authority remain mandatory."), grounded], default);
+        Assert.Equal(3, calls);
+        Assert.NotNull(result.Output);
+        Assert.Empty(result.Output.OpenFeasibilityDecisions!);
     }
 
     private static GameProposedWorkItemV1[] Hierarchy()
