@@ -40,7 +40,8 @@ public sealed partial class SpecialistAgent
                 var model = Settings.GetString("llmModel");
                 if (string.IsNullOrWhiteSpace(model)) throw new InvalidOperationException("Configure an approved review model.");
                 var client = context.CreateChatClient(new AgentLlmSelection(provider, model));
-                var response = await client.GetResponseAsync([
+                decision = await GenerateTechnicalDecisionAsync(async (messages, ct) =>
+                    (await client.GetResponseAsync(messages, ResponseOptions(), ct)).Text, [
                     new ChatMessage(ChatRole.System, """
                         Review the supplied candidate patch against the accepted requirements, technical constraints,
                         and acceptance criteria. Inspect correctness, regressions, integration and missing coverage.
@@ -52,8 +53,7 @@ public sealed partial class SpecialistAgent
                         requires specific actionable findings. This review does not authorize a merge or replace QA.
                         """),
                     new ChatMessage(ChatRole.User, JsonSerializer.Serialize(new { input.Planning, Candidate = candidate }, ReviewJson))
-                ], ResponseOptions(), token);
-                decision = ParseTechnicalDecision(response.Text, candidate.CandidateCommitSha);
+                ], candidate.CandidateCommitSha, token);
             }
             else
             {
@@ -101,6 +101,44 @@ public sealed partial class SpecialistAgent
         }
     }
 
+    internal static async Task<GameTechnicalDecision> GenerateTechnicalDecisionAsync(
+        Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<string>> generate,
+        IReadOnlyList<ChatMessage> messages, string sha, CancellationToken token)
+    {
+        var response = await generate(messages, token);
+        try { return ParseTechnicalDecision(response, sha); }
+        catch (TechnicalReviewFormatException)
+        {
+            // One bounded repair of representation. Exact candidate and consistency failures do not retry.
+            // Preserve any complete decision in a valid prefix; it cannot silently change during repair.
+            var prefix = TryReadDecisionPrefix(response, sha);
+            var repair = new List<ChatMessage>(messages)
+            {
+                new(ChatRole.Assistant, response),
+                new(ChatRole.User, "The previous response was invalid JSON. Correct only its formatting and return exactly one JSON object " +
+                    "with candidateCommitSha, approved (boolean), summary and findings (array of strings). " +
+                    "Keep the same commit, decision, summary and findings; do not re-review, add prose, fences or trailing characters.")
+            };
+            var corrected = ParseTechnicalDecision(await generate(repair, token), sha);
+            if (prefix is not null && (corrected.Approved != prefix.Approved || corrected.Summary != prefix.Summary ||
+                !corrected.Findings.SequenceEqual(prefix.Findings)))
+                throw new InvalidOperationException("Technical review formatting repair changed the recorded decision or findings; no review decision was recorded.");
+            return corrected;
+        }
+    }
+
+    private static GameTechnicalDecision? TryReadDecisionPrefix(string response, string sha)
+    {
+        try
+        {
+            var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(response.Trim()));
+            using var document = JsonDocument.ParseValue(ref reader);
+            var decision = document.RootElement.Deserialize<GameTechnicalDecision>(ReviewJson);
+            if (decision is not null) ValidateTechnicalDecision(decision, sha);
+            return decision;
+        }
+        catch (JsonException) { return null; }
+    }
     internal static GameTechnicalDecision ParseTechnicalDecision(string response, string sha)
     {
         // Some providers append escaped whitespace outside the JSON object. Normalize only
@@ -117,7 +155,7 @@ public sealed partial class SpecialistAgent
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException("Technical review returned invalid decision JSON; no review decision was recorded.");
+            throw new TechnicalReviewFormatException();
         }
         ValidateTechnicalDecision(decision, sha);
         return decision;
@@ -143,3 +181,6 @@ internal sealed record GameReviewReceipt(WorkExecutionOutcomeV1 Outcome);
 internal sealed record GameTechnicalDecision(string CandidateCommitSha, bool Approved, string Summary, IReadOnlyList<string> Findings);
 internal sealed record GameTechnicalReviewEvidence(string StageKey, Guid PublicationId, string CandidateCommitSha,
     bool Approved, string Summary, IReadOnlyList<string> Findings);
+
+internal sealed class TechnicalReviewFormatException() : InvalidOperationException(
+    "Technical review returned invalid decision JSON after its bounded formatting attempt; no review decision was recorded.");

@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.11.7`
+- Version: `2.11.8`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -123,3 +123,7 @@ Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension onl
 ## Technical-review response formatting (2.11.7)
 
 `ParseTechnicalDecision` accepts literal escaped whitespace at the end of an otherwise valid JSON response, as emitted by some providers. It preserves all findings and validates the exact candidate SHA and decision consistency before recording a result. It does not extract JSON from prose or accept multiple decisions. Invalid JSON has a specific blocker message. Rejected candidates return through the configured engineering rework transition; technical review does not implement changes or authorize merge.
+
+## Bounded review formatting repair (2.11.8)
+
+`GenerateTechnicalDecisionAsync` permits one formatting retry for invalid JSON. It retains the original candidate context and validates the corrected decision. A complete initial object followed by malformed trailing content supplies an immutable decision/summary/findings baseline for repair; a correction cannot switch a rejection into approval or drop findings. Wrong SHA and inconsistent decisions never trigger repair. Two malformed responses block with a specific error.

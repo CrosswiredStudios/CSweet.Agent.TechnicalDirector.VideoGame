@@ -31,17 +31,17 @@ public sealed class TechnicalReviewParsingTests
     [InlineData("\\x")]
     public void Invalid_suffix_is_a_specific_blocker_not_a_decision(string suffix)
     {
-        var error = Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision() + suffix, Sha));
+        var error = Assert.ThrowsAny<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision() + suffix, Sha));
         Assert.Contains("invalid decision JSON", error.Message);
     }
 
     [Fact]
     public void Normalization_does_not_weaken_commit_or_approval_checks()
     {
-        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision() + "\\n", new string('b', 40)));
-        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision().Replace("\"approved\":false", "\"approved\":true") + "\\n", Sha));
+        Assert.ThrowsAny<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision() + "\\n", new string('b', 40)));
+        Assert.ThrowsAny<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision(Decision().Replace("\"approved\":false", "\"approved\":true") + "\\n", Sha));
         Assert.True(SpecialistAgent.ParseTechnicalDecision(Decision(true) + "\\n", Sha).Approved);
-        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision("```json\n" + Decision() + "\n```", Sha));
-        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision("{bad json}\\n", Sha));
+        Assert.ThrowsAny<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision("```json\n" + Decision() + "\n```", Sha));
+        Assert.ThrowsAny<InvalidOperationException>(() => SpecialistAgent.ParseTechnicalDecision("{bad json}\\n", Sha));
     }
 }
