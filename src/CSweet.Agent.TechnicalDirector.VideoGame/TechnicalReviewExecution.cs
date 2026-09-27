@@ -53,9 +53,7 @@ public sealed partial class SpecialistAgent
                         """),
                     new ChatMessage(ChatRole.User, JsonSerializer.Serialize(new { input.Planning, Candidate = candidate }, ReviewJson))
                 ], ResponseOptions(), token);
-                decision = JsonSerializer.Deserialize<GameTechnicalDecision>(response.Text, ReviewJson)
-                    ?? throw new InvalidOperationException("Technical review returned no decision.");
-                ValidateTechnicalDecision(decision, candidate.CandidateCommitSha);
+                decision = ParseTechnicalDecision(response.Text, candidate.CandidateCommitSha);
             }
             else
             {
@@ -103,6 +101,27 @@ public sealed partial class SpecialistAgent
         }
     }
 
+    internal static GameTechnicalDecision ParseTechnicalDecision(string response, string sha)
+    {
+        // Some providers append escaped whitespace outside the JSON object. Normalize only
+        // that suffix; do not extract a decision from prose, alter strings, or discard a second object.
+        var json = response.AsSpan().Trim();
+        while (json.EndsWith("\\n", StringComparison.Ordinal) || json.EndsWith("\\r", StringComparison.Ordinal) ||
+               json.EndsWith("\\t", StringComparison.Ordinal))
+            json = json[..^2].TrimEnd();
+        GameTechnicalDecision decision;
+        try
+        {
+            decision = JsonSerializer.Deserialize<GameTechnicalDecision>(json, ReviewJson)
+                ?? throw new InvalidOperationException("Technical review returned no decision.");
+        }
+        catch (JsonException)
+        {
+            throw new InvalidOperationException("Technical review returned invalid decision JSON; no review decision was recorded.");
+        }
+        ValidateTechnicalDecision(decision, sha);
+        return decision;
+    }
     internal static void ValidateTechnicalDecision(GameTechnicalDecision decision, string sha)
     {
         if (decision.CandidateCommitSha != sha || string.IsNullOrWhiteSpace(decision.Summary) || decision.Findings is null ||
