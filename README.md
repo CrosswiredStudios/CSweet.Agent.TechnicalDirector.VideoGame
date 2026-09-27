@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.11.8`
+- Version: `2.11.9`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -127,3 +127,7 @@ Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension onl
 ## Bounded review formatting repair (2.11.8)
 
 `GenerateTechnicalDecisionAsync` permits one formatting retry for invalid JSON. It retains the original candidate context and validates the corrected decision. A complete initial object followed by malformed trailing content supplies an immutable decision/summary/findings baseline for repair; a correction cannot switch a rejection into approval or drop findings. Wrong SHA and inconsistent decisions never trigger repair. Two malformed responses block with a specific error.
+
+## Complete planning handoffs (2.11.9)
+
+`PlanningCoordinationMessage` reads `coordinationContext` only from the matching planning-cycle artifact on the authenticated Producer's turn. Producer 2.11.2 uses this existing artifact field for complete handoffs that exceed the chat-message limit. Invalid context fails closed; another participant, project, cycle or accepted-package revision cannot supply it. Explicit owner-authorized replacements take precedence over conflicting older planning while unrelated scope, completed work, QA and merge controls remain intact.
