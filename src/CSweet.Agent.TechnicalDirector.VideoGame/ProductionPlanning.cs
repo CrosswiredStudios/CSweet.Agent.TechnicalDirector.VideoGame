@@ -44,12 +44,20 @@ public sealed partial class SpecialistAgent
             .Where(x => x.Status != WorkStatuses.Cancelled && x.ProposalProvenance is not null)
             .Select(x => new
             {
+                x.Id,
                 proposalKey = x.ProposalProvenance!.ProposalItemKey,
                 x.TypeKey,
                 title = DisplayTitle(x.Title),
                 parentProposalKey = x.ParentItemId is { } parentId && boardById.TryGetValue(parentId, out var parent)
                     ? parent.ProposalProvenance?.ProposalItemKey
                     : null,
+                x.Description,
+                requirements = x.Planning?.Requirements,
+                acceptanceCriteria = x.Planning?.AcceptanceCriteria,
+                constraints = x.Planning?.Constraints,
+                dependencies = x.Planning?.DependencyItemIds,
+                dependencyProposalKeys = x.Planning?.DependencyItemIds.Select(id => boardById.GetValueOrDefault(id)?.ProposalProvenance?.ProposalItemKey),
+                currentDelegations = x.Planning?.DelegationRecommendations,
                 x.Status,
                 inSprint = x.SprintId is not null
             }).OrderBy(x => x.proposalKey, StringComparer.Ordinal).ToList();
@@ -65,7 +73,7 @@ public sealed partial class SpecialistAgent
                 A simple arcade game normally needs technical leadership, engineering and QA. Do not invent
                 specialist work to fill a studio roster. Simple procedural visuals, UI and packaging may be explicit
                 engineering tasks with suitable skills. Include useful technical investigations before other hires.
-                Own the product Git repository, branch/integration standards and review criteria. Use the supplied
+                Plan the product Git repository structure, branch/integration standards and review criteria. Use the supplied
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
                 Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings).
@@ -85,6 +93,17 @@ public sealed partial class SpecialistAgent
                 preferredSpecializationKeys so a user-selected agent from the same core role can
                 accept the work. Keep work.execution.run.v1 mandatory. All parents and dependencies
                 resolve within deliveryItems, without cycles.
+                The Technical Director plans and reviews; this role never writes code, builds prototypes, runs
+                benchmarks, or commits files. Assign all coding, prototype construction, package/version locking,
+                performance implementation and repository commits to game-engineer. Assign independent execution
+                of acceptance tests to game-quality-assurance. Technical Director tasks produce a concrete plan
+                with decisions, implementation guidance, measurement methods, and review criteria. Their completion
+                criteria must evaluate that plan, never require unperformed implementation or measured results.
+                When correcting a mixed planning/implementation ticket, split its responsibilities into linked
+                planning, engineering, and QA tasks. Preserve every original deliverable and acceptance criterion
+                across those tasks; moving responsibility must not weaken, omit, or mark any execution requirement
+                fulfilled. Downstream consumers must depend on the actual implementation/validation result, not
+                just the plan. Preserve unrelated tasks and completed work. Reuse canonical keys for retained work.
                 Every leaf needs testable criteria and one accountable role. Preserve the accepted creative direction;
                 list only unresolved decisions requiring external authority in openFeasibilityDecisions. Incorporate
                 the Producer's supplied coordination directions and recorded manager decisions; do not reopen

@@ -25,12 +25,15 @@ public sealed class EngineeringDeliveryTests
         Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(board, item with { StageAssignments = [] }, setup));
         Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(board, item, setup with { Status = "AwaitingApproval" }));
     }
-    [Fact]
-    public void DeclaresMissingReviewRolesWithoutChangingScopeOrExistingOwners()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DeclaresMissingReviewRolesWithoutChangingScopeOrExistingOwners(bool previouslyFinalized)
     {
         var item = Item();
         item = item with { Planning = item.Planning! with { DelegationRecommendations =
             [new("specialist-execution", "game-engineer", ["work.execution.run.v1"], null, true, "Implement gameplay")] } };
+        if (previouslyFinalized) item = item with { Delivery = new(Guid.NewGuid(), item.Planning.Requirements, item.Planning.AcceptanceCriteria, item.Planning.Constraints) };
         var revision = Assert.IsType<ReviseWorkItemPlanningRequest>(SpecialistAgent.EngineeringPlanningRequest(Guid.NewGuid(), item));
         Assert.Equal(item.Planning.Requirements, revision.Planning.Requirements);
         Assert.Equal(item.Planning.AcceptanceCriteria, revision.Planning.AcceptanceCriteria);
@@ -55,6 +58,10 @@ public sealed class EngineeringDeliveryTests
         }
         var staffed = planned with { StageAssignments = assignments };
         var final = Assert.IsType<FinalizeWorkItemDeliveryRequest>(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), staffed, setup, reviewedDelivery: true));
+        var staleAssignments = staffed with { Delivery = final.Delivery };
+        var repaired = Assert.IsType<FinalizeWorkItemDeliveryRequest>(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), staleAssignments, setup, reviewedDelivery: true));
+        Assert.Contains(repaired.StageAssignments, x => x.StageKey == "governed-merge");
+        Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), staleAssignments with { StageAssignments = repaired.StageAssignments }, setup, reviewedDelivery: true));
         Assert.Equal(6, final.StageAssignments.Count);
         foreach (var existing in assignments) Assert.Contains(existing, final.StageAssignments);
         Assert.Equal("source-control.merge.execute.v2", Assert.Single(final.StageAssignments, x => x.StageKey == "governed-merge").PlatformAction);
@@ -84,7 +91,7 @@ public sealed class EngineeringDeliveryTests
         Assert.DoesNotContain(request.StageAssignments, x => x.StageKey == "governed-merge");
         foreach (var status in new[] { "Done", "Completed", "Running", "InProgress", "Cancelled" })
             Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), item with { Status = status }, setup, true));
-        Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), item with { Delivery = request.Delivery }, setup, true));
+        Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), item with { Delivery = request.Delivery, StageAssignments = request.StageAssignments }, setup, true));
         Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), item with { StageAssignments = [] }, setup, true));
     }
     [Fact]

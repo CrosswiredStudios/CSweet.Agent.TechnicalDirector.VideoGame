@@ -10,10 +10,10 @@ public sealed partial class SpecialistAgent : VideoGameSpecialistAgentBase
     internal const int DefaultOutputTokens = 32_000;
     private const int MinimumOutputTokens = 2_048;
     public override string AgentId => "com.csweet.video-game-technical-director";
-    public override string Version => "2.11.4";
+    public override string Version => "2.11.5";
     protected override string RoleKey => "game-technical-director";
     protected override string ArtifactTypeKey => "video-game.technical-design.v1";
-    protected override string RolePrompt => "Own the product Git repository, branch and integration standards, repository readiness, and technical review criteria. Own engine and toolchain feasibility, runtime architecture, performance budgets, technical standards, integration boundaries, and technical approvals. Require measured evidence and executable constraints.";
+    protected override string RolePrompt => "Own the product Git repository, branch and integration standards, repository readiness, and technical review criteria. Own engine and toolchain feasibility, runtime architecture, performance budgets, technical standards, integration boundaries, and technical approvals. Require measured evidence and executable constraints from the implementation and QA owners. You plan and review only; you do not write code, build prototypes, run measurements, or commit repository changes.";
     protected override IReadOnlyList<string> RequiredSections => ["Architecture", "Toolchain Feasibility", "Performance Budgets", "Technical Standards", "Risks", "Approval Criteria"];
 
     protected override AgentConfigurationBuilder Configure(AgentConfigurationBuilder builder) =>

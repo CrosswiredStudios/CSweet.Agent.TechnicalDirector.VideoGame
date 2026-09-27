@@ -36,10 +36,16 @@ public sealed partial class SpecialistAgent
             item.ProposalProvenance is null || item.AccountableOrganizationUserId is not { } accountable ||
             item.Status is "Done" or "Completed" or "InProgress" or "Running" or "Cancelled" || string.IsNullOrWhiteSpace(primaryRole)) return null;
         var plan = item.Planning;
+        var engineering = RoleTaxonomy.SatisfiesRole([primaryRole], "game-engineer");
+        var completeReviewAssignments = !reviewedDelivery ||
+            (item.StageAssignments.Any(x => x.StageKey == "producer-review") && (!engineering ||
+                (item.StageAssignments.Any(x => x.StageKey == "governed-merge") && ReviewDelegations.All(r =>
+                    item.StageAssignments.Any(x => x.StageKey == r.StageKey && x.AgentInstallationId is not null &&
+                        x.Requirements?.RequiredRoleKey == r.RequiredRoleKey && x.SelectionEvidence is not null)))));
         if (item.Delivery is { } current && current.RepositoryId == repository && current.BaseBranch == setup.DefaultBranch &&
             current.Requirements.SequenceEqual(plan.Requirements) && current.AcceptanceCriteria.SequenceEqual(plan.AcceptanceCriteria) &&
             (current.Constraints ?? []).SequenceEqual(plan.Constraints ?? []) &&
-            current.DependencyItemIds.SequenceEqual(plan.DependencyItemIds)) return null;
+            current.DependencyItemIds.SequenceEqual(plan.DependencyItemIds) && completeReviewAssignments) return null;
         var assignments = item.StageAssignments.ToList();
         if (reviewedDelivery && RoleTaxonomy.SatisfiesRole([primaryRole], "game-engineer"))
         {
@@ -73,7 +79,7 @@ public sealed partial class SpecialistAgent
 
     internal static ReviseWorkItemPlanningRequest? EngineeringPlanningRequest(Guid boardId, WorkItem item)
     {
-        if (item.Delivery is not null || item.ExecutionMode != WorkItemExecutionModes.Executable || item.Planning is null ||
+        if (item.ExecutionMode != WorkItemExecutionModes.Executable || item.Planning is null ||
             item.ProposalProvenance is null || item.Status is "Done" or "Completed" or "Running" or "InProgress" or "Cancelled" ||
             !item.Planning.DelegationRecommendations.Any(x => x.StageKey == "specialist-execution" && x.RequiredRoleKey == "game-engineer")) return null;
         var recommendations = item.Planning.DelegationRecommendations.ToList();

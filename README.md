@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.11.4`
+- Version: `2.11.5`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -116,3 +116,5 @@ SDK 3.56.0 adds `ProjectDeliveryPlanning` and `ProjectDeliveryReview`. An approv
 proposal. For the lightweight manager-brief execution policy, the assigned technical quality stage
 reviews the exact patch and published developer tests. It does not claim it reran the tests. Rework
 findings are persisted on the ticket, and the Producer retains delivery acceptance and merge authority.
+
+The Technical Director produces plans and reviews; coding, prototypes, package locks, measured execution, and commits belong to engineering and independent QA. Replanning includes full canonical requirements and criteria. Previously finalized tickets reassigned to engineering still receive technical review, independent QA, and merge-decision requirements before delivery can execute.
