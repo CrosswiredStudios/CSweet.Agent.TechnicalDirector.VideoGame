@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.11.5`
+- Version: `2.11.6`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -118,3 +118,5 @@ reviews the exact patch and published developer tests. It does not claim it rera
 findings are persisted on the ticket, and the Producer retains delivery acceptance and merge authority.
 
 The Technical Director produces plans and reviews; coding, prototypes, package locks, measured execution, and commits belong to engineering and independent QA. Replanning includes full canonical requirements and criteria. Previously finalized tickets reassigned to engineering still receive technical review, independent QA, and merge-decision requirements before delivery can execute.
+
+Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension only from the authenticated counterpart for the exact accepted planning cycle. `ReadRoleRepairInstruction` validates its schema and `BuildRoleRepairPlanning` checks the source planning hash against the current canonical board. It deterministically preserves requirements, acceptance criteria, constraints, unrelated roles and ticket identities. The retained Technical Director task requires a real plan; a new engineering task owns every original delivery criterion and independent QA verifies all of them. Unfinished downstream work waits for validation. This scope-preserving transformation does not ask a model to transcribe the backlog or claim any delivery is complete. Unknown versions, stale scope, missing canonical dependencies and output-key collisions block without changing the board. Existing normal planning is unchanged; no new capability grants are required.

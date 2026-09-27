@@ -39,6 +39,18 @@ public sealed partial class SpecialistAgent
             return AgentCoordinationTurnResult.Blocked("The planning package digest changed.");
         var repository = await EnsureRepositoryAsync(cycle.WorkstreamId, cycle.TeamId, context, cancellationToken);
         var board = await context.Platform.Work.ReadBoardAsync(cycle.BoardId, cancellationToken);
+        if (artifact.Payload.TryGetProperty("roleRepair", out _))
+        {
+            try
+            {
+                var repaired = BuildRoleRepairPlanning(board.Items, ReadRoleRepairInstruction(request, cycle));
+                return CompletePlanningProposal(cycle, repaired);
+            }
+            catch (Exception error) when (error is InvalidOperationException or JsonException)
+            {
+                return AgentCoordinationTurnResult.Blocked("Structured role repair blocked: " + error.Message);
+            }
+        }
         var boardById = board.Items.ToDictionary(x => x.Id);
         var canonicalPlanning = board.Items
             .Where(x => x.Status != WorkStatuses.Cancelled && x.ProposalProvenance is not null)
@@ -125,9 +137,14 @@ public sealed partial class SpecialistAgent
         if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],
             $"Repository setup: {repository.Status}; repository={repository.RepositoryId}; approval={repository.ApprovalId}; {repository.Remediation}"] };
+        return CompletePlanningProposal(cycle, output);
+    }
+
+    private static AgentCoordinationTurnResult CompletePlanningProposal(GameProductionPlanningCycleV1 cycle, PlanningOutput output)
+    {
         var digest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(output))).ToLowerInvariant();
         var proposal = new GameTechnicalDeliveryProposalV1(cycle, output.DeliveryItems,
-            output.FeasibilityFindings ?? [], output.TechnicalConstraints, output.OpenFeasibilityDecisions ?? [], digest);
+            output.FeasibilityFindings ?? [], output.TechnicalConstraints ?? [], output.OpenFeasibilityDecisions ?? [], digest);
         return AgentCoordinationTurnResult.Completed("Proposed scope-specific delivery work and capability requirements.",
             new AgentCoordinationArtifactSubmission("video-game.production.technical-delivery-proposal.v1", "1.0",
                 cycle.PlanningFingerprint, 1, true, JsonSerializer.SerializeToElement(proposal)));
