@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.11.9`
+- Version: `2.12.0`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -131,3 +131,9 @@ Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension onl
 ## Complete planning handoffs (2.11.9)
 
 `PlanningCoordinationMessage` reads `coordinationContext` only from the matching planning-cycle artifact on the authenticated Producer's turn. Producer 2.11.2 uses this existing artifact field for complete handoffs that exceed the chat-message limit. Invalid context fails closed; another participant, project, cycle or accepted-package revision cannot supply it. Explicit owner-authorized replacements take precedence over conflicting older planning while unrelated scope, completed work, QA and merge controls remain intact.
+
+## Technical lead for blocked developers (2.12.0)
+
+When the assigned developer is blocked by a technical failure on a work item, they open a work-item-scoped support coordination (`software-development.support-request.v1`) with the team's technical lead. On game teams that lead is the Technical Director. I answer with `software-architecture.guidance.v1`: a diagnosis, ordered next steps, invariants, relevant design decisions, explicit verification, and remaining risks. The developer then retries the exact blocked stage.
+
+I still plan and review only: I never write code, run measurements, or claim results. If the fix needs a scope, criteria, environment or tooling decision, the guidance sets `requiresArchitectureApproval` and names what the Producer or owner must decide, so the developer does not retry on an unapproved change. This uses the existing coordination read and respond grants, with updated purpose text.

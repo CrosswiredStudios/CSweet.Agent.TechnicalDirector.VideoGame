@@ -16,6 +16,8 @@ public sealed partial class SpecialistAgent
             return await ProjectDeliveryPlanning.PlanAsync(request, context,
                 context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a planning provider."), Settings.GetString("llmModel"))), cancellationToken);
         var artifact = request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact;
+        if (artifact?.Type == DeveloperSupportArtifactTypes.SupportRequest)
+            return await AnswerDeveloperSupportAsync(request, artifact, context, cancellationToken);
         if (artifact?.Type != "video-game.production.planning-cycle.v1")
             return await base.HandleCoordinationTurnAsync(request, context, cancellationToken);
         var cycle = artifact.Payload.Deserialize<GameProductionPlanningCycleV1>();

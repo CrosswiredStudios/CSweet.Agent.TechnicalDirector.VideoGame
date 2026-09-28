@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.11.9",
+  "version": "2.12.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -202,12 +202,12 @@
     {
       "name": "communication.coordination.read.v1",
       "scope": "team",
-      "purpose": "Read planning and estimation coordination."
+      "purpose": "Read planning, estimation, and work-item developer support coordination."
     },
     {
       "name": "communication.coordination.respond.v1",
       "scope": "team",
-      "purpose": "Respond with technical feasibility, decomposition, and estimate evidence."
+      "purpose": "Respond with technical feasibility, decomposition, estimate evidence, and technical guidance for a blocked assigned developer."
     },
     {
       "name": "platform.agent-operating-state.read.v1",
