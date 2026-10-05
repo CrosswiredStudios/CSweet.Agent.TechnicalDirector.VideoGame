@@ -6,6 +6,40 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed class ProductionPlanningTests
 {
+    [Theory]
+    [InlineData("```json\n", "\n```", true)]
+    [InlineData("```\r\n", "\r\n```", true)]
+    [InlineData("```JSON\n", "\n```", true)]
+    [InlineData("Here is the plan:\n```json\n", "\n```", false)]
+    [InlineData("```json\n", "\n```\n{}", false)]
+    [InlineData("```json\n", "\n{}\n```", false)]
+    public async Task One_enclosing_fence_needs_no_model_repair_but_prose_and_extra_objects_are_rejected(string prefix, string suffix, bool accepted)
+    {
+        var calls = 0;
+        var json = JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(Hierarchy(), [], [], []));
+        var result = await SpecialistAgent.GeneratePlanningAsync((_, _) =>
+        {
+            calls++;
+            return Task.FromResult(prefix + json + suffix);
+        }, [], default);
+        Assert.Equal(accepted ? 1 : 3, calls);
+        Assert.Equal(accepted, result.Output is not null);
+    }
+
+    [Fact]
+    public async Task Fenced_invalid_dependencies_still_require_correction()
+    {
+        var plan = Hierarchy();
+        plan[2] = plan[2] with { DependencyProposalKeys = ["missing"] };
+        var json = JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(plan, [], [], []));
+        var calls = 0;
+        var result = await SpecialistAgent.GeneratePlanningAsync((_, _) =>
+        {
+            calls++; return Task.FromResult("```json\n" + json + "\n```");
+        }, [], default);
+        Assert.Equal(3, calls); Assert.Null(result.Output);
+    }
+
     [Fact]
     public void Lean_plan_can_cover_engineering_and_qa_without_studio_specialists()
     {

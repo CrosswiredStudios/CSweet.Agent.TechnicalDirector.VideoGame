@@ -7,7 +7,7 @@ Technical planning publishes a compact milestone (epic), feature/content (story)
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.12.1`
+- Version: `2.12.2`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none

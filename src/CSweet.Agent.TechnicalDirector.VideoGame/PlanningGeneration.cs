@@ -32,7 +32,7 @@ public sealed partial class SpecialistAgent
             var text = await generate(messages, cancellationToken);
             try
             {
-                var output = JsonSerializer.Deserialize<PlanningOutput>(text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                var output = JsonSerializer.Deserialize<PlanningOutput>(UnwrapPlanningJson(text), new JsonSerializerOptions(JsonSerializerDefaults.Web));
                 if (output?.DeliveryItems is { } items)
                 {
                     output = output with { DeliveryItems = items.Select(NormalizeCoreRoleSkills).ToArray() };
@@ -63,6 +63,19 @@ public sealed partial class SpecialistAgent
             }
         }
         return (null, $"Technical planning could not produce a valid proposal after three attempts. {issue}");
+    }
+
+    // Normalize only one enclosing fence. Never extract JSON from prose or discard
+    // trailing objects: those responses still require a bounded correction.
+    internal static string UnwrapPlanningJson(string text)
+    {
+        var trimmed = text.Trim();
+        var newline = trimmed.IndexOf('\n');
+        if (newline < 0 || !trimmed.EndsWith("```", StringComparison.Ordinal)) return trimmed;
+        var opening = trimmed[..newline].TrimEnd('\r');
+        return opening is "```" or "```json" or "```JSON"
+            ? trimmed[(newline + 1)..^3].Trim()
+            : trimmed;
     }
 
     private static string Correction(string issue, IReadOnlyList<GameProposedWorkItemV1>? accepted, bool compact = false) =>
