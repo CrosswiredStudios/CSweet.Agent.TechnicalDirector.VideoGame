@@ -4,6 +4,8 @@ Owns engine feasibility, runtime architecture, performance budgets, technical st
 
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
+`GeneratePlanningAsync` accepts a complete JSON object wrapped in a plain or JSON Markdown fence. `UnwrapPlanningJson` removes only that enclosing fence; prose, multiple objects and incomplete JSON still require bounded correction. Hierarchy and dependency validation run after normalization.
+
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
