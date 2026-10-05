@@ -4,12 +4,17 @@ Owns engine feasibility, runtime architecture, performance budgets, technical st
 
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
+Technical review and merge decisions use the Producer's canonical workflow assignment.
+The original approved plan may delegate only implementation; it does not need to be
+rewritten to add reviewers. Role, selection and artifact-package checks still apply.
+After upgrading an already blocked review, request a ticket retry to run a new attempt.
+
 `GeneratePlanningAsync` accepts a complete JSON object wrapped in a plain or JSON Markdown fence. `UnwrapPlanningJson` removes only that enclosing fence; prose, multiple objects and incomplete JSON still require bounded correction. Hierarchy and dependency validation run after normalization.
 
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.12.2`
+- Version: `2.12.3`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none

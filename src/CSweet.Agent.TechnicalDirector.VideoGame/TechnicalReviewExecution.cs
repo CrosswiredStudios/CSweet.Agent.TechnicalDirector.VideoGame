@@ -95,7 +95,12 @@ public sealed partial class SpecialistAgent
         catch (OperationCanceledException) { throw; }
         catch (Exception error) when (error is not OutOfMemoryException)
         {
-            var reason = error is InvalidOperationException or ArgumentException ? error.Message : "Technical review could not complete; inspect the execution diagnostics.";
+            var reason = error switch
+            {
+                InvalidOperationException or ArgumentException or UnauthorizedAccessException => error.Message,
+                PlatformCapabilityException capability => $"Technical review could not invoke {capability.Capability} ({capability.Code}): {capability.Message}",
+                _ => $"Technical review could not complete ({error.GetType().Name}); no review decision was accepted."
+            };
             return AgentWorkResult.Success(new WorkExecutionOutcomeV1(assignment.StageExecutionId, assignment.AttemptId,
                 WorkExecutionDispositions.Blocked, "blocked", reason, JsonSerializer.SerializeToElement(new { }), [], [reason]));
         }
