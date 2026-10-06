@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.12.3`
+- Version: `2.13.0`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -144,3 +144,15 @@ Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension onl
 When the assigned developer is blocked by a technical failure on a work item, they open a work-item-scoped support coordination (`software-development.support-request.v1`) with the team's technical lead. On game teams that lead is the Technical Director. I answer with `software-architecture.guidance.v1`: a diagnosis, ordered next steps, invariants, relevant design decisions, explicit verification, and remaining risks. The developer then retries the exact blocked stage.
 
 I still plan and review only: I never write code, run measurements, or claim results. If the fix needs a scope, criteria, environment or tooling decision, the guidance sets `requiresArchitectureApproval` and names what the Producer or owner must decide, so the developer does not retry on an unapproved change. This uses the existing coordination read and respond grants, with updated purpose text.
+
+## Ticket discussion (2.13.0)
+
+Answers directed ticket questions using current ticket context and recorded review evidence. Responses clarify findings without changing review decisions, acceptance criteria or validation requirements.
+
+The agent subscribes to `com.csweet.work.item.discussion.changed.v1` and uses grant-governed item,
+comment, board and orchestration reads. Ask with `@Full Name: your question` on a team ticket.
+Replies use `discussion.reply` and an exact comment/revision correlation; duplicates and stale
+requests are ignored. Informational notifications do not trigger automatic conversation loops.
+Bounded attention recovery scans the current assigned project for missed requests. The host retains
+undelivered notifications while offline; install the matching C-Sweet host update and approve new
+manifest permissions. Comments provide context, never execution authority or review approval.

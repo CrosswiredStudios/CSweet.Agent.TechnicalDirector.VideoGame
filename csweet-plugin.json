@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.12.3",
+  "version": "2.13.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -114,6 +114,12 @@
     }
   ],
   "requires": [
+    {
+      "name": "work.item.comments.read",
+      "scope": "team",
+      "purpose": "Read current ticket context to answer directed discussion and recover missed notifications.",
+      "modelVisible": false
+    },
     {
       "name": "work.personal-todo.claim.v1",
       "scope": "organization",
@@ -292,6 +298,7 @@
   ],
   "events": {
     "subscribes": [
+      "com.csweet.work.item.discussion.changed.v1",
       "com.csweet.calendar.reminder-due.v1",
       "com.csweet.work.personal-todo.available.v1",
       "com.csweet.agent.coordination.turn-requested.v1",

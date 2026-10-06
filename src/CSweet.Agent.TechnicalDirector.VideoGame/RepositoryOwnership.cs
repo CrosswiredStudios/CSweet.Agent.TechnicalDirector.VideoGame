@@ -65,6 +65,7 @@ public sealed partial class SpecialistAgent
     public override async Task HandleAttentionReviewAsync(AgentAttentionReviewContext review,
         AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        await RecoverDiscussionAsync(context, cancellationToken);
         var state = await context.Platform.ReadOperatingStateAsync<RepositoryPortfolio>(RepositoryStateKey, cancellationToken);
         if (state is null) return;
         foreach (var saved in state.Payload.Projects.Values)
