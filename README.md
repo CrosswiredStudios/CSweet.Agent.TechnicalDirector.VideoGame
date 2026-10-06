@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.13.0`
+- Version: `2.14.0`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -44,7 +44,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.56.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.59.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds
@@ -145,7 +145,7 @@ When the assigned developer is blocked by a technical failure on a work item, th
 
 I still plan and review only: I never write code, run measurements, or claim results. If the fix needs a scope, criteria, environment or tooling decision, the guidance sets `requiresArchitectureApproval` and names what the Producer or owner must decide, so the developer does not retry on an unapproved change. This uses the existing coordination read and respond grants, with updated purpose text.
 
-## Ticket discussion (2.13.0)
+## Ticket discussion (2.14.0)
 
 Answers directed ticket questions using current ticket context and recorded review evidence. Responses clarify findings without changing review decisions, acceptance criteria or validation requirements.
 
@@ -156,3 +156,7 @@ requests are ignored. Informational notifications do not trigger automatic conve
 Bounded attention recovery scans the current assigned project for missed requests. The host retains
 undelivered notifications while offline; install the matching C-Sweet host update and approve new
 manifest permissions. Comments provide context, never execution authority or review approval.
+
+## Hierarchical delivery
+
+The V2 assignment identifies Task, Story, Epic or Release scope. Tasks require an authorized sprint; aggregate reviews require an active delivery plan and do not invent sprint identities. Use the exact assigned branch, commit or artifact revision. Every task requires independent QA, including documents. Managers accept aggregate candidates using current evidence; task completion does not promote to main or authorize deployment.

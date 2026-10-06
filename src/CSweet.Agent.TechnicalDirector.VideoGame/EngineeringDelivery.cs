@@ -14,6 +14,9 @@ public sealed partial class SpecialistAgent
             var board = await context.Platform.Work.ReadBoardAsync(summary.Id, token);
             if (board.Items.Count == 0) continue;
             var workstream = await context.Platform.ReadWorkstreamAsync(new(setup.WorkstreamId), token);
+            // Revised delivery is finalized by the manager against the activated
+            // plan's story bindings; legacy setup must not replace them with main.
+            if (workstream.ProfileKey == "video-game-production.v2" && workstream.ProfileVersion >= 6) continue;
             var reviewedDelivery = workstream.ProfileKey == "video-game-production.v2" && workstream.ProfileVersion >= 5;
             var plannedSprints = (await context.Platform.Work.ListSprintsAsync(summary.Id, token))
                 .Where(x => x.Status == "Planned").Select(x => x.Id).ToHashSet();

@@ -23,6 +23,11 @@ public sealed partial class SpecialistAgent
             return await base.ExecuteCapabilityCoreAsync(request, context, token);
         try
         {
+            var item = assignment.Item.Deserialize<WorkItem>(ReviewJson);
+            if (assignment.StageKey == "technical-review" && item?.Delivery?.DeliveryPlanId.HasValue == true)
+                return await DeliveryTaskTechnicalReview.ExecuteAsync(assignment, context,
+                    context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ??
+                        throw new InvalidOperationException("Configure an approved review provider."), Settings.GetString("llmModel"))), token);
             var input = SpecialistAssignmentValidator.Validate(assignment, RoleKey);
             var stateKey = $"game-review:{assignment.StageExecutionId:N}:{assignment.AttemptId:N}:{assignment.AssignmentRevision}";
             var prior = await context.Platform.ReadOperatingStateAsync<GameReviewReceipt>(stateKey, token);
@@ -86,7 +91,8 @@ public sealed partial class SpecialistAgent
             var outcome = new WorkExecutionOutcomeV1(assignment.StageExecutionId, assignment.AttemptId,
                 WorkExecutionDispositions.Completed, decision.Approved ? "approved" : "rejected", decision.Summary,
                 JsonSerializer.SerializeToElement(output, ReviewJson),
-                [new("commit", "Reviewed game candidate", candidate.CandidateCommitSha)], decision.Findings);
+                [new("commit", "Reviewed game candidate", candidate.CandidateCommitSha),
+                 new("target-commit", "Reviewed story target", candidate.TargetCommitSha ?? "")], decision.Findings);
             await new RevisionSafeProjectState(context.Platform).MergeAsync<GameReviewReceipt>(stateKey,
                 "video-game.technical-review-receipt.v1", 1, current => current ?? new(outcome),
                 new Dictionary<string, string>(), $"{stateKey}:completed", token);
