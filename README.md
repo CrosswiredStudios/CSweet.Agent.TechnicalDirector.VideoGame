@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.14.0`
+- Version: `2.14.1`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -31,7 +31,7 @@ dotnet run --project src/CSweet.Agent.TechnicalDirector.VideoGame -- --self-test
 The tests run entirely in memory and require no C-Sweet instance or credentials.
 
 The installation settings **Maximum context-window tokens** (`maxContextWindowTokens`, default
-220,000) and **Maximum output tokens** (`maxOutputTokens`, default 32,000) configure the Technical
+256,000) and **Maximum output tokens** (`maxOutputTokens`, default 128,000) configure the Technical
 Director's planning ceiling and per-response output budget for technical planning, candidate
 review, build selection, and specialist work. The output budget includes model reasoning and must
 remain below the context ceiling. The agent imposes no fixed maximum, so both values can match the
