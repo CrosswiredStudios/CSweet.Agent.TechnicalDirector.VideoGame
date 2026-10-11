@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.14.3`
+- Version: `2.14.4`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -161,8 +161,12 @@ manifest permissions. Comments provide context, never execution authority or rev
 
 The V2 assignment identifies Task, Story, Epic or Release scope. Tasks require an authorized sprint; aggregate reviews require an active delivery plan and do not invent sprint identities. Use the exact assigned branch, commit or artifact revision. Every task requires independent QA, including documents. Managers accept aggregate candidates using current evidence; task completion does not promote to main or authorize deployment.
 
-## Planning validation diagnostics (2.14.3)
+## Planning validation diagnostics (2.14.4)
 
 PlanningValidation.PlanValidationIssues supplies item-specific correction and blocked-result errors. Self-parent stories, missing references, unsupported skills and parent/dependency cycles identify the offending keys. The same validator controls acceptance; the generator never accepts an invalid proposal after exhausting correction. Install this version before retrying a planning collaboration rejected under a previous version.
 
 PlanningConstructionGuidance adds an ordered checklist and a contract-valid worked example to every planning attempt. The example demonstrates milestone/story/task containment, research then implementation then independent QA, and exact role/skill values. Examples supply structure only; accepted scope, canonical keys and owner-authorized decisions remain authoritative.
+
+## Certified release build-readiness
+
+SDK 3.63.0 allows the Producer to assign build-readiness to an updated Technical Director or Developer when no Build Release Engineer is available. The assigned agent must advertise `work.execution.build-readiness.v1` and V2 execution. `DeliveryBuildReadiness.ExecuteAsync` requests the configured certified provider build for every exact release repository candidate, returns durable pending build identities, and verifies successful output provenance. It grants no deployment, publication, or independent product approval authority. Existing project, repository and build grants remain required.

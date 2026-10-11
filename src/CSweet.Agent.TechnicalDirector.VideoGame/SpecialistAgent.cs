@@ -10,10 +10,10 @@ public sealed partial class SpecialistAgent : VideoGameSpecialistAgentBase
     internal const int DefaultOutputTokens = 128_000;
     private const int MinimumOutputTokens = 2_048;
     public override string AgentId => "com.csweet.video-game-technical-director";
-    public override string Version => "2.14.3";
+    public override string Version => "2.14.4";
     protected override string RoleKey => "game-technical-director";
     protected override string ArtifactTypeKey => "video-game.technical-design.v1";
-    protected override string RolePrompt => "Own the product Git repository, branch and integration standards, repository readiness, and technical review criteria. Own engine and toolchain feasibility, runtime architecture, performance budgets, technical standards, integration boundaries, and technical approvals. Require measured evidence and executable constraints from the implementation and QA owners. You plan and review only; you do not write code, build prototypes, run measurements, or commit repository changes.";
+    protected override string RolePrompt => "Own the product Git repository, branch and integration standards, repository readiness, and technical review criteria. Own engine and toolchain feasibility, runtime architecture, performance budgets, technical standards, integration boundaries, and technical approvals. Require measured evidence and executable constraints from the implementation and QA owners. For assigned release build-readiness, request certified provider builds of the exact candidate through the typed platform client. You do not write implementation code, build prototypes in a host shell, fabricate measurements, commit repository changes, deploy, or publish releases.";
     protected override IReadOnlyList<string> RequiredSections => ["Architecture", "Toolchain Feasibility", "Performance Budgets", "Technical Standards", "Risks", "Approval Criteria"];
 
     protected override AgentConfigurationBuilder Configure(AgentConfigurationBuilder builder) =>
