@@ -6,6 +6,68 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed class ProductionPlanningTests
 {
+    [Fact]
+    public void Worked_example_serializes_to_a_valid_contract_with_independent_qa()
+    {
+        var guidance = SpecialistAgent.PlanningConstructionGuidance();
+        var exampleJson = guidance[guidance.IndexOf('{')..];
+        var example = JsonSerializer.Deserialize<SpecialistAgent.PlanningOutput>(exampleJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Empty(SpecialistAgent.PlanValidationIssues(example.DeliveryItems));
+        var byKey = example.DeliveryItems.ToDictionary(x => x.ProposalKey);
+        var qa = example.DeliveryItems.Single(x => x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance);
+        var implementation = byKey[Assert.Single(qa.DependencyProposalKeys)];
+        Assert.Equal(VideoGameRoleKeys.Engineer, implementation.AccountableRoleKey);
+        Assert.Equal(VideoGameWorkItemTypeKeys.Task, implementation.WorkItemTypeKey);
+        Assert.Equal(implementation.ParentProposalKey, qa.ParentProposalKey);
+        Assert.All(example.DeliveryItems.Where(x => x.WorkItemTypeKey is VideoGameWorkItemTypeKeys.Milestone or VideoGameWorkItemTypeKeys.Feature),
+            x => Assert.Empty(x.DependencyProposalKeys));
+    }
+
+    [Fact]
+    public async Task Correction_identifies_self_parent_and_preserves_scope_when_repaired()
+    {
+        var plan = Hierarchy();
+        plan[1] = plan[1] with { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Content, ParentProposalKey = "story" };
+        var calls = 0;
+        var result = await SpecialistAgent.GeneratePlanningAsync((messages, _) =>
+        {
+            if (calls++ > 0)
+            {
+                Assert.Contains("Item 'story': parentProposalKey names the item itself", messages.Last().Text);
+                plan[1] = plan[1] with { ParentProposalKey = "epic" };
+            }
+            return Task.FromResult(JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(plan, [], [], [])));
+        }, [], default);
+        Assert.Equal(2, calls);
+        Assert.NotNull(result.Output);
+        Assert.Equal(plan.Select(x => x.ProposalKey), result.Output.DeliveryItems.Select(x => x.ProposalKey));
+    }
+
+    [Fact]
+    public async Task Blocked_result_retains_unsupported_role_skill_and_actual_cycle()
+    {
+        var plan = Hierarchy();
+        plan[1] = plan[1] with { DependencyProposalKeys = ["implementation"] };
+        plan[2] = plan[2] with { AccountableRoleKey = "invented-role", PreferredSpecializationKeys = ["invented-skill"] };
+        var json = JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput(plan, [], [], []));
+        var result = await SpecialistAgent.GeneratePlanningAsync((_, _) => Task.FromResult(json), [], default);
+        Assert.Null(result.Output);
+        Assert.Contains("Item 'implementation': accountableRoleKey 'invented-role'", result.Error);
+        Assert.Contains("preferredSpecializationKeys contains unsupported values [invented-skill]", result.Error);
+        Assert.Contains("story -> implementation -> story", result.Error);
+        Assert.Contains("game-quality-assurance", result.Error);
+    }
+
+    [Fact]
+    public async Task Null_work_item_is_reported_without_crashing_correction()
+    {
+        var json = JsonSerializer.Serialize(new SpecialistAgent.PlanningOutput([.. Hierarchy(), null!], [], [], []));
+        var result = await SpecialistAgent.GeneratePlanningAsync((_, _) => Task.FromResult(json), [], default);
+        Assert.Null(result.Output);
+        Assert.Contains("null item", result.Error);
+    }
+
     [Theory]
     [InlineData("```json\n", "\n```", true)]
     [InlineData("```\r\n", "\r\n```", true)]
@@ -98,15 +160,19 @@ public sealed class ProductionPlanningTests
         {
             calls++;
             Assert.Equal("Accepted scope", messages[0].Text);
+            var guidance = Assert.Single(messages, x => x.Role == Microsoft.Extensions.AI.ChatRole.System);
+            Assert.Contains("CONTRACT EXAMPLE", guidance.Text);
+            Assert.Contains("Do not copy its example-* keys", guidance.Text);
+            Assert.Contains("Do not reduce scope", guidance.Text);
             if (calls == 2)
             {
-                Assert.Equal(Microsoft.Extensions.AI.ChatRole.Assistant, messages[1].Role);
-                Assert.Contains("Correct your proposal:", messages[2].Text);
+                Assert.Single(messages, x => x.Role == Microsoft.Extensions.AI.ChatRole.Assistant);
+                Assert.Contains("Correct your proposal:", messages.Last().Text);
             }
             if (calls == 3)
             {
-                Assert.Equal(2, messages.Count);
-                Assert.Contains("at most 20 concise deliveryItems", messages[1].Text);
+                Assert.DoesNotContain(messages, x => x.Role == Microsoft.Extensions.AI.ChatRole.Assistant);
+                Assert.Contains("at most 20 concise deliveryItems", messages.Last().Text);
             }
             return Task.FromResult(scenario == "persistent" || scenario == "compact-pass" && calls < 3 ? "{" :
                 calls >= 2 || scenario == "valid" ? valid :

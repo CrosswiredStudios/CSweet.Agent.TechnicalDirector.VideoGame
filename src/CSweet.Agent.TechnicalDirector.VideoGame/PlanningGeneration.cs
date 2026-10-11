@@ -23,7 +23,9 @@ public sealed partial class SpecialistAgent
         Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<string>> generate,
         IReadOnlyList<ChatMessage> initialMessages, CancellationToken cancellationToken)
     {
-        var messages = initialMessages.ToList();
+        // Retain construction guidance in every pass, including the fresh correction pass.
+        var guidedMessages = initialMessages.Append(new ChatMessage(ChatRole.System, PlanningConstructionGuidance())).ToList();
+        var messages = guidedMessages.ToList();
         string issue = "No proposal returned.";
         IReadOnlyList<GameProposedWorkItemV1>? acceptedContainers = null;
         for (var attempt = 0; attempt < 3; attempt++)
@@ -35,13 +37,13 @@ public sealed partial class SpecialistAgent
                 var output = JsonSerializer.Deserialize<PlanningOutput>(UnwrapPlanningJson(text), new JsonSerializerOptions(JsonSerializerDefaults.Web));
                 if (output?.DeliveryItems is { } items)
                 {
-                    output = output with { DeliveryItems = items.Select(NormalizeCoreRoleSkills).ToArray() };
+                    output = output with { DeliveryItems = items.Select(item => item is null ? item! : NormalizeCoreRoleSkills(item)).ToArray() };
                     acceptedContainers ??= ValidContainerOutline(output.DeliveryItems);
                     if (acceptedContainers is not null && !PreservesContainerOutline(output.DeliveryItems, acceptedContainers))
                         issue = "The accepted milestone and story outline changed. Restore every accepted container key, title, scope, criterion, parent, and dependency; repair only the executable leaves.";
                     else if (IsValidPlan(output.DeliveryItems)) return (output, null);
                     else
-                        issue = "The plan must contain an Epic > Story > Task hierarchy with separate engineer and QA tasks, testable criteria, unique keys, allowed roles/types/skills, and resolvable acyclic parents and dependencies.";
+                        issue = "Validation errors: " + string.Join("; ", PlanValidationIssues(output.DeliveryItems));
                 }
                 else issue = "The plan must contain deliveryItems.";
             }
@@ -58,7 +60,7 @@ public sealed partial class SpecialistAgent
             {
                 // Do not feed two large malformed responses back into the model. A fresh,
                 // compact pass is bounded and still must satisfy the full plan validator.
-                messages = initialMessages.ToList();
+                messages = guidedMessages.ToList();
                 messages.Add(new(ChatRole.User, Correction(issue, acceptedContainers, compact: true)));
             }
         }
@@ -89,6 +91,7 @@ public sealed partial class SpecialistAgent
     internal static IReadOnlyList<GameProposedWorkItemV1>? ValidContainerOutline(
         IReadOnlyList<GameProposedWorkItemV1> items)
     {
+        if (items.Any(x => x is null)) return null;
         var containers = items.Where(x => x.WorkItemTypeKey is VideoGameWorkItemTypeKeys.Milestone or
             VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content).ToList();
         if (containers.Count == 0 || !containers.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone) ||

@@ -106,7 +106,9 @@ public sealed partial class SpecialistAgent
                 the software-developer and software-qa core roles. Put game-domain skills in
                 preferredSpecializationKeys so a user-selected agent from the same core role can
                 accept the work. Keep work.execution.run.v1 mandatory. All parents and dependencies
-                resolve within deliveryItems, without cycles.
+                resolve within deliveryItems, without cycles. A story must never name itself as its parent.
+                Parent containment also participates in cycle detection: do not make a story depend on any
+                of its own descendants. Put sequencing dependencies on executable tasks instead.
                 The Technical Director plans and reviews; this role never writes code, builds prototypes, runs
                 benchmarks, or commits files. Assign all coding, prototype construction, package/version locking,
                 performance implementation and repository commits to game-engineer. Assign independent execution
@@ -190,46 +192,8 @@ public sealed partial class SpecialistAgent
         return end > 0 && end + 1 < title.Length ? title[(end + 1)..].TrimStart() : title;
     }
 
-    internal static bool IsValidPlan(IReadOnlyList<GameProposedWorkItemV1>? items)
-    {
-        if (items is null || items.Count is 0 or > 200 || items.Any(x => x is null)) return false;
-        var roles = Constants(typeof(VideoGameRoleKeys));
-        var skills = Constants(typeof(VideoGameSpecializationKeys));
-        var types = Constants(typeof(VideoGameWorkItemTypeKeys));
-        var keys = items.Select(x => x.ProposalKey).ToHashSet(StringComparer.Ordinal);
-        if (keys.Count != items.Count || items.Any(x => string.IsNullOrWhiteSpace(x.ProposalKey) ||
-            string.IsNullOrWhiteSpace(x.Title) || string.IsNullOrWhiteSpace(x.Description) ||
-            x.AcceptanceCriteria is null || x.AcceptanceCriteria.Count == 0 || x.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace) ||
-            !roles.Contains(x.AccountableRoleKey) || !types.Contains(x.WorkItemTypeKey) ||
-            x.RequiredSpecializationKeys is null ||
-            x.RequiredSpecializationKeys.Any(k => !skills.Contains(k)) ||
-            x.PreferredSpecializationKeys is null || x.PreferredSpecializationKeys.Any(k => !skills.Contains(k)) ||
-            x.RequiredCapabilityKeys is null || x.RequiredCapabilityKeys.Any(k => k != "work.execution.run.v1") ||
-            x.DependencyProposalKeys is null || x.DependencyProposalKeys.Any(k => !keys.Contains(k)) ||
-            (x.ParentProposalKey is not null && !keys.Contains(x.ParentProposalKey)))) return false;
-        var byKey = items.ToDictionary(x => x.ProposalKey, StringComparer.Ordinal);
-        var stories = new HashSet<string>([VideoGameWorkItemTypeKeys.Feature, VideoGameWorkItemTypeKeys.Content], StringComparer.Ordinal);
-        if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone) ||
-            !items.Any(x => stories.Contains(x.WorkItemTypeKey)) ||
-            !items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.Engineer) ||
-            !items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance) ||
-            items.Any(x => x.WorkItemTypeKey switch
-            {
-                VideoGameWorkItemTypeKeys.Milestone => x.ParentProposalKey is not null,
-                VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content =>
-                    x.ParentProposalKey is null || byKey[x.ParentProposalKey].WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone,
-                _ => x.ParentProposalKey is null || !stories.Contains(byKey[x.ParentProposalKey].WorkItemTypeKey)
-            })) return false;
-        var resolved = new HashSet<string>();
-        while (resolved.Count < items.Count)
-        {
-            var ready = items.Where(x => !resolved.Contains(x.ProposalKey) && x.DependencyProposalKeys.All(resolved.Contains) &&
-                (x.ParentProposalKey is null || resolved.Contains(x.ParentProposalKey))).ToList();
-            if (ready.Count == 0) return false;
-            foreach (var item in ready) resolved.Add(item.ProposalKey);
-        }
-        return true;
-    }
+    internal static bool IsValidPlan(IReadOnlyList<GameProposedWorkItemV1>? items) =>
+        PlanValidationIssues(items).Count == 0;
 
     internal sealed record PlanningOutput(IReadOnlyList<GameProposedWorkItemV1> DeliveryItems,
         IReadOnlyList<string>? FeasibilityFindings, IReadOnlyList<string>? TechnicalConstraints,
