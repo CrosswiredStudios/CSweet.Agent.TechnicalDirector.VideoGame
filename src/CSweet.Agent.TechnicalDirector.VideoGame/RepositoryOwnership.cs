@@ -74,6 +74,8 @@ public sealed partial class SpecialistAgent
             if (saved.Status != "Ready") await SaveRepositoryAsync(setup, context, cancellationToken);
             await FinalizeExecutableTicketsAsync(setup, context, cancellationToken);
             await ReconcileBuildsAsync(setup, context, cancellationToken);
+            await ReconcileTeamComputeAsync(setup, context, cancellationToken);
+            await ReportTestUrlsAsync(setup.WorkstreamId, context, cancellationToken);
         }
     }
 }

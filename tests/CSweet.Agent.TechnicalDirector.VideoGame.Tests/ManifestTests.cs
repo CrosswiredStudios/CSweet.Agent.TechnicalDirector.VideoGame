@@ -27,6 +27,13 @@ public sealed class ManifestTests
             Assert.Contains(manifest.Requires, x => x.Name == capability);
         foreach (var name in new[] { "work.item.read", "work.item.comment" })
             Assert.Contains(manifest.Requires, x => x.Name == name && x.Scope == "team");
+        Assert.Contains(manifest.Provides, x => x.Name == DeliveryComputeTest.ExecutionCapability);
+        foreach (var capability in new[] { "compute.provision.v1", "compute.read.v1", "compute.list.v1",
+            "compute.execute.v1", "network.inbound.v1", "network.publish-port.v1", PlatformCapabilities.OrganizationSnapshotRead,
+            CommunicationCapabilities.ChatCreate, CommunicationCapabilities.MessageSend })
+            Assert.Contains(manifest.Requires, x => x.Name == capability && !x.ModelVisible);
+        foreach (var eventType in new[] { "com.csweet.compute.changed.v1", "com.csweet.compute.available.v1", WorkDeliveryCapabilities.Changed })
+            Assert.Contains(eventType, manifest.Events.Subscribes);
         Assert.Equal(agent.AgentId, manifest.Id);
         Assert.Equal(agent.Version, manifest.Version);
         Assert.Equal(agent.Version, typeof(SpecialistAgent).Assembly.GetName().Version?.ToString(3));
