@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.15.0`
+- Version: `2.16.0`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -44,7 +44,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.59.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 3.65.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds
@@ -78,7 +78,7 @@ This does not grant merge authorization or bypass the governed work execution/pu
 
 ## Provider queue handling
 
-Uses SDK 3.40.0 for acknowledged LLM waiting, conversation activity, and host-authoritative deadline updates. Deploy the matching C-Sweet AgentHost and reimport this package to enable the private polling protocol.
+Uses SDK 3.65.0 for acknowledged LLM waiting, conversation activity, and host-authoritative deadline updates. Deploy the matching C-Sweet AgentHost and reimport this package to enable the private polling protocol.
 
 ## Engineering ticket delivery (2.6.0)
 
@@ -118,7 +118,7 @@ Calendar-triggered assignments request the SDK claim/complete/block/release life
 
 ## Lightweight producer coordination
 
-SDK 3.56.0 adds `ProjectDeliveryPlanning` and `ProjectDeliveryReview`. An approved project-bound
+SDK 3.65.0 adds `ProjectDeliveryPlanning` and `ProjectDeliveryReview`. An approved project-bound
 `project.delivery.plan-request.v1` receives a validated architecture and ordered ticket/sprint
 proposal. For the lightweight manager-brief execution policy, the assigned technical quality stage
 reviews the exact patch and published developer tests. It does not claim it reran the tests. Rework
@@ -161,7 +161,7 @@ manifest permissions. Comments provide context, never execution authority or rev
 
 The V2 assignment identifies Task, Story, Epic or Release scope. Tasks require an authorized sprint; aggregate reviews require an active delivery plan and do not invent sprint identities. Use the exact assigned branch, commit or artifact revision. Every task requires independent QA, including documents. Managers accept aggregate candidates using current evidence; task completion does not promote to main or authorize deployment.
 
-## Planning validation diagnostics (2.15.0)
+## Planning validation diagnostics (2.16.0)
 
 PlanningValidation.PlanValidationIssues supplies item-specific correction and blocked-result errors. Self-parent stories, missing references, unsupported skills and parent/dependency cycles identify the offending keys. The same validator controls acceptance; the generator never accepts an invalid proposal after exhausting correction. Install this version before retrying a planning collaboration rejected under a previous version.
 
@@ -169,7 +169,7 @@ PlanningConstructionGuidance adds an ordered checklist and a contract-valid work
 
 ## Certified release build-readiness
 
-SDK 3.64.0 allows the Producer to assign build-readiness to an updated Technical Director or Developer when no Build Release Engineer is available. The assigned agent must advertise `work.execution.build-readiness.v1` and V2 execution. `DeliveryBuildReadiness.ExecuteAsync` requests the configured certified provider build for every exact release repository candidate, returns durable pending build identities, and verifies successful output provenance. It grants no deployment, publication, or independent product approval authority. Existing project, repository and build grants remain required.
+SDK 3.65.0 allows the Producer to assign build-readiness to an updated Technical Director or Developer when no Build Release Engineer is available. The assigned agent must advertise `work.execution.build-readiness.v1` and V2 execution. `DeliveryBuildReadiness.ExecuteAsync` requests the configured certified provider build for every exact release repository candidate, returns durable pending build identities, and verifies successful output provenance. It grants no deployment, publication, or independent product approval authority. Existing project, repository and build grants remain required.
 
 ## Project compute test delivery
 
@@ -179,3 +179,7 @@ SDK 3.64.0 allows the Producer to assign build-readiness to an updated Technical
 - Request scoped compute, organization-directory and communication capabilities. Installation approval does not grant network access.
 
 Current compute review links are local to the provider machine. Public hosting remains a separate capability. Pending setup and local-link approval preserve durable progress; unknown command outcomes are not automatically repeated.
+
+## Delegation and tracking
+
+SDK 3.65.0 dispatches authenticated delegation before specialist conversation fallback. The manifest requests delegation, work tracking, directory and conversation reads, personal commitments and model interpretation. These declarations require reviewed grants; existing resource permissions and approval rules still apply. The shared SDK owns coordinator reporting and wake recovery.
