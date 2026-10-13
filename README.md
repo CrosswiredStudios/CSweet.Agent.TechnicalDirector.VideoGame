@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.16.1`
+- Version: `2.16.2`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -171,7 +171,9 @@ The V2 assignment identifies Task, Story, Epic or Release scope. Tasks require a
 
 PlanningValidation.PlanValidationIssues supplies item-specific correction and blocked-result errors. Self-parent stories, missing references, unsupported skills and parent/dependency cycles identify the offending keys. The same validator controls acceptance; the generator never accepts an invalid proposal after exhausting correction. Install this version before retrying a planning collaboration rejected under a previous version.
 
-PlanningConstructionGuidance adds an ordered checklist and a contract-valid worked example to every planning attempt. The example demonstrates milestone/story/task containment, research then implementation then independent QA, and exact role/skill values. Examples supply structure only; accepted scope, canonical keys and owner-authorized decisions remain authoritative.
+PlanningConstructionGuidance adds an ordered checklist and a contract-valid worked example to every planning attempt. The example demonstrates milestone/story/task containment, implementation then independent QA, and exact role/skill values without a default research prerequisite. Examples supply structure only; accepted scope, canonical keys and owner-authorized decisions remain authoritative.
+
+Performance targets remain implementation constraints. Profiling follows runnable increments, with representative-device validation and optimization in later hardening/QA. A blocking performance spike requires a specific architectural decision, supporting risk evidence, costly consequences, narrowly affected dependencies, a bounded experiment and stopping rule, and available measurement resources. Missing hardware is an environment dependency requiring a decision, not grounds for repeated code rework. Existing accepted criteria change only through an authorized amendment; deferred validation is never passed validation.
 
 ## Certified release build-readiness
 

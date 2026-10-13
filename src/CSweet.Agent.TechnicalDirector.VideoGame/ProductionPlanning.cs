@@ -85,8 +85,13 @@ public sealed partial class SpecialistAgent
                 Decompose the accepted brief into a lean delivery backlog through a packaged runnable game and
                 independent QA. Size the work and specialist roles to actual requirements and anticipated workload.
                 A simple arcade game normally needs technical leadership, engineering and QA. Do not invent
+                preliminary performance work before a playable prototype. Default to a small playable prototype,
+                incremental refinement, profiling observed bottlenecks, and optimization where evidence warrants it.
+                Performance budgets guide implementation; hard device benchmarks normally belong to later
+                hardening and acceptance, not permission to begin ordinary gameplay work. Do not invent
                 specialist work to fill a studio roster. Simple procedural visuals, UI and packaging may be explicit
-                engineering tasks with suitable skills. Include useful technical investigations before other hires.
+                engineering tasks with suitable skills. Add investigations only for concrete unresolved risks;
+                ordinary implementation must not wait for speculative optimization or a generic feasibility checklist.
                 Plan the product Git repository structure, branch/integration standards and review criteria. Use the supplied
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
@@ -128,10 +133,21 @@ public sealed partial class SpecialistAgent
                 Every leaf needs testable criteria and one accountable role. Preserve the accepted creative direction;
                 list only unresolved decisions requiring external authority in openFeasibilityDecisions. Incorporate
                 the Producer's supplied coordination directions and recorded manager decisions; do not reopen
-                questions those decisions resolve. Technical investigations delegated to this team (engine pins,
-                performance profiling, implementation choices and tuning within accepted bounds) belong in
-                executable research-spike tasks with testable outputs and downstream dependencies, not in
-                openFeasibilityDecisions. Record their remaining uncertainty in feasibilityFindings. Keep actual
+                questions those decisions resolve. Resolve routine engine pins and implementation choices within
+                implementation tasks. Treat performance targets as ongoing constraints, profile runnable increments,
+                and schedule representative-device measurements and optimization in later hardening/QA.
+                A performance spike may block work only for a justified architectural risk: name the uncertain
+                architectural decision, evidence of the risk, the costly failure or redesign it could cause, and
+                exactly which dependent work cannot safely proceed. Define a bounded experiment, a stopping rule,
+                required available measurement resources and how each outcome changes that decision. Block only
+                those affected tasks; unrelated implementation proceeds. A target FPS, unknown particle cap,
+                unmeasured hardware or generic desire for confidence is not sufficient justification.
+                If measurement resources are unavailable, record the environment dependency and escalate a
+                decision; do not send repeated code rework to obtain evidence the environment cannot produce.
+                Never promote a non-blocking validation or later release criterion into an early prerequisite.
+                Preserve accepted criteria unless an authenticated scope amendment explicitly defers them;
+                deferred checks stay assigned to later validation and are never reported as passed.
+                Record remaining uncertainty in feasibilityFindings. Keep actual
                 unresolved scope, budget or creative-authority conflicts explicit. The Producer will
                 escalate those questions to the Creative Director; do not silently decide them.
                 An authenticated Producer request may carry exact owner-authorized scope replacements with an

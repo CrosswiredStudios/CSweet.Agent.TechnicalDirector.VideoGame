@@ -19,6 +19,8 @@ public sealed class ProductionPlanningTests
         var implementation = byKey[Assert.Single(qa.DependencyProposalKeys)];
         Assert.Equal(VideoGameRoleKeys.Engineer, implementation.AccountableRoleKey);
         Assert.Equal(VideoGameWorkItemTypeKeys.Task, implementation.WorkItemTypeKey);
+        Assert.Empty(implementation.DependencyProposalKeys);
+        Assert.DoesNotContain(example.DeliveryItems, x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.ResearchSpike);
         Assert.Equal(implementation.ParentProposalKey, qa.ParentProposalKey);
         Assert.All(example.DeliveryItems.Where(x => x.WorkItemTypeKey is VideoGameWorkItemTypeKeys.Milestone or VideoGameWorkItemTypeKeys.Feature),
             x => Assert.Empty(x.DependencyProposalKeys));
