@@ -73,6 +73,8 @@ public sealed class DiscussionTests
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             Assert.Contains("Which line", messages.Last().Text);
+            Assert.Equal(2048, options?.MaxOutputTokens);
+            Assert.Contains("Lead with the answer", messages.First().Text);
             beforeAnswer();
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "Give the scene an explicit key and test that the control resolves it.")));
         }

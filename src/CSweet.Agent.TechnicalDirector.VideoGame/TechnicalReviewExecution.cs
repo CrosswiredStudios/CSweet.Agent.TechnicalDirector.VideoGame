@@ -56,6 +56,9 @@ public sealed partial class SpecialistAgent
                         {"candidateCommitSha":"exact supplied SHA","approved":true|false,"summary":"reason",
                         "findings":["actionable findings"]}. Approval requires no unresolved findings. Rejection
                         requires specific actionable findings. This review does not authorize a merge or replace QA.
+                        Keep summary to one sentence. Each finding names the affected code, the defect or missing
+                        evidence, and the needed correction. Combine duplicate findings; omit praise, restated
+                        requirements and review narration. Preserve every distinct substantive defect.
                         """),
                     new ChatMessage(ChatRole.User, JsonSerializer.Serialize(new { input.Planning, Candidate = candidate }, ReviewJson))
                 ], candidate.CandidateCommitSha, token);

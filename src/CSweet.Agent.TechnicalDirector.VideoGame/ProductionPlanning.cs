@@ -80,7 +80,7 @@ public sealed partial class SpecialistAgent
             new AgentLlmInvocationContext(null, null, "video-game-technical-planning")));
         var roles = Constants(typeof(VideoGameRoleKeys));
         var skills = Constants(typeof(VideoGameSpecializationKeys));
-        var generated = await GeneratePlanningAsync(async (messages, token) => (await client.GetResponseAsync(messages, ResponseOptions(), token)).Text, [
+        var generated = await GeneratePlanningAsync(async (messages, token) => (await client.GetResponseAsync(messages, ResponseOptions(PlanningOutputTokens), token)).Text, [
             new ChatMessage(ChatRole.System, """
                 Decompose the accepted brief into a lean delivery backlog through a packaged runnable game and
                 independent QA. Size the work and specialist roles to actual requirements and anticipated workload.
@@ -91,6 +91,11 @@ public sealed partial class SpecialistAgent
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
                 Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings).
+                Keep descriptions to one or two direct sentences. State each requirement once at its owning
+                task; use dependencies for shared work instead of repeating the whole brief in every item.
+                Keep criteria specific and testable. Preserve every distinct accepted requirement and criterion;
+                brevity removes repeated explanations, never required scope. Findings and constraints should
+                each state one decision-relevant fact; use empty arrays when there is nothing to report.
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run.v1"]), dependencyProposalKeys (array), parentProposalKey (nullable).

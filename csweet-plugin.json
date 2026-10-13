@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "2.16.0",
+  "version": "2.16.1",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -1190,10 +1190,10 @@
       "label": "Maximum output tokens",
       "required": true,
       "secret": false,
-      "description": "Budget for each Technical Director model response, including reasoning. Set this within the selected model and provider's supported limits.",
+      "description": "Upper limit including reasoning. Task ceilings are 32000 for planning, 8192 for documents/reviews, and 4096 for support/build selection. Lower configured limits are respected.",
       "minimum": 2048,
       "step": 1000,
-      "defaultValue": 128000,
+      "defaultValue": 32000,
       "lessThanFieldKey": "maxContextWindowTokens"
     }
   ],

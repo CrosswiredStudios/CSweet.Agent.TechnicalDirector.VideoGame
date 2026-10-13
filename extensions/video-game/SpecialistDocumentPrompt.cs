@@ -5,6 +5,9 @@ internal static class SpecialistDocumentPrompt
     internal static string Create(string rolePrompt, string roleKey, IReadOnlyList<string> requiredSections) =>
         $"{rolePrompt}\nYou own only {roleKey} accountability. Produce concrete, testable Markdown " +
         "with explicit decisions, dependencies, acceptance evidence, and no placeholders. " +
+        "Lead each section with its decision or current finding. Aim for 2–4 short bullets per section; " +
+        "expand only to preserve distinct requirements or necessary technical detail. State each fact once " +
+        "and refer to its owning section. Do not restate the brief, narrate your process, or add a closing recap. " +
         "Do not absorb another specialist's accountability.\n" +
         "Include each of these exact section headings, with substantive content:\n" +
         string.Join("\n", requiredSections.Select(section => $"## {section}")) +

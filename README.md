@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.16.0`
+- Version: `2.16.1`
 - Provides: `work.execution.run.v1`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -31,12 +31,18 @@ dotnet run --project src/CSweet.Agent.TechnicalDirector.VideoGame -- --self-test
 The tests run entirely in memory and require no C-Sweet instance or credentials.
 
 The installation settings **Maximum context-window tokens** (`maxContextWindowTokens`, default
-256,000) and **Maximum output tokens** (`maxOutputTokens`, default 128,000) configure the Technical
-Director's planning ceiling and per-response output budget for technical planning, candidate
-review, build selection, and specialist work. The output budget includes model reasoning and must
-remain below the context ceiling. The agent imposes no fixed maximum, so both values can match the
-selected model. These settings do not enlarge the model's actual context window or override the
-provider profile's authoritative execution ceiling.
+256,000) and **Maximum output tokens** (`maxOutputTokens`, default 32,000) set upper limits,
+including model reasoning. `SpecialistAgent.ResponseOptions` also caps production planning at
+32,000 tokens, documents/reviews at 8,192, and developer support/build selection at 4,096.
+Lower configured limits remain effective; existing installations set to 128,000 receive these
+task ceilings after upgrade. Ticket replies use a separate 2,048-token budget and default to
+120 words. These settings do not enlarge a model's actual context window or override the
+provider's execution ceiling. The SDK's separate project-planning and aggregate-review protocols
+retain their existing budgets.
+
+Prompts lead with decisions and next actions, remove repeated context, and keep distinct
+acceptance criteria, scope and evidence requirements intact. Structured output is validated and
+corrected through the existing bounded retries; output is never silently cut to fit a word limit.
 
 ## Install
 

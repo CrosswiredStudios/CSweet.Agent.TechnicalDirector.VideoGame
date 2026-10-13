@@ -42,7 +42,7 @@ public sealed class ManifestTests
         var outputTokens = Assert.Single(manifest.Configuration,
             field => field.Key == "maxOutputTokens");
         Assert.Equal(256_000, contextWindow.DefaultValue!.Value.GetInt32());
-        Assert.Equal(128_000, outputTokens.DefaultValue!.Value.GetInt32());
+        Assert.Equal(32_000, outputTokens.DefaultValue!.Value.GetInt32());
         Assert.Equal("maxContextWindowTokens", outputTokens.LessThanFieldKey);
         Assert.Contains(agent.PrimaryCapability, manifest.Capabilities);
         Assert.Empty(VideoGameSpecialistConformance.ValidateManifest(
@@ -57,9 +57,9 @@ public sealed class ManifestTests
     [Fact]
     public void Output_budget_uses_configuration_and_stays_below_context_window()
     {
-        Assert.Equal(128_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
+        Assert.Equal(32_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
             new Dictionary<string, JsonElement>())));
-        Assert.Equal(128_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
+        Assert.Equal(32_000, SpecialistAgent.ResolveOutputTokens(new AgentSettings(
             new Dictionary<string, JsonElement>
             {
                 ["maxOutputTokens"] = JsonSerializer.SerializeToElement(128_000)
@@ -70,6 +70,22 @@ public sealed class ManifestTests
                 ["maxContextWindowTokens"] = JsonSerializer.SerializeToElement(25_000),
                 ["maxOutputTokens"] = JsonSerializer.SerializeToElement(32_000)
             })));
+    }
+
+    [Theory]
+    [InlineData(128_000, 256_000, 32_000, 32_000)]
+    [InlineData(128_000, 256_000, 8_192, 8_192)]
+    [InlineData(128_000, 256_000, 4_096, 4_096)]
+    [InlineData(3_000, 256_000, 8_192, 3_000)]
+    [InlineData(32_000, 5_000, 8_192, 4_999)]
+    public void Task_budgets_bound_legacy_configuration_and_respect_lower_limits(int configured, int context, int ceiling, int expected)
+    {
+        var settings = new AgentSettings(new Dictionary<string, JsonElement>
+        {
+            ["maxOutputTokens"] = JsonSerializer.SerializeToElement(configured),
+            ["maxContextWindowTokens"] = JsonSerializer.SerializeToElement(context)
+        });
+        Assert.Equal(expected, SpecialistAgent.ResolveOutputTokens(settings, ceiling));
     }
 
     private static string RepositoryRoot()
