@@ -13,9 +13,9 @@ public sealed partial class SpecialistAgent
     protected override async Task<AgentWorkResult> ExecuteCapabilityCoreAsync(
         AgentCapabilityRequest request, AgentRuntimeContext context, CancellationToken token)
     {
-        if (request.Capability != WorkManagementCapabilityNames.ExecutionRunV1)
+        if (request.Capability != WorkManagementCapabilityNames.ExecutionRun)
             return await base.ExecuteCapabilityCoreAsync(request, context, token);
-        var assignment = DeserializePayload<WorkExecutionAssignmentV1>(request.Arguments);
+        var assignment = DeserializePayload<WorkExecutionAssignment>(request.Arguments);
         if (ProjectDeliveryReview.Supports(assignment) && assignment!.StageKey == "quality")
             return await ProjectDeliveryReview.ExecuteAsync(assignment, context,
                 context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a review provider."), Settings.GetString("llmModel"))), false, token);
@@ -33,8 +33,8 @@ public sealed partial class SpecialistAgent
             var prior = await context.Platform.ReadOperatingStateAsync<GameReviewReceipt>(stateKey, token);
             if (prior?.Payload.Outcome is { } cached) return AgentWorkResult.Success(cached);
             var candidate = await context.Platform.SourceControl.ReviewMergeAsync(new(
-                assignment.ItemId, assignment.AssignmentRevision, $"{stateKey}:read"), token);
-            if (candidate.WorkItemId != assignment.ItemId || candidate.CandidateCommitSha.Length is not (40 or 64) ||
+                assignment.TaskItemId, assignment.AssignmentRevision, $"{stateKey}:read"), token);
+            if (candidate.WorkItemId != assignment.TaskItemId || candidate.CandidateCommitSha.Length is not (40 or 64) ||
                 candidate.CandidateCommitSha.Any(x => !Uri.IsHexDigit(x)) ||
                 !candidate.DiffSummary.Contains("\ndiff --git ", StringComparison.Ordinal))
                 throw new InvalidOperationException("The broker did not provide a complete exact-candidate review patch.");
@@ -66,7 +66,7 @@ public sealed partial class SpecialistAgent
             else
             {
                 var recorded = await context.Platform.ReadOperatingStateAsync<GameTechnicalReviewEvidence>(
-                    TechnicalApprovalKey(assignment.ItemId, assignment.AssignmentRevision, candidate.PublicationId), token);
+                    TechnicalApprovalKey(assignment.TaskItemId, assignment.AssignmentRevision, candidate.PublicationId), token);
                 var approved = MatchesTechnicalApproval(recorded?.Payload, candidate);
                 var passed = candidate.QualityEvidence.Count > 0 && candidate.QualityEvidence.All(x =>
                     x.Succeeded && x.ExitCode == 0 && !string.IsNullOrWhiteSpace(x.Command));
@@ -76,7 +76,7 @@ public sealed partial class SpecialistAgent
                     approved && passed ? [] : ["Review the current candidate and run QA for its exact commit before requesting merge authorization."]);
                 if (decision.Approved)
                 {
-                    var authorized = await context.Platform.SourceControl.AuthorizeMergeAsync(new(assignment.ItemId,
+                    var authorized = await context.Platform.SourceControl.AuthorizeMergeAsync(new(assignment.TaskItemId,
                         assignment.AssignmentRevision, candidate.PublicationId, candidate.CandidateCommitSha,
                         GitMergeDecisions.Approve, decision.Summary, $"{stateKey}:authorize"), token);
                     if (authorized.PublicationId != candidate.PublicationId || authorized.CandidateCommitSha != candidate.CandidateCommitSha ||
@@ -88,7 +88,7 @@ public sealed partial class SpecialistAgent
                 candidate.CandidateCommitSha, decision.Approved, decision.Summary, decision.Findings);
             if (assignment.StageKey == "technical-review")
                 await new RevisionSafeProjectState(context.Platform).MergeAsync<GameTechnicalReviewEvidence>(
-                    TechnicalApprovalKey(assignment.ItemId, assignment.AssignmentRevision, candidate.PublicationId),
+                    TechnicalApprovalKey(assignment.TaskItemId, assignment.AssignmentRevision, candidate.PublicationId),
                     "video-game.technical-candidate-decision.v1", 1, _ => output, new Dictionary<string, string>(),
                     $"{stateKey}:candidate-decision", token);
             var outcome = new WorkExecutionOutcomeV1(assignment.StageExecutionId, assignment.AttemptId,

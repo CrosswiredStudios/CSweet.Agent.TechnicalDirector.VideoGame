@@ -103,7 +103,7 @@ public sealed partial class SpecialistAgent
                 each state one decision-relevant fact; use empty arrays when there is nothing to report.
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
-                requiredCapabilityKeys (["work.execution.run.v1"]), dependencyProposalKeys (array), parentProposalKey (nullable).
+                requiredCapabilityKeys (["work.execution.run"]), dependencyProposalKeys (array), parentProposalKey (nullable).
                 Prefer a compact proposal of at most 20 items. Build a small Epic > Story > Task hierarchy: at least one milestone, one feature or
                 content story, and separate engineering and QA tasks. Milestones have no parent;
                 every feature/content item belongs to a milestone, and every executable item belongs
@@ -115,7 +115,7 @@ public sealed partial class SpecialistAgent
                 Use only supplied roles and skills. Game engineer and game QA are work labels within
                 the software-developer and software-qa core roles. Put game-domain skills in
                 preferredSpecializationKeys so a user-selected agent from the same core role can
-                accept the work. Keep work.execution.run.v1 mandatory. All parents and dependencies
+                accept the work. Keep work.execution.run mandatory. All parents and dependencies
                 resolve within deliveryItems, without cycles. A story must never name itself as its parent.
                 Parent containment also participates in cycle detection: do not make a story depend on any
                 of its own descendants. Put sequencing dependencies on executable tasks instead.

@@ -46,7 +46,7 @@ public sealed partial class SpecialistAgent
         GameProposedWorkItemV1 Item(string key, string type, string title, string description,
             string criterion, string role, string? parent, string[] skills, string[] dependencies) =>
             new(key, type, title, description, [criterion], role, [], skills,
-                ["work.execution.run.v1"], dependencies) { ParentProposalKey = parent };
+                ["work.execution.run"], dependencies) { ParentProposalKey = parent };
         return new([
             Item("example-epic", VideoGameWorkItemTypeKeys.Milestone, "Playable prototype",
                 "Deliver the example playable increment with independent validation.",

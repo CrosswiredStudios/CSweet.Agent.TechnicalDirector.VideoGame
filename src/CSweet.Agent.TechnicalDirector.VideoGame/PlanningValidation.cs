@@ -40,8 +40,8 @@ public sealed partial class SpecialistAgent
                 var invalid = values.Where(x => !skills.Contains(x)).Distinct().ToArray();
                 if (invalid.Length > 0) Error($"{field} contains unsupported values [{string.Join(", ", invalid)}]. Use only the supplied Skills list.");
             }
-            if (item.RequiredCapabilityKeys is null || item.RequiredCapabilityKeys.Any(x => x != "work.execution.run.v1"))
-                Error("requiredCapabilityKeys must be an array containing only work.execution.run.v1.");
+            if (item.RequiredCapabilityKeys is null || item.RequiredCapabilityKeys.Any(x => x != "work.execution.run"))
+                Error("requiredCapabilityKeys must be an array containing only work.execution.run.");
             if (item.DependencyProposalKeys is null) Error("dependencyProposalKeys must be an array (use [] when empty).");
             else foreach (var dependency in item.DependencyProposalKeys)
             {

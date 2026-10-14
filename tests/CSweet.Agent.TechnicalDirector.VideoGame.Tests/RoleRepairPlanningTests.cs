@@ -18,7 +18,7 @@ public sealed class RoleRepairPlanningTests
             ProposalProvenance = new(Guid.NewGuid(), "digest", key),
             Planning = new([$"Requirement for {key}"], [$"Criterion for {key}"], [$"Constraint for {key}"]),
             StageAssignments = role is null ? [] : [new("specialist-execution", "AgentInstallation")
-                { Requirements = new(role, [], [], ["work.execution.run.v1"]) }]
+                { Requirements = new(role, [], [], ["work.execution.run"]) }]
         };
         var epic = Item("epic", VideoGameWorkItemTypeKeys.Milestone, null);
         var story = Item("story", VideoGameWorkItemTypeKeys.Feature, epic.Id);

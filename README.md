@@ -14,8 +14,8 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `2.16.3`
-- Provides: `work.execution.run.v1`
+- Version: `3.0.0`
+- Provides: `work.execution.run`
 - Activation: manual
 - Requested platform/provider capabilities: none
 - Event subscriptions: none
@@ -191,3 +191,7 @@ Current compute review links are local to the provider machine. Public hosting r
 ## Delegation and tracking
 
 SDK 3.65.0 dispatches authenticated delegation before specialist conversation fallback. The manifest requests delegation, work tracking, directory and conversation reads, personal commitments and model interpretation. These declarations require reviewed grants; existing resource permissions and approval rules still apply. The shared SDK owns coordinator reporting and wake recovery.
+
+## Execution contract (3.0.0)
+
+Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from SDK/WorkManagement.Contracts 4.0.0. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.

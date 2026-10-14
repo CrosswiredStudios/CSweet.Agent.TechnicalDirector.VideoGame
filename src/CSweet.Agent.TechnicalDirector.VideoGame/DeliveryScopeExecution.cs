@@ -5,7 +5,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
-    protected override Task<AgentWorkResult> ExecuteDeliveryScopeAsync(WorkExecutionAssignmentV2 assignment,
+    protected override Task<AgentWorkResult> ExecuteDeliveryScopeAsync(WorkExecutionAssignment assignment,
         AgentRuntimeContext context, CancellationToken ct) => assignment.StageKey == "build-readiness"
         ? DeliveryBuildReadiness.ExecuteAsync(assignment, context, ct)
         : DeliveryScopeReview.ExecuteAsync(assignment, context,

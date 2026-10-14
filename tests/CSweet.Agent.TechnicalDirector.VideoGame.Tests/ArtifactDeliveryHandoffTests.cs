@@ -27,17 +27,18 @@ public sealed class ArtifactDeliveryHandoffTests
         var packageId = Guid.NewGuid();
         var planning = new WorkItemPlanningSpecification(["Validate engine API"], ["Identify supported runtime API"], [])
         {
-            DelegationRecommendations = [new("specialist-execution", author.DeclaredRoleKey, ["work.execution.run.v1"], null, true, "Author technical validation")],
+            DelegationRecommendations = [new("specialist-execution", author.DeclaredRoleKey, ["work.execution.run"], null, true, "Author technical validation")],
             ArtifactPackageDigest = new(packageId, 1, ArtifactPackageDigestCalculator.Calculate(packageId, 1, members), DateTimeOffset.UtcNow, members)
         };
         var input = new WorkExecutionInputV1(Guid.NewGuid(), Guid.NewGuid(), 1, planning)
         {
-            AssignmentRequirements = new(author.DeclaredRoleKey, [], [], ["work.execution.run.v1"]),
+            AssignmentRequirements = new(author.DeclaredRoleKey, [], [], ["work.execution.run"]),
             AssignmentSelection = new(authorInstallation, 1, new string('a', 64), [], new string('a', 64), DateTimeOffset.UtcNow)
         };
-        var assignment = JsonSerializer.Deserialize<WorkExecutionAssignmentV1>("{}")! with
+        var assignment = JsonSerializer.Deserialize<WorkExecutionAssignment>("{}")! with
         {
-            SprintExecutionId = Guid.NewGuid(), ItemExecutionId = Guid.NewGuid(), StageExecutionId = Guid.NewGuid(), AttemptId = Guid.NewGuid(),
+            Scope = "Task", PolicyRevisionId = Guid.NewGuid(),
+            SprintExecutionId = Guid.NewGuid(), ExecutionId = Guid.NewGuid(), StageExecutionId = Guid.NewGuid(), AttemptId = Guid.NewGuid(),
             OrganizationId = Guid.NewGuid(), BoardId = Guid.NewGuid(), SprintId = Guid.NewGuid(), ItemId = Guid.NewGuid(),
             AssignmentRevision = 1, Attempt = 1, Deadline = DateTimeOffset.UtcNow.AddMinutes(5), StageKey = "specialist-execution",
             Item = JsonSerializer.SerializeToElement(new { }), Input = JsonSerializer.SerializeToElement(input, Json), PriorOutcomes = [], Evidence = []
@@ -45,17 +46,17 @@ public sealed class ArtifactDeliveryHandoffTests
         // Recover the actual author's completed durable state, exercising its production outcome writer.
         var payload = new SpecialistOperatingState
         {
-            WorkstreamId = input.WorkstreamId!.Value, WorkItemId = assignment.ItemId, RoleKey = author.DeclaredRoleKey,
+            WorkstreamId = input.WorkstreamId!.Value, WorkItemId = assignment.TaskItemId, RoleKey = author.DeclaredRoleKey,
             StageExecutionId = assignment.StageExecutionId, AttemptId = assignment.AttemptId, AssignmentRevision = 1, Status = "Completed",
             Delivery = new("Exact technical validation", artifactId, revisionId, sha, [], [])
         };
         var now = DateTimeOffset.UtcNow;
-        var state = new AgentOperatingStateResponse(Guid.NewGuid(), ProjectStateKeys.WorkItem(author.DeclaredRoleKey, input.WorkstreamId.Value, assignment.ItemId),
+        var state = new AgentOperatingStateResponse(Guid.NewGuid(), ProjectStateKeys.WorkItem(author.DeclaredRoleKey, input.WorkstreamId.Value, assignment.TaskItemId),
             "com.csweet.video-game.specialist-work-state.v1", 1, "Active", new Dictionary<string, string>(), [], "completed", [], Guid.NewGuid(),
             JsonSerializer.SerializeToElement(payload), 1, now, now);
         var authorRuntime = new AgentTestRuntime().RegisterCapability<AgentOperatingStateReadRequest, AgentOperatingStateReadResponse>(
             PlatformCapabilities.AgentOperatingStateRead, (_, _) => Task.FromResult(new AgentOperatingStateReadResponse(state)));
-        var authored = await author.ExecuteCapabilityAsync(new(Guid.NewGuid(), WorkManagementCapabilityNames.ExecutionRunV1,
+        var authored = await author.ExecuteCapabilityAsync(new(Guid.NewGuid(), WorkManagementCapabilityNames.ExecutionRun,
             JsonSerializer.SerializeToElement(assignment, Json), "author"), authorRuntime.CreateContext(assignment.OrganizationId.ToString(), authorInstallation.ToString()), default);
         Assert.True(authored.Succeeded, authored.Error);
         var outcome = authored.Value!.Value.Deserialize<WorkExecutionOutcomeV1>(Json)!;
@@ -75,10 +76,10 @@ public sealed class ArtifactDeliveryHandoffTests
             StageKey = "quality", StageExecutionId = Guid.NewGuid(), AttemptId = Guid.NewGuid(), PriorOutcomes = prior,
             Item = JsonSerializer.SerializeToElement(new { deliverySpecificationJson = JsonSerializer.Serialize(new { deliveryKind = "Artifact" }) })
         };
-        qa = JsonSerializer.Deserialize<WorkExecutionAssignmentV1>(JsonSerializer.Serialize(qa, Json), Json)!;
+        qa = JsonSerializer.Deserialize<WorkExecutionAssignment>(JsonSerializer.Serialize(qa, Json), Json)!;
         var item = JsonSerializer.Deserialize<WorkItem>("{}")! with
         {
-            Id = assignment.ItemId, PlanningRevision = 1, Planning = planning,
+            Id = assignment.TaskItemId, PlanningRevision = 1, Planning = planning,
             StageAssignments = [new("quality", "AgentInstallation", Guid.NewGuid(), qaInstallation)]
         };
         var reads = 0; var reviews = 0;
@@ -88,7 +89,7 @@ public sealed class ArtifactDeliveryHandoffTests
             {
                 reads++; Assert.Equal(artifactId, request.GetProperty("artifactId").GetGuid());
                 return Task.FromResult(new ArtifactDocument(artifactId, "Validation", "video-game.technical-design.v1", "Submitted", revisionId, revisionId, null,
-                    null, assignment.ItemId, [new(revisionId, 1, null, scenario == "wrong-content" ? content + " tampered" : content, sha, "Submitted", now, now, null)]));
+                    null, assignment.TaskItemId, [new(revisionId, 1, null, scenario == "wrong-content" ? content + " tampered" : content, sha, "Submitted", now, now, null)]));
             })
             .RegisterCapability<JsonElement, JsonElement>(PlatformCapabilities.LlmChatStream, (request, _) =>
             {

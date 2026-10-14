@@ -106,7 +106,7 @@ public sealed partial class SpecialistAgent
             !roles.Contains(x.AccountableRoleKey) || x.RequiredSpecializationKeys is null ||
             x.RequiredSpecializationKeys.Any(key => !skills.Contains(key)) || x.PreferredSpecializationKeys is null ||
             x.PreferredSpecializationKeys.Any(key => !skills.Contains(key)) || x.RequiredCapabilityKeys is null ||
-            x.RequiredCapabilityKeys.Any(key => key != "work.execution.run.v1") ||
+            x.RequiredCapabilityKeys.Any(key => key != "work.execution.run") ||
             x.DependencyProposalKeys is null || x.DependencyProposalKeys.Any(key => !keys.Contains(key)) ||
             x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone && x.ParentProposalKey is not null ||
             x.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone &&

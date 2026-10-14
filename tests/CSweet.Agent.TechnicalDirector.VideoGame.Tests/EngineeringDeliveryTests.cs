@@ -32,7 +32,7 @@ public sealed class EngineeringDeliveryTests
     {
         var item = Item();
         item = item with { Planning = item.Planning! with { DelegationRecommendations =
-            [new("specialist-execution", "game-engineer", ["work.execution.run.v1"], null, true, "Implement gameplay")] } };
+            [new("specialist-execution", "game-engineer", ["work.execution.run"], null, true, "Implement gameplay")] } };
         if (previouslyFinalized) item = item with { Delivery = new(Guid.NewGuid(), item.Planning.Requirements, item.Planning.AcceptanceCriteria, item.Planning.Constraints) };
         var revision = Assert.IsType<ReviseWorkItemPlanningRequest>(SpecialistAgent.EngineeringPlanningRequest(Guid.NewGuid(), item));
         Assert.Equal(item.Planning.Requirements, revision.Planning.Requirements);
@@ -76,7 +76,7 @@ public sealed class EngineeringDeliveryTests
     {
         var original = Item();
         var item = original with { StageAssignments = [original.StageAssignments[0] with
-            { Requirements = new(role, [], [], ["work.execution.run.v1"]) }] };
+            { Requirements = new(role, [], [], ["work.execution.run"]) }] };
         var setup = new SpecialistAgent.RepositorySetup(Guid.NewGuid(), Guid.NewGuid(), "Ready", Guid.NewGuid(), null, null, "main");
         var request = Assert.IsType<FinalizeWorkItemDeliveryRequest>(
             SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), item, setup, reviewedDelivery: true));
@@ -118,6 +118,6 @@ public sealed class EngineeringDeliveryTests
         ProposalProvenance = new(Guid.NewGuid(), "proposal-digest", "move"),
         Planning = new(["Move player"], ["Position changes"], ["Keep accepted scope"]) { DependencyItemIds = [Guid.NewGuid()] },
         StageAssignments = [new("specialist-execution", "AgentInstallation", Guid.NewGuid(), Guid.NewGuid())
-            { Requirements = new("game-engineer", [], [], ["work.execution.run.v1"]) }]
+            { Requirements = new("game-engineer", [], [], ["work.execution.run"]) }]
     };
 }
