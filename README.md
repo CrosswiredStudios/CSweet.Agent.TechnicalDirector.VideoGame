@@ -14,7 +14,12 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `3.0.0`
+- Version: `3.1.0`
+
+Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
+test links without a separate approval for each instance. Core limits this permission to local
+port 8080 and the authorized instance lifetime. Owners can revoke access from Compute; the
+agent cannot restore an explicit revocation. This permission does not include public hosting or outbound internet.
 - Provides: `work.execution.run`
 - Activation: manual
 - Requested platform/provider capabilities: none
@@ -192,6 +197,6 @@ Current compute review links are local to the provider machine. Public hosting r
 
 SDK 3.65.0 dispatches authenticated delegation before specialist conversation fallback. The manifest requests delegation, work tracking, directory and conversation reads, personal commitments and model interpretation. These declarations require reviewed grants; existing resource permissions and approval rules still apply. The shared SDK owns coordinator reporting and wake recovery.
 
-## Execution contract (3.0.0)
+## Execution contract (3.1.0)
 
 Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from SDK/WorkManagement.Contracts 4.0.0. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.

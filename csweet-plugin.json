@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -981,6 +981,12 @@
       "scope": "workstream",
       "modelVisible": false,
       "purpose": "Discover approved project compute and coordinate an exact-source test application and review link for the project manager and CEO."
+    },
+    {
+      "name": "compute.local-test-links.v1",
+      "scope": "workstream",
+      "modelVisible": false,
+      "purpose": "Share local browser test links on port 8080 for the lifetime of each authorized test instance, reviewed when hired."
     },
     {
       "name": "network.inbound.v1",
