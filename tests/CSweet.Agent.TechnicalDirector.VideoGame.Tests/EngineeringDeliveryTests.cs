@@ -40,7 +40,7 @@ public sealed class EngineeringDeliveryTests
         Assert.Equal(item.Planning.DependencyItemIds, revision.Planning.DependencyItemIds);
         Assert.Null(revision.StageAssignments);
         Assert.Equal(item.ProposalProvenance, revision.ProposalProvenance);
-        Assert.Equal(new[] { "specialist-execution", "technical-review", "quality", "merge-decision" },
+        Assert.Equal(new[] { "specialist-execution", "technical-review", "quality" },
             revision.Planning.DelegationRecommendations.Select(x => x.StageKey));
         var planned = item with { Planning = revision.Planning };
         Assert.Null(SpecialistAgent.EngineeringPlanningRequest(Guid.NewGuid(), planned));
@@ -62,7 +62,7 @@ public sealed class EngineeringDeliveryTests
         var repaired = Assert.IsType<FinalizeWorkItemDeliveryRequest>(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), staleAssignments, setup, reviewedDelivery: true));
         Assert.Contains(repaired.StageAssignments, x => x.StageKey == "governed-merge");
         Assert.Null(SpecialistAgent.DeliveryFinalizationRequest(Guid.NewGuid(), staleAssignments with { StageAssignments = repaired.StageAssignments }, setup, reviewedDelivery: true));
-        Assert.Equal(6, final.StageAssignments.Count);
+        Assert.Equal(5, final.StageAssignments.Count);
         foreach (var existing in assignments) Assert.Contains(existing, final.StageAssignments);
         Assert.Equal("source-control.merge.execute.v2", Assert.Single(final.StageAssignments, x => x.StageKey == "governed-merge").PlatformAction);
         Assert.Equal("BoardManager", Assert.Single(final.StageAssignments, x => x.StageKey == "producer-review").PrincipalKind);

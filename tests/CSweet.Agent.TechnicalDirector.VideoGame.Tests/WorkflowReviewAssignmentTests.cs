@@ -18,25 +18,25 @@ public sealed class WorkflowReviewAssignmentTests
                 { AssignmentRequirements = input.AssignmentRequirements! with { RequiredRoleKey = "game-engineer" } },
                 new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
         var reads = 0;
-        var runtime = new AgentTestRuntime().RegisterCapability<AgentOperatingStateReadRequest, AgentOperatingStateReadResponse>(
-            PlatformCapabilities.AgentOperatingStateRead, (_, _) =>
+        var runtime = new AgentTestRuntime().RegisterCapability<WorkItemReference, WorkItem>(
+            WorkManagementCapabilityNames.ItemRead, (_, _) =>
             {
                 reads++;
-                throw new PlatformCapabilityException(PlatformCapabilities.AgentOperatingStateRead,
-                    PlatformCapabilityErrorCode.Denied, "The operating-state grant is missing.");
+                throw new PlatformCapabilityException(WorkManagementCapabilityNames.ItemRead,
+                    PlatformCapabilityErrorCode.Denied, "The current item read grant is missing.");
             });
-        var result = await runtime.ExecuteCapabilityAsync(new SpecialistAgent(), WorkManagementCapabilityNames.ExecutionRun, assignment);
+        var agent = await ConfiguredAsync(runtime);
+        var result = await runtime.ExecuteCapabilityAsync(agent, WorkManagementCapabilityNames.ExecutionRun, assignment);
         Assert.True(result.Succeeded);
         var outcome = result.Value!.Value.Deserialize<WorkExecutionOutcomeV1>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
         Assert.Equal("Blocked", outcome.Disposition);
         Assert.Equal(wrongRole ? 0 : 1, reads);
-        Assert.Contains(wrongRole ? "canonical assignment" : "The operating-state grant is missing.", outcome.Summary);
+        Assert.Contains(wrongRole ? "canonical assignment" : "The current item read grant is missing.", outcome.Summary);
         Assert.Empty(outcome.Evidence);
     }
 
     [Theory]
     [InlineData("technical-review", "game-technical-director")]
-    [InlineData("merge-decision", "game-technical-director")]
     [InlineData("quality", "game-quality-assurance")]
     public void Manager_assigned_review_accepts_original_plan_that_only_delegated_implementation(string stage, string role)
     {
@@ -72,6 +72,67 @@ public sealed class WorkflowReviewAssignmentTests
             Input = JsonSerializer.SerializeToElement(input, new JsonSerializerOptions(JsonSerializerDefaults.Web))
         };
         Assert.ThrowsAny<Exception>(() => SpecialistAssignmentValidator.Validate(assignment, "game-technical-director"));
+    }
+
+    [Fact]
+    public async Task RawPlatformAssignmentReadsCurrentDeliveryAndUsesReferenceReviewWithoutFallback()
+    {
+        var (assignment, _) = Create("technical-review", "game-technical-director");
+        var repository = Guid.NewGuid();
+        var delivery = new WorkItemDeliverySpecification(repository, ["Works"], ["Works"])
+            { DeliveryPlanId = Guid.NewGuid(), BaseBranch = "story" };
+        // Match WorkOrchestrator.DispatchAsync's actual wire shape, not a synthetic typed WorkItem.
+        assignment = assignment with { Item = JsonSerializer.SerializeToElement(new
+        {
+            id = assignment.ItemId, title = "Engine setup", planningRevision = 2,
+            deliverySpecificationJson = JsonSerializer.Serialize(delivery, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        }) };
+        var current = JsonSerializer.Deserialize<WorkItem>("{}")! with
+        {
+            Id = assignment.TaskItemId, PlanningRevision = 2, Delivery = delivery,
+            StageAssignments = [new("technical-review", "AgentInstallation",
+                AgentInstallationId: Guid.Parse("00000000-0000-0000-0000-000000000001"))]
+        };
+        var reads = 0;
+        var runtime = new AgentTestRuntime()
+            .RegisterCapability<WorkItemReference, WorkItem>(WorkManagementCapabilityNames.ItemRead, (_, _) => Task.FromResult(current))
+            .RegisterCapability<ReviewGitMergeRequest, GitMergeReview>(GitMergeCapabilities.Review, (request, _) =>
+            {
+                reads++;
+                Assert.False(request.IncludePatch);
+                Assert.Null(request.DiffRead);
+                return Task.FromResult(new GitMergeReview(Guid.NewGuid(), repository, current.Id, "Game",
+                    new string('a', 40), null, "", [], [], "AwaitingValidation")
+                {
+                    TargetBranch = "story", TargetCommitSha = new string('b', 40), PatchDigest = new string('c', 64),
+                    ChangedFiles = ["dist/assets/game.js"]
+                });
+            });
+        var result = await runtime.ExecuteCapabilityAsync(await ConfiguredAsync(runtime), WorkManagementCapabilityNames.ExecutionRun, assignment);
+        Assert.True(result.Succeeded);
+        var outcome = result.Value!.Value.Deserialize<WorkExecutionOutcomeV1>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal("rejected", outcome.OutcomeCode);
+        Assert.Contains("generated", outcome.Summary);
+        Assert.Single(outcome.Diagnostics);
+        Assert.Equal(1, reads);
+    }
+
+    [Fact]
+    public async Task StandaloneMergeDecisionIsRejectedWithoutReadingOrAuthorizingGit()
+    {
+        var (assignment, _) = Create("merge-decision", "game-technical-director");
+        var result = await new AgentTestRuntime().ExecuteCapabilityAsync(new SpecialistAgent(), WorkManagementCapabilityNames.ExecutionRun, assignment);
+        Assert.False(result.Succeeded);
+        Assert.Contains("platform", result.Error);
+    }
+
+    private static async Task<SpecialistAgent> ConfiguredAsync(AgentTestRuntime runtime)
+    {
+        var agent = new SpecialistAgent();
+        var result = await runtime.ExecuteCapabilityAsync(agent, AgentConfigurationCapabilities.Update,
+            new { settings = new { llmProviderId = Guid.NewGuid(), llmModel = "test" } });
+        Assert.True(result.Succeeded, result.Error);
+        return agent;
     }
 
     private static (WorkExecutionAssignment, WorkExecutionInputV1) Create(string stage, string role)

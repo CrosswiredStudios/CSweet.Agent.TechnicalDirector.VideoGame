@@ -4,7 +4,7 @@ Owns engine feasibility, runtime architecture, performance budgets, technical st
 
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
-Technical review and merge decisions use the Producer's canonical workflow assignment.
+Technical review uses the Producer's canonical workflow assignment. Task integration is platform-owned.
 The original approved plan may delegate only implementation; it does not need to be
 rewritten to add reviewers. Role, selection and artifact-package checks still apply.
 After upgrading an already blocked review, request a ticket retry to run a new attempt.
@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `3.1.2`
+- Version: `4.0.0`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
@@ -96,10 +96,10 @@ Uses SDK 3.65.0 for acknowledged LLM waiting, conversation activity, and host-au
 Repository attention reviews now attach ready repository and default-branch configuration to staffed, provenance-bound game-engineer tickets on the same team and workstream. Existing planning, dependencies, accountability and stage assignments are preserved; already finalized and completed tickets are skipped. Board-read and delivery-finalization permissions are requested at board scope. Host authorization and planning approval checks still apply. This does not configure downstream code review or QA stages, which remain separate required work.
 
 ### Technical code review (2.6.0)
-Technical review uses the broker-provided exact patch and canonical planning requirements to produce an evidence-backed approval or actionable rejection. Final merge authorization requires a prior technical approval of that publication and SHA plus passing broker QA evidence. Results are stored per execution attempt for replay. The two work-item Git capabilities require host assignment-scoped grants. No source edits, direct Git operations, or merge execution occur in this agent. Compatible profile and stage assignments are still required.
+Technical review reads the current typed work item, verifies the independent reviewer assignment, and uses the shared SDK's exact source/target reference and bounded diff pages. It produces an evidence-backed approval or actionable rejection. Platform-owned integration and independent QA retain their existing gates. The agent requests only the work-item Git review capability; it no longer runs a full-patch fallback or standalone merge-decision stage. Source edits, direct Git operations and merge execution remain outside this agent.
 
 ### Engineering stage finalization (2.6.0)
-For game profile revision 5 or later, repository reconciliation adds technical-review, quality and merge-decision delegation requirements to engineering plans, preserving their accepted scope and current owners. Producer staffing binds missing stages. Finalization waits for those role assignments and adds the trusted governed merge action and Producer approval stage. Legacy pinned profiles keep their existing route. Workstream read and board planning-revision capabilities require explicit grants. Uses Contracts 3.17.0.
+Repository reconciliation adds independent technical-review and quality responsibilities to engineering plans. The shared SDK reviewer reads the current typed item and reviews an exact source/target through bounded diff pages. Task integration is platform-owned; standalone merge-decision execution and the old full-patch review fallback are removed. Workstream read and planning-revision capabilities still require explicit grants.
 
 ## Release notes
 
@@ -135,7 +135,7 @@ proposal. For the lightweight manager-brief execution policy, the assigned techn
 reviews the exact patch and published developer tests. It does not claim it reran the tests. Rework
 findings are persisted on the ticket, and the Producer retains delivery acceptance and merge authority.
 
-The Technical Director produces plans and reviews; coding, prototypes, package locks, measured execution, and commits belong to engineering and independent QA. Replanning includes full canonical requirements and criteria. Previously finalized tickets reassigned to engineering still receive technical review, independent QA, and merge-decision requirements before delivery can execute.
+The Technical Director produces plans and reviews; coding, prototypes, package locks, measured execution, and commits belong to engineering and independent QA. Replanning includes full canonical requirements and criteria. Previously finalized tickets reassigned to engineering still receive technical review and independent QA requirements before delivery can execute.
 
 Version 2.11.6 accepts the Producer 2.10.4 structured `roleRepair` extension only from the authenticated counterpart for the exact accepted planning cycle. `ReadRoleRepairInstruction` validates its schema and `BuildRoleRepairPlanning` checks the source planning hash against the current canonical board. It deterministically preserves requirements, acceptance criteria, constraints, unrelated roles and ticket identities. The retained Technical Director task requires a real plan; a new engineering task owns every original delivery criterion and independent QA verifies all of them. Unfinished downstream work waits for validation. This scope-preserving transformation does not ask a model to transcribe the backlog or claim any delivery is complete. Unknown versions, stale scope, missing canonical dependencies and output-key collisions block without changing the board. Existing normal planning is unchanged; no new capability grants are required.
 ## Technical-review response formatting (2.11.7)

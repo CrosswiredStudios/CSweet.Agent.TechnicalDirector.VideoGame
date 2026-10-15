@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "3.1.2",
+  "version": "4.0.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -904,12 +904,7 @@
     {
       "name": "git.merge.review.v2",
       "scope": "work-item",
-      "purpose": "Review and authorize only the exact candidate assigned to the active technical review stage."
-    },
-    {
-      "name": "git.merge.authorize.v2",
-      "scope": "work-item",
-      "purpose": "Review and authorize only the exact candidate assigned to the active technical review stage."
+      "purpose": "Read exact source/target metadata and bounded diff pages for the independently assigned technical review. Integration is platform-owned."
     },
     {
       "name": "platform.workstream.read.v1",

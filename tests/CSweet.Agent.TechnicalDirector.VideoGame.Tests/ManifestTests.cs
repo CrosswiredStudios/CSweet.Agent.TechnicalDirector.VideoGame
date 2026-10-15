@@ -17,8 +17,8 @@ public sealed class ManifestTests
         Assert.Equal("OnDemand", manifest.Runtime.DefaultActivationMode);
         var agent = new SpecialistAgent();
 
-        foreach (var capability in new[] { GitMergeCapabilities.Review, GitMergeCapabilities.Authorize })
-            Assert.Contains(manifest.Requires, x => x.Name == capability && x.Scope == "work-item");
+        Assert.Contains(manifest.Requires, x => x.Name == GitMergeCapabilities.Review && x.Scope == "work-item");
+        Assert.DoesNotContain(manifest.Requires, x => x.Name == GitMergeCapabilities.Authorize);
         Assert.DoesNotContain(manifest.Requires, x => x.Name == GitWorkspaceCapabilities.Publish);
         Assert.Contains(manifest.Requires, x => x.Name == PlatformCapabilities.WorkstreamRead && x.Scope == "workstream");
         Assert.Contains(manifest.Requires, x => x.Name == "work.item.planning.revise.v1" && x.Scope == "board");

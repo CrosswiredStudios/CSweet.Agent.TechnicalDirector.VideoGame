@@ -75,9 +75,7 @@ public sealed partial class SpecialistAgent
         new("technical-review", "game-technical-director", ["work.execution.run"], null, true,
             "Review the exact candidate implementation before independent QA.") { RequiredSpecializationKeys = ["technical-feasibility"] },
         new("quality", "game-quality-assurance", ["work.execution.run"], null, true,
-            "Test the technically reviewed candidate and record exact-commit validation evidence.") { RequiredSpecializationKeys = ["test-planning"] },
-        new("merge-decision", "game-technical-director", ["work.execution.run"], null, true,
-            "Authorize the same technically approved commit only after passing QA.") { RequiredSpecializationKeys = ["technical-feasibility"] }
+            "Test the technically reviewed candidate and record exact-commit validation evidence.") { RequiredSpecializationKeys = ["test-planning"] }
     ];
 
     internal static ReviseWorkItemPlanningRequest? EngineeringPlanningRequest(Guid boardId, WorkItem item)
