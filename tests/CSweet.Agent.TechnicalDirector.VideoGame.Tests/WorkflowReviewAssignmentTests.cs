@@ -77,23 +77,26 @@ public sealed class WorkflowReviewAssignmentTests
     [Fact]
     public async Task RawPlatformAssignmentReadsCurrentDeliveryAndUsesReferenceReviewWithoutFallback()
     {
-        var (assignment, _) = Create("technical-review", "game-technical-director");
+        var (assignment, input) = Create("technical-review", "game-technical-director");
         var repository = Guid.NewGuid();
         var delivery = new WorkItemDeliverySpecification(repository, ["Works"], ["Works"])
             { DeliveryPlanId = Guid.NewGuid(), BaseBranch = "story" };
         // Match WorkOrchestrator.DispatchAsync's actual wire shape, not a synthetic typed WorkItem.
-        assignment = assignment with { Item = JsonSerializer.SerializeToElement(new
+        assignment = assignment with { PlanningRevision = 2, DeliveryPlanId = delivery.DeliveryPlanId,
+            Input = JsonSerializer.SerializeToElement(input with { PlanningRevision = 2 }, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
+            Item = JsonSerializer.SerializeToElement(new
         {
             id = assignment.ItemId, title = "Engine setup", planningRevision = 2,
             deliverySpecificationJson = JsonSerializer.Serialize(delivery, new JsonSerializerOptions(JsonSerializerDefaults.Web))
         }) };
         var current = JsonSerializer.Deserialize<WorkItem>("{}")! with
         {
-            Id = assignment.TaskItemId, PlanningRevision = 2, Delivery = delivery,
+            Id = assignment.TaskItemId, PlanningRevision = 2, Delivery = delivery, Planning = input.Planning,
             StageAssignments = [new("technical-review", "AgentInstallation",
                 AgentInstallationId: Guid.Parse("00000000-0000-0000-0000-000000000001"))]
         };
         var reads = 0;
+        var publication = Guid.NewGuid();
         var runtime = new AgentTestRuntime()
             .RegisterCapability<WorkItemReference, WorkItem>(WorkManagementCapabilityNames.ItemRead, (_, _) => Task.FromResult(current))
             .RegisterCapability<ReviewGitMergeRequest, GitMergeReview>(GitMergeCapabilities.Review, (request, _) =>
@@ -101,7 +104,7 @@ public sealed class WorkflowReviewAssignmentTests
                 reads++;
                 Assert.False(request.IncludePatch);
                 Assert.Null(request.DiffRead);
-                return Task.FromResult(new GitMergeReview(Guid.NewGuid(), repository, current.Id, "Game",
+                return Task.FromResult(new GitMergeReview(publication, repository, current.Id, "Game",
                     new string('a', 40), null, "", [], [], "AwaitingValidation")
                 {
                     TargetBranch = "story", TargetCommitSha = new string('b', 40), PatchDigest = new string('c', 64),
@@ -114,7 +117,7 @@ public sealed class WorkflowReviewAssignmentTests
         Assert.Equal("rejected", outcome.OutcomeCode);
         Assert.Contains("generated", outcome.Summary);
         Assert.Single(outcome.Diagnostics);
-        Assert.Equal(1, reads);
+        Assert.Equal(2, reads);
     }
 
     [Fact]
