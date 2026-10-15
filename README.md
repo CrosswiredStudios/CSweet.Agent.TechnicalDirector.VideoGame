@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `3.1.0`
+- Version: `3.1.1`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
@@ -200,3 +200,5 @@ SDK 3.65.0 dispatches authenticated delegation before specialist conversation fa
 ## Execution contract (3.1.0)
 
 Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from SDK/WorkManagement.Contracts 4.0.0. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.
+
+Uses SDK 4.2.0 bounded exact-publication task technical review and repository source hygiene. Install the matching platform broker and trusted Git publisher before upgrading. Existing generated/dependency files require explicit source cleanup; build recipes generate deployable artifacts from pinned dependencies.
