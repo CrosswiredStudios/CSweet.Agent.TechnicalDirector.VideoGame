@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `3.1.1`
+- Version: `3.1.2`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
@@ -80,7 +80,7 @@ ID so renamed products and repeated planning cycles cannot create duplicate repo
 
 Reimport the agent and review the new `source-control.repository.provision.v2` organization grant and
 `source-control.repository.team-options.v2` team grant. Business approval requirements still apply.
-The AlwaysOn attention callback checks pending requests every five minutes without an LLM call.
+The platform-scheduled OnDemand attention callback checks pending requests every five minutes without an LLM call.
 Operating state preserves product/team ownership and approval or remediation status across restarts.
 Planning continues while provisioning is pending; technical proposals report the actual setup status.
 Ready means provisioning completed and the exact repository appears in the planning team's inventory.
@@ -202,3 +202,5 @@ SDK 3.65.0 dispatches authenticated delegation before specialist conversation fa
 Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from SDK/WorkManagement.Contracts 4.0.0. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.
 
 Uses SDK 4.2.0 bounded exact-publication task technical review and repository source hygiene. Install the matching platform broker and trusted Git publisher before upgrading. Existing generated/dependency files require explicit source cleanup; build recipes generate deployable artifacts from pinned dependencies.
+
+Activation defaults to OnDemand. Durable messages, assignments, scheduled duties and attention reviews wake the agent; idle runtimes release their Office slot. Attention wakes require the platform scheduler that supports sleeping OnDemand installations. Existing installations retain their selected activation mode until their schedule is updated.

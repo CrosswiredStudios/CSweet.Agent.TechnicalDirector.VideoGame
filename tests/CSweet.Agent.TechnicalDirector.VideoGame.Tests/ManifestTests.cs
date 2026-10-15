@@ -14,6 +14,7 @@ public sealed class ManifestTests
         var path = Path.Combine(root, "csweet-plugin.json");
 
         var manifest = await AgentManifestLoader.LoadAsync(path, CancellationToken.None);
+        Assert.Equal("OnDemand", manifest.Runtime.DefaultActivationMode);
         var agent = new SpecialistAgent();
 
         foreach (var capability in new[] { GitMergeCapabilities.Review, GitMergeCapabilities.Authorize })
