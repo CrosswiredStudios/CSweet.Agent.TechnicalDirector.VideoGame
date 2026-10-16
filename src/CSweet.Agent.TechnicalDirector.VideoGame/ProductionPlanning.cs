@@ -89,7 +89,7 @@ public sealed partial class SpecialistAgent
             new AgentLlmInvocationContext(null, null, "video-game-technical-planning")));
         var roles = Constants(typeof(VideoGameRoleKeys));
         var skills = Constants(typeof(VideoGameSpecializationKeys));
-        var generated = await GenerateCheckpointedPlanningAsync(context, client, [
+        IReadOnlyList<ChatMessage> planningMessages = [
             new ChatMessage(ChatRole.System, """
                 Decompose the accepted brief into a lean delivery backlog through a packaged runnable game and
                 independent QA. Size the work and specialist roles to actual requirements and anticipated workload.
@@ -171,7 +171,11 @@ public sealed partial class SpecialistAgent
                 """),
             new ChatMessage(ChatRole.User, $"Repository setup: {JsonSerializer.Serialize(repository)}\nRoles: {JsonSerializer.Serialize(roles)}\nSkills: {JsonSerializer.Serialize(skills)}\nExisting canonical planning identities: {JsonSerializer.Serialize(canonicalPlanning)}\nAccepted inputs:\n{string.Join("\n\n", grounding)}")
             , PlanningCoordinationMessage(request, cycle)
-        ], cancellationToken);
+        ];
+        if (artifact.Payload.TryGetProperty("progressivePlanning", out var progressive))
+            return await GenerateProgressivePlanningAsync(context, client, planningMessages, grounding, cycle,
+                progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken);
+        var generated = await GenerateCheckpointedPlanningAsync(context, client, planningMessages, cancellationToken);
         if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],
             $"Repository setup: {repository.Status}; repository={repository.RepositoryId}; approval={repository.ApprovalId}; {repository.Remediation}"] };

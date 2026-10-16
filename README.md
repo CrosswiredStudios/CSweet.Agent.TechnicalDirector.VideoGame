@@ -2,6 +2,8 @@
 
 Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.
 
+`GenerateProgressivePlanningAsync` negotiates outline-first planning with the Producer. It publishes the complete approved scope as increment Epics with one bounded Story each, maps every accepted document paragraph to retained Story scope, then refines only the requested dependency-ready Story into at most twelve execution/QA tasks. Original Story criteria survive verbatim. Future scope remains visible without implementation briefs. The frozen outline, task index and three-task brief pages have separate immutable checkpoints; replay verifies the exact accepted inputs and reconstructs only validated work. Legacy callers retain the complete-plan path below.
+
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
 `GenerateCheckpointedPlanningAsync` first generates and validates the complete compact scope index,
@@ -30,7 +32,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.0.4`
+- Version: `4.1.0`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
