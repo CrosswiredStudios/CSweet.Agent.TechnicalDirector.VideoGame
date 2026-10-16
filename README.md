@@ -32,7 +32,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.1.0`
+- Version: `4.1.1`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
