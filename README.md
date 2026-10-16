@@ -4,6 +4,22 @@ Owns engine feasibility, runtime architecture, performance budgets, technical st
 
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
+`GenerateCheckpointedPlanningAsync` first generates and validates the complete compact scope index,
+then generates detailed implementation briefs for three tasks at a time. Every page requests a JSON
+schema and permits at most three attempts, with completion reason and parse/validation errors retained
+in a blocked diagnostic. A normal provider stop is not proof of complete JSON. No partial response
+becomes a proposal or tickets. The assembled result still passes hierarchy, dependency, role and
+engineering-brief checks.
+
+The existing operating-state grant saves the frozen index and each brief page separately within
+the platform's 64 KiB record limit. Exact input digests include accepted documents, canonical work,
+repository facts and authenticated Producer directions. Retries reuse only validated pages for those
+same inputs; concurrent writes cannot replace the accepted index or a saved brief. No grants changed.
+
+`PlanningPagesTests` includes the three malformed/incomplete Pulse Break response shapes. To replay
+the full retained responses, set `CSWEET_PLANNING_CAPTURE_ROOT` to the authorized local capture folder;
+raw business documents and captured responses are not bundled in the package.
+
 Technical review uses the Producer's canonical workflow assignment. Task integration is platform-owned.
 The original approved plan may delegate only implementation; it does not need to be
 rewritten to add reviewers. Role, selection and artifact-package checks still apply.
@@ -14,7 +30,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.0.3`
+- Version: `4.0.4`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
