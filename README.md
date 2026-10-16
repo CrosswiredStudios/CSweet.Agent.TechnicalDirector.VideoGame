@@ -14,7 +14,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.0.2`
+- Version: `4.0.3`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
@@ -204,3 +204,7 @@ Execution uses one `work.execution.run` capability and `WorkExecutionAssignment`
 Uses SDK 4.2.1 bounded exact-publication task technical review and repository source hygiene. Install the matching platform broker and trusted Git publisher before upgrading. Existing generated/dependency files require explicit source cleanup; build recipes generate deployable artifacts from pinned dependencies.
 
 Activation defaults to OnDemand. Durable messages, assignments, scheduled duties and attention reviews wake the agent; idle runtimes release their Office slot. Attention wakes require the platform scheduler that supports sleeping OnDemand installations. Existing installations retain their selected activation mode until their schedule is updated.
+
+## Small tasks and comment revisions
+
+Require actionable Outcome, Context, Pseudocode, Assumptions and Verification sections in new engineering briefs, with bounded correction and validation. Split independent deliverables even when sequential. Answer revision comments with explicit correction, clarification or replacement recommendations. Comments can supersede specific implementation guidance, but cannot waive accepted outcomes, criteria, reviews or grants. Substantial changes require linked replacement tickets through governed replanning; a replacement recommendation is not automatic cancellation or execution authority. The original stays blocked until that planning is applied.

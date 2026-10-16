@@ -5,7 +5,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
-    internal static string PlanningConstructionGuidance() => """
+    internal static string PlanningConstructionGuidance() => ImplementationBrief.Guidance + "\n" + """
         Construct the proposal in this order before returning JSON:
         1. Map every accepted deliverable and acceptance criterion to a story and executable tasks.
            Use existing canonical proposal keys for retained scope. Do not reduce scope to fit a preferred item count.
@@ -57,7 +57,11 @@ public sealed partial class SpecialistAgent
                 "Left and right input move the player within the playfield, verified independently.",
                 VideoGameRoleKeys.Engineer, "example-epic", [VideoGameSpecializationKeys.GameplayProgramming], []),
             Item("example-implementation", VideoGameWorkItemTypeKeys.Task, "Implement bounded movement",
-                "Implement movement using the supported input API and add reproducible checks.",
+                "Outcome: Move the player horizontally within the playfield; scoring is out of scope.\n" +
+                "Context: Update the player controller's movement handler; locate the actual script and input mapping before editing.\n" +
+                "Pseudocode: direction = right - left; nextX = x + direction * speed * delta; x = clamp(nextX, leftEdge, rightEdge).\n" +
+                "Assumptions: The controller exposes position and playfield bounds; request a comment revision if current APIs differ.\n" +
+                "Verification: Check both directions, no input, and clamping at each boundary.",
                 "Left/right keys move in the correct direction; player position never leaves the playfield.",
                 VideoGameRoleKeys.Engineer, "example-story", [VideoGameSpecializationKeys.GameplayProgramming], []),
             Item("example-qa", VideoGameWorkItemTypeKeys.Task, "Independently validate movement",

@@ -41,9 +41,9 @@ public sealed partial class SpecialistAgent
                     acceptedContainers ??= ValidContainerOutline(output.DeliveryItems);
                     if (acceptedContainers is not null && !PreservesContainerOutline(output.DeliveryItems, acceptedContainers))
                         issue = "The accepted milestone and story outline changed. Restore every accepted container key, title, scope, criterion, parent, and dependency; repair only the executable leaves.";
-                    else if (IsValidPlan(output.DeliveryItems)) return (output, null);
+                    else if (IsValidPlan(output.DeliveryItems) && EngineeringBriefIssues(output.DeliveryItems).Count == 0) return (output, null);
                     else
-                        issue = "Validation errors: " + string.Join("; ", PlanValidationIssues(output.DeliveryItems));
+                        issue = "Validation errors: " + string.Join("; ", PlanValidationIssues(output.DeliveryItems).Concat(EngineeringBriefIssues(output.DeliveryItems)));
                 }
                 else issue = "The plan must contain deliveryItems.";
             }
@@ -85,8 +85,13 @@ public sealed partial class SpecialistAgent
         (accepted is null
             ? "No container outline was accepted; regenerate a lean Epic > Story > Task hierarchy from the accepted scope. "
             : $"Accepted container outline (immutable): {JsonSerializer.Serialize(accepted)} Repair only the executable leaves; do not rename, remove, reorder, or replace these containers. ") +
-        $"Return one complete JSON object{(compact ? " with at most 20 concise deliveryItems" : "")}, including separate testable engineer and QA tasks. " +
+        $"Return one complete JSON object{(compact ? " with concise deliveryItems; never combine independently deliverable tasks to reduce the count" : "")}, including separate testable engineer and QA tasks. " +
         "Preserve all accepted deliverables, do not invent approvals, and add no Markdown or commentary.";
+
+    internal static IReadOnlyList<string> EngineeringBriefIssues(IReadOnlyList<GameProposedWorkItemV1> items) =>
+        items.Where(x => x is not null && x.AccountableRoleKey == VideoGameRoleKeys.Engineer &&
+                x.WorkItemTypeKey is not (VideoGameWorkItemTypeKeys.Milestone or VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content))
+            .SelectMany(x => ImplementationBrief.Issues(x.Description).Select(issue => $"Item '{x.ProposalKey}': {issue}")).ToArray();
 
     internal static IReadOnlyList<GameProposedWorkItemV1>? ValidContainerOutline(
         IReadOnlyList<GameProposedWorkItemV1> items)

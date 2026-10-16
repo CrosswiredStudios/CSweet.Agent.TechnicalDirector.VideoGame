@@ -174,7 +174,7 @@ public sealed class ProductionPlanningTests
             if (calls == 3)
             {
                 Assert.DoesNotContain(messages, x => x.Role == Microsoft.Extensions.AI.ChatRole.Assistant);
-                Assert.Contains("at most 20 concise deliveryItems", messages.Last().Text);
+                Assert.Contains("never combine independently deliverable tasks", messages.Last().Text);
             }
             return Task.FromResult(scenario == "persistent" || scenario == "compact-pass" && calls < 3 ? "{" :
                 calls >= 2 || scenario == "valid" ? valid :
@@ -269,7 +269,7 @@ public sealed class ProductionPlanningTests
         var story = Item("story", VideoGameRoleKeys.Engineer) with
         { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Feature, ParentProposalKey = epic.ProposalKey };
         var engineer = Item("implementation", VideoGameRoleKeys.Engineer) with
-        { ParentProposalKey = story.ProposalKey };
+        { ParentProposalKey = story.ProposalKey, Description = SpecialistAgent.PlanningContractExample().DeliveryItems[2].Description };
         var qa = Item("qa", VideoGameRoleKeys.QualityAssurance) with
         { ParentProposalKey = story.ProposalKey, DependencyProposalKeys = [engineer.ProposalKey] };
         return [epic, story, engineer, qa];

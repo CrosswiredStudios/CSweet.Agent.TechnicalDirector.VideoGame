@@ -13,8 +13,17 @@ public sealed partial class SpecialistAgent
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
         if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact?.Type == ProjectDeliveryPlanning.RequestType)
-            return await ProjectDeliveryPlanning.PlanAsync(request, context,
-                context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a planning provider."), Settings.GetString("llmModel"))), cancellationToken);
+        {
+            using var planningClient = new ImplementationPlanningClient(context.CreateChatClient(new AgentLlmSelection(
+                Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a planning provider."), Settings.GetString("llmModel"))));
+            var result = await ProjectDeliveryPlanning.PlanAsync(request, context, planningClient, cancellationToken);
+            if (result.Artifact?.Payload.Deserialize<ProjectDeliveryPlan>(new JsonSerializerOptions(JsonSerializerDefaults.Web)) is { } plan)
+            {
+                var issues = plan.Items.SelectMany(x => ImplementationBrief.Issues(x.Description).Select(issue => $"{x.Key}: {issue}")).ToArray();
+                if (issues.Length > 0) return AgentCoordinationTurnResult.Blocked("Technical implementation briefs need revision: " + string.Join("; ", issues));
+            }
+            return result;
+        }
         var artifact = request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact;
         if (artifact?.Type == DeveloperSupportArtifactTypes.SupportRequest)
             return await AnswerDeveloperSupportAsync(request, artifact, context, cancellationToken);
@@ -96,7 +105,7 @@ public sealed partial class SpecialistAgent
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
                 Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings).
-                Keep descriptions to one or two direct sentences. State each requirement once at its owning
+                Include actionable implementation briefs in descriptions. State each requirement once at its owning
                 task; use dependencies for shared work instead of repeating the whole brief in every item.
                 Keep criteria specific and testable. Preserve every distinct accepted requirement and criterion;
                 brevity removes repeated explanations, never required scope. Findings and constraints should
@@ -104,7 +113,7 @@ public sealed partial class SpecialistAgent
                 Each deliveryItems entry has proposalKey, workItemTypeKey, title, description, acceptanceCriteria (array),
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run"]), dependencyProposalKeys (array), parentProposalKey (nullable).
-                Prefer a compact proposal of at most 20 items. Build a small Epic > Story > Task hierarchy: at least one milestone, one feature or
+                Prefer small deliverables over a small ticket count. Build an Epic > Story > Task hierarchy: at least one milestone, one feature or
                 content story, and separate engineering and QA tasks. Milestones have no parent;
                 every feature/content item belongs to a milestone, and every executable item belongs
                 to a feature/content item. Split the playable game into small independently testable
