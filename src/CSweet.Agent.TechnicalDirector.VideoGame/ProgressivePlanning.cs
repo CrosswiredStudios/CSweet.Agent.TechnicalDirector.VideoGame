@@ -85,31 +85,13 @@ public sealed partial class SpecialistAgent
             if (request.ScopeKey is not null && request.ScopeKey != scopeKey) throw new InvalidOperationException("The accepted inputs or Producer directions changed.");
             async Task<ChatResponse> Generate(IReadOnlyList<ChatMessage> input, Type type, CancellationToken ct)
             {
-                var options = ResponseOptions(16_000);
+                var options = ResponseOptions(PlanningOutputTokens);
                 options.ResponseFormat = ChatResponseFormat.ForJsonSchema(JsonSerializer.SerializeToElement(PlanningJson.GetJsonSchemaAsNode(type)), "progressive_planning");
                 return await client.GetResponseAsync(input, options, ct);
             }
             var sources = AcceptedScopeSources(documents);
-            var saved = await context.Platform.ReadOperatingStateAsync<ProgressiveScopeIndex>(scopeKey, token);
-            var scope = saved?.Payload;
-            if (scope is null)
-            {
-                if (request.Phase != "Outline") throw new InvalidOperationException("The exact accepted scope outline is unavailable; publish it before requesting detail.");
-                scope = await ReadPlanningPageAsync<ProgressiveScopeIndex>(Generate, messages, "full-scope outline",
-                    "Progressive planning phase: return ONLY a compact complete milestone/story outline in plan, plus coverage. " +
-                    "Use short scope descriptions and concise testable Story criteria; do not repeat the approved documents or write implementation detail. " +
-                    "Do not generate any executable tasks, implementation briefs or pseudocode in this phase. Preserve the entire accepted game, " +
-                    "every requirement, acceptance criterion and non-goal. The first milestone targets a small playable end-to-end prototype; " +
-                    "order its small stories by actual prerequisites, then later content, polish, hardening and release. Each increment Epic contains exactly one Story; " +
-                    "larger product milestones can span several increment Epics without changing any requirements. Each Story is a bounded " +
-                    "increment that can be refined into at most twelve tasks including engineering and independent QA where appropriate. " +
-                    "Use exact allowed roles/skills and the PlanningOutput field names inside plan. Container dependency keys name only " +
-                    "actual prerequisite containers; never descendants. Map EVERY sourceKey below to one or more owning Story proposalKeys " +
-                    "in coverage. Heading/overview/non-goal paragraphs may map to multiple relevant stories. A mapped source remains an " +
-                    "approved requirement, not completed work. Source ledger: " + JsonSerializer.Serialize(sources, PlanningJson),
-                    value => ValidateProgressiveOutline(value, sources), 40000, token);
-                await SaveProgressiveStateAsync(scopeKey, scope, context, token);
-            }
+            var scope = await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
+                request.Phase == "Outline", token);
             ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
@@ -135,7 +117,7 @@ public sealed partial class SpecialistAgent
                     JsonSerializer.Serialize(new { story, sources = StoryScopeSources(story) }, PlanningJson) +
                     "\nExisting identity/dependency ledger: " + JsonSerializer.Serialize(scope.Plan.DeliveryItems.Concat(leaves).Select(x =>
                         new { x.ProposalKey, x.Title, x.ParentProposalKey, x.WorkItemTypeKey }), PlanningJson),
-                    value => ValidateStoryRefinement(value, story, scope.Plan, leaves), 24000, token);
+                    value => ValidateStoryRefinement(value, story, scope.Plan, leaves), MaximumPlanningPageCharacters, token);
                 index = index with { Items = index.Items.Select(NormalizeCoreRoleSkills).ToArray() };
                 ValidateStoryRefinement(index, story, scope.Plan, leaves);
                 await SaveProgressiveStateAsync(indexKey, index, context, token);
@@ -163,7 +145,7 @@ public sealed partial class SpecialistAgent
                             persisted.Add(number);
                         }
                     }, token);
-                if (generated.Output is null) return AgentCoordinationTurnResult.Blocked(generated.Error!);
+                if (generated.Output is null) return AgentCoordinationTurnResult.Blocked(PlanningGeneratorFailure + " C-Sweet technical issue: " + generated.Error);
                 leaves = generated.Output.DeliveryItems.Where(x => !IsPlanningContainer(x)).ToList();
                 var completed = index.Items.Select(x => x with { Description = leaves.Single(leaf => leaf.ProposalKey == x.ProposalKey).Description }).ToArray();
                 await SaveProgressiveStateAsync(indexKey + ":completed", new CompletedProgressiveStory(outlineDigest, indexDigest,
@@ -181,7 +163,8 @@ public sealed partial class SpecialistAgent
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException)
         {
-            return AgentCoordinationTurnResult.Blocked("Progressive planning is blocked; approved scope and validated pages are retained. " + error.Message);
+            return AgentCoordinationTurnResult.Blocked(PlanningGeneratorFailure + " C-Sweet technical issue: progressive planning could not generate or validate its output. " +
+                "Approved scope and validated pages are retained. Escalate through the reporting manager to the CEO for a C-Sweet code correction; no creative decision is requested. Diagnostic: " + error.Message);
         }
     }
 

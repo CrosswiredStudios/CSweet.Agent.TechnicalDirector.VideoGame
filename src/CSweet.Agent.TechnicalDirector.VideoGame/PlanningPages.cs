@@ -12,6 +12,8 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 public sealed partial class SpecialistAgent
 {
     internal const int PlanningPageSize = 3;
+    internal const int MaximumPlanningPageCharacters = 128_000;
+    internal const string PlanningGeneratorFailure = "[csweet.planning.generator]";
     private static readonly JsonSerializerOptions PlanningJson = CreatePlanningJson();
     internal sealed record PlanningDescription(string ProposalKey, string Description);
     internal sealed record PlanningDescriptionPage(IReadOnlyList<PlanningDescription> Items);
@@ -62,7 +64,7 @@ public sealed partial class SpecialistAgent
             return await client.GetResponseAsync(pageMessages, options, ct);
         }, messages, digest, retained, async (checkpoint, ct) =>
         {
-            // Operating-state records are bounded to 64 KiB. Keep the compact index
+            // Operating-state payloads are bounded to 128,000 characters. Keep the index
             // separate from each three-task brief page instead of growing one record.
             var indexCheckpoint = checkpoint with { Descriptions = new Dictionary<string, string>() };
             if (!indexPersisted)
@@ -121,9 +123,9 @@ public sealed partial class SpecialistAgent
                 "Do not reduce scope or combine independent tasks to fit an item count. Return the PlanningOutput contract as JSON.",
                 value => {
                     ValidatePlanningOutline(value);
-                    if (JsonSerializer.Serialize(new PlanningCheckpoint(inputDigest, value, new Dictionary<string, string>())).Length > 60000)
+                    if (JsonSerializer.Serialize(new PlanningCheckpoint(inputDigest, value, new Dictionary<string, string>())).Length > MaximumPlanningPageCharacters)
                         throw new InvalidOperationException("The compact scope index exceeds durable-state bounds. Remove repeated wording without dropping requirements or tasks.");
-                }, 48000, token);
+                }, MaximumPlanningPageCharacters, token);
             outline = outline with { DeliveryItems = outline.DeliveryItems.Select(NormalizeCoreRoleSkills).ToArray() };
             ValidatePlanningOutline(outline);
             var descriptions = saved?.Descriptions.ToDictionary() ?? new Dictionary<string, string>();
@@ -153,7 +155,7 @@ public sealed partial class SpecialistAgent
                         var issues = EngineeringBriefIssues(page.Select(item => item with {
                             Description = value.Items.Single(x => x.ProposalKey == item.ProposalKey).Description }).ToArray());
                         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
-                    }, 24000, token);
+                    }, MaximumPlanningPageCharacters, token);
                 foreach (var item in response.Items) descriptions[item.ProposalKey] = item.Description;
                 await save(new(inputDigest, outline, descriptions.ToDictionary()), token);
             }

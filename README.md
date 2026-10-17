@@ -32,7 +32,9 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.2.0`
+- Version: `4.2.1`
+
+Planning responses and durable checkpoint payloads allow 128,000 characters. Progressive planning saves a compact complete scope identity/dependency manifest, then separate detail pages of three increments and coverage pages of twelve approved source paragraphs. No outline is published until every page and source mapping validates. Restarts reuse immutable pages. Previously validated single-record outlines remain readable. Requires the matching platform operating-state/coordination limits. Generator failures report `[csweet.planning.generator]` as C-Sweet technical issues for manager-to-CEO code-correction escalation.
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
