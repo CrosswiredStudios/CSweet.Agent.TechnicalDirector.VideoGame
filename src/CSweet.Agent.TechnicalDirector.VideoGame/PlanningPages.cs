@@ -176,6 +176,7 @@ public sealed partial class SpecialistAgent
 
     private static void ValidatePlanningOutline(PlanningOutput output)
     {
+        _ = BindDependencyPins(output);
         var issues = PlanValidationIssues(output.DeliveryItems);
         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
         if (output.FeasibilityFindings is null || output.TechnicalConstraints is null || output.OpenFeasibilityDecisions is null ||

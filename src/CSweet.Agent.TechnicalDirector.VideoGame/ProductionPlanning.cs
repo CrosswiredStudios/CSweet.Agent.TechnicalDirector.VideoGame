@@ -104,7 +104,8 @@ public sealed partial class SpecialistAgent
                 Plan the product Git repository structure, branch/integration standards and review criteria. Use the supplied
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
-                Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings).
+                Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings), and dependencyPins (array of {package,exactVersion}; use [] when unresolved).
+                A resolved version pin must be a concrete exact version in dependencyPins. A promise to choose a pin at kickoff is unresolved. Missing Phaser pins become an executable engineering prerequisite whose integrated result gates dependent engineering; never ask a human to perform routine package locking.
                 Include actionable implementation briefs in descriptions. State each requirement once at its owning
                 task; use dependencies for shared work instead of repeating the whole brief in every item.
                 Keep criteria specific and testable. Preserve every distinct accepted requirement and criterion;
@@ -184,6 +185,15 @@ public sealed partial class SpecialistAgent
 
     private static AgentCoordinationTurnResult CompletePlanningProposal(GameProductionPlanningCycleV1 cycle, PlanningOutput output)
     {
+        output = BindDependencyPins(output);
+        // Progressive outline/story pages deliberately contain only part of the global
+        // hierarchy. Full executable proposals still validate the bound dependency graph.
+        if (output.DeliveryItems.Any(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task) &&
+            output.DeliveryItems.Any(x => x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task))
+        {
+            var issues = PlanValidationIssues(output.DeliveryItems);
+            if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
+        }
         var digest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(output))).ToLowerInvariant();
         var proposal = new GameTechnicalDeliveryProposalV1(cycle, output.DeliveryItems,
             output.FeasibilityFindings ?? [], output.TechnicalConstraints ?? [], output.OpenFeasibilityDecisions ?? [], digest);
@@ -231,5 +241,8 @@ public sealed partial class SpecialistAgent
 
     internal sealed record PlanningOutput(IReadOnlyList<GameProposedWorkItemV1> DeliveryItems,
         IReadOnlyList<string>? FeasibilityFindings, IReadOnlyList<string>? TechnicalConstraints,
-        IReadOnlyList<string>? OpenFeasibilityDecisions);
+        IReadOnlyList<string>? OpenFeasibilityDecisions)
+    {
+        public IReadOnlyList<DependencyPin> DependencyPins { get; init; } = [];
+    }
 }

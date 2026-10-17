@@ -32,7 +32,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.1.1`
+- Version: `4.2.0`
 
 Victor requests `compute.local-test-links.v1` at hiring or upgrade review so he can share browser
 test links without a separate approval for each instance. Core limits this permission to local
@@ -226,3 +226,11 @@ Activation defaults to OnDemand. Durable messages, assignments, scheduled duties
 ## Small tasks and comment revisions
 
 Require actionable Outcome, Context, Pseudocode, Assumptions and Verification sections in new engineering briefs, with bounded correction and validation. Split independent deliverables even when sequential. Answer revision comments with explicit correction, clarification or replacement recommendations. Comments can supersede specific implementation guidance, but cannot waive accepted outcomes, criteria, reviews or grants. Substantial changes require linked replacement tickets through governed replanning; a replacement recommendation is not automatic cancellation or execution authority. The original stays blocked until that planning is applied.
+
+## Concrete dependency decisions
+
+Planning output may carry `dependencyPins` with unique package names and exact versions.
+The published engineering briefs retain those structured pins. An unresolved Phaser pin
+becomes an executable engineering prerequisite that commits and verifies the package and
+lockfile; dependent engineering waits for its integrated result. A future human kickoff is
+not a resolved version or evidence that implementation ran.
