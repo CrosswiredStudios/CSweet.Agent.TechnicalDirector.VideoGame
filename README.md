@@ -32,7 +32,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `4.2.1`
+- Version: `4.2.3`
 
 Planning responses and durable checkpoint payloads allow 128,000 characters. Progressive planning saves a compact complete scope identity/dependency manifest, then separate detail pages of three increments and coverage pages of twelve approved source paragraphs. No outline is published until every page and source mapping validates. Restarts reuse immutable pages. Previously validated single-record outlines remain readable. Requires the matching platform operating-state/coordination limits. Generator failures report `[csweet.planning.generator]` as C-Sweet technical issues for manager-to-CEO code-correction escalation.
 
@@ -219,9 +219,9 @@ SDK 3.65.0 dispatches authenticated delegation before specialist conversation fa
 
 ## Execution contract (3.1.0)
 
-Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from WorkManagement.Contracts 4.0.0 through SDK 4.2.1. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.
+Execution uses one `work.execution.run` capability and `WorkExecutionAssignment` from WorkManagement.Contracts 4.0.0 through SDK 4.6.3. Task and aggregate scopes retain their distinct authority checks within that envelope. Upgrade the platform and executing agents together; no legacy execution adapter remains.
 
-Uses SDK 4.2.1 bounded exact-publication task technical review and repository source hygiene. Install the matching platform broker and trusted Git publisher before upgrading. Existing generated/dependency files require explicit source cleanup; build recipes generate deployable artifacts from pinned dependencies.
+Uses SDK 4.6.3 bounded exact-publication task technical review and repository source hygiene. Install the matching platform broker and trusted Git publisher before upgrading. Existing generated/dependency files require explicit source cleanup; build recipes generate deployable artifacts from pinned dependencies.
 
 Activation defaults to OnDemand. Durable messages, assignments, scheduled duties and attention reviews wake the agent; idle runtimes release their Office slot. Attention wakes require the platform scheduler that supports sleeping OnDemand installations. Existing installations retain their selected activation mode until their schedule is updated.
 
@@ -236,3 +236,7 @@ The published engineering briefs retain those structured pins. An unresolved Pha
 becomes an executable engineering prerequisite that commits and verifies the package and
 lockfile; dependent engineering waits for its integrated result. A future human kickoff is
 not a resolved version or evidence that implementation ran.
+
+## Review response recovery (4.2.3)
+
+Uses SDK 4.6.3 for 128,000-character technical review inputs/responses and 16,000-character summaries/evidence, subject to the configured model token ceiling. Schema bounds and validation use the same limits. Validation reports all text-bound errors with exact paths and lengths, then permits three bounded correction calls without accumulating failed response history. No invalid report authorizes integration. Exhaustion is identified as a C-Sweet review-processing issue for management escalation. Existing accepted page checkpoints remain compatible, with current candidate authorization and page hashes checked before reuse.

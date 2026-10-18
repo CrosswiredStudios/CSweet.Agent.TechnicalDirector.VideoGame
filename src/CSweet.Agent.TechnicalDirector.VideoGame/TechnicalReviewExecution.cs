@@ -40,8 +40,15 @@ public sealed partial class SpecialistAgent
                 PlatformCapabilityException capability => $"Technical review could not invoke {capability.Capability} ({capability.Code}): {capability.Message}",
                 _ => $"Technical review could not complete ({error.GetType().Name}); no review decision was accepted."
             };
-            return AgentWorkResult.Success(new WorkExecutionOutcomeV1(assignment.StageExecutionId, assignment.AttemptId,
-                WorkExecutionDispositions.Blocked, "blocked", reason, JsonSerializer.SerializeToElement(new { }), [], [reason]));
+            return AgentWorkResult.Success(ReviewBlockedOutcome(assignment, reason));
         }
+    }
+    internal static WorkExecutionOutcomeV1 ReviewBlockedOutcome(WorkExecutionAssignment assignment, string reason)
+    {
+        const string suffix = "… [Full review-processing error is retained in output.reviewProcessingError and diagnostics.]";
+        var summary = reason.Length <= 4096 ? reason : reason[..(4096 - suffix.Length)] + suffix;
+        return new(assignment.StageExecutionId, assignment.AttemptId,
+            WorkExecutionDispositions.Blocked, "blocked", summary,
+            JsonSerializer.SerializeToElement(new { reviewProcessingError = reason }), [], [reason]);
     }
 }

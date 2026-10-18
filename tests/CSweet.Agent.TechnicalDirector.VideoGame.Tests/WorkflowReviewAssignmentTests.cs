@@ -7,6 +7,18 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed class WorkflowReviewAssignmentTests
 {
+    [Fact]
+    public void LongReviewProcessingFailureRetainsDiagnosticsWithAStorageSafeStatus()
+    {
+        var (assignment, _) = Create("technical-review", "game-technical-director");
+        var reason = "C-Sweet review-processing issue: " + new string('e', 16000);
+        var outcome = SpecialistAgent.ReviewBlockedOutcome(assignment, reason);
+        Assert.True(outcome.Summary.Length <= 4096);
+        Assert.Contains("Full review-processing error is retained", outcome.Summary);
+        Assert.Equal(reason, outcome.Output.GetProperty("reviewProcessingError").GetString());
+        Assert.Equal(reason, Assert.Single(outcome.Diagnostics));
+        Assert.Equal("Blocked", outcome.Disposition);
+    }
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

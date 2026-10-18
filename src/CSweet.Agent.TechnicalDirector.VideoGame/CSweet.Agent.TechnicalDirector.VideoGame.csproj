@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Version>4.2.1</Version>
+    <Version>4.2.3</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSweet.WorkManagement.Contracts" Version="4.0.0" />
-    <PackageReference Include="CSweet.Agent.SDK" Version="4.3.2" />
+    <PackageReference Include="CSweet.Agent.SDK" Version="4.6.3" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
