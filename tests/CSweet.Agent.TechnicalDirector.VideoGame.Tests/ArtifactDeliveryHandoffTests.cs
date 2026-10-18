@@ -114,7 +114,8 @@ public sealed class ArtifactDeliveryHandoffTests
         var reviewed = await ArtifactDeliveryReview.ExecuteAsync(qa, context, client, default);
         var reviewedOutcome = reviewed.Value!.Value.Deserialize<WorkExecutionOutcomeV1>(Json)!;
         Assert.Equal("passed", reviewedOutcome.OutcomeCode);
-        Assert.Equal(1, reads); Assert.Equal(1, reviews);
+        // SDK reauthorizes the exact revision after the independent verdict.
+        Assert.Equal(2, reads); Assert.Equal(1, reviews);
         var result = reviewedOutcome.Output.Deserialize<WorkArtifactQualityResult>(Json)!;
         Assert.Equal(artifactId, result.ArtifactId); Assert.Equal(revisionId, result.RevisionId); Assert.Equal(sha, result.Sha256);
     }

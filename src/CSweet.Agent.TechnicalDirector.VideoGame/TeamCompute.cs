@@ -50,9 +50,10 @@ public sealed partial class SpecialistAgent
         {
             var plans = await context.Platform.Work.ReadDeliveryPlansAsync(new(project), ct);
             foreach (var plan in plans.Where(x => x.Status is not ("Cancelled" or "Draft")).OrderByDescending(x => x.CreatedAt).Take(1))
-            foreach (var execution in plan.Executions.Where(x => x.Scope == WorkExecutionScopes.Release))
+            foreach (var execution in plan.Executions)
             {
-                var stage = execution.Stages.LastOrDefault(x => x.StageKey == "build-readiness" && x.LastOutcomeCode == "approved");
+                var workflow=plan.Scopes.Single(s=>s.Scope==execution.Scope&&s.ItemId==execution.ItemId).TicketWorkflow;
+                var stage = execution.Stages.LastOrDefault(x => workflow?.Steps.Any(s=>s.Key==x.StageKey&&s.Handler is "build-readiness" or "compute-test")==true && x.LastOutcomeCode == "approved");
                 var result = stage?.LatestOutcome?.Output.Deserialize<WorkDeliveryReviewResult>(new JsonSerializerOptions(JsonSerializerDefaults.Web));
                 if (result?.ComputeTests is not { Count: > 0 } || execution.Candidate?.Digest != result.CandidateDigest ||
                     result.ComputeTests.Any(x => x.UrlExpiresAt <= DateTimeOffset.UtcNow)) continue;
