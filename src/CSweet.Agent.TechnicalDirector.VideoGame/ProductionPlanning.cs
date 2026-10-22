@@ -50,6 +50,20 @@ public sealed partial class SpecialistAgent
             return AgentCoordinationTurnResult.Blocked("The planning package digest changed.");
         var repository = await EnsureRepositoryAsync(cycle.WorkstreamId, cycle.TeamId, context, cancellationToken);
         var board = await context.Platform.Work.ReadBoardAsync(cycle.BoardId, cancellationToken);
+        if (artifact.Payload.TryGetProperty("scopeAmendment", out _))
+        {
+            try
+            {
+                if (board.Board.ManagerOrganizationUserId != request.Counterpart.OrganizationUserId)
+                    throw new InvalidOperationException("The scope amendment must come from the current board manager.");
+                return CompletePlanningProposal(cycle, BuildScopeAmendmentPlanning(board.Items,
+                    ReadScopeAmendmentInstruction(request, cycle)));
+            }
+            catch (Exception error) when (error is InvalidOperationException or JsonException)
+            {
+                return AgentCoordinationTurnResult.Blocked("Structured scope amendment blocked: " + error.Message);
+            }
+        }
         if (artifact.Payload.TryGetProperty("roleRepair", out _))
         {
             try

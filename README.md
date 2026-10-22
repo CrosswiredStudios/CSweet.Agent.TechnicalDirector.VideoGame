@@ -32,7 +32,13 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `5.0.2`
+- Version: `5.0.3`
+
+Producer 4.0.10 can send an exact owner amendment in the authenticated planning cycle's
+`scopeAmendment` artifact field. The Director checks all canonical planning digests and exact
+replacement entries before constructing the proposal. This preserves full requirements, completed
+work, hierarchy, dependencies and roles without model transcription. It never reports unperformed
+QA as passed. Install Director 5.0.3 before Producer 4.0.10 to recover a saved correction.
 
 Planning responses and durable checkpoint payloads allow 128,000 characters. Progressive planning saves a compact complete scope identity/dependency manifest, then separate detail pages of three increments and coverage pages of twelve approved source paragraphs. No outline is published until every page and source mapping validates. Restarts reuse immutable pages. Previously validated single-record outlines remain readable. Requires the matching platform operating-state/coordination limits. Generator failures report `[csweet.planning.generator]` as C-Sweet technical issues for manager-to-CEO code-correction escalation.
 
