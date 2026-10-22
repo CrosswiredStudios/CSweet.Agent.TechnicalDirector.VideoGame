@@ -7,6 +7,11 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 internal static class ImplementationBrief
 {
     internal const string Guidance = """
+        For web games, suggest Chromium-only browser verification. Do not add a cross-browser matrix
+        or real-device certification to requirements, acceptance criteria, implementation briefs or QA
+        tasks. Verify responsive behavior at appropriate Chromium viewports without claiming device
+        certification. Preserve explicit accepted owner requirements for other browsers and request an
+        authorized amendment when needed; never silently waive accepted scope.
         Own the implementation design in each engineering ticket's description. Split recursively:
         if a task can produce two independently deliverable, verifiable changes, make two tasks.
         A dependency between the changes does not justify combining them. Keep the tests needed to

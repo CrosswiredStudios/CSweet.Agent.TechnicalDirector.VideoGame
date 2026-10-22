@@ -7,6 +7,13 @@ public sealed partial class SpecialistAgent
 {
     internal static string PlanningConstructionGuidance() => ImplementationBrief.Guidance + "\n" + """
         Construct the proposal in this order before returning JSON:
+        For web games, suggest Chromium as the only browser verification target. Do not add Firefox,
+        Safari, Edge, iOS Safari, Android Chrome, a six-browser matrix or real-device certification
+        to requirements, acceptance criteria, implementation briefs or QA tasks. Responsive layouts
+        and input behavior may be verified in Chromium at appropriate viewports; viewport emulation
+        is not real-device certification. Preserve explicit accepted owner requirements: if older
+        accepted scope requires other browsers, request an authorized amendment to Chromium-only
+        verification instead of silently changing it or adding unsupported verification gates.
         1. Map every accepted deliverable and acceptance criterion to a story and executable tasks.
            Use existing canonical proposal keys for retained scope. Do not reduce scope to fit a preferred item count.
         2. Define milestones first, with parentProposalKey null. Define feature/content stories next,

@@ -67,6 +67,8 @@ public sealed class ImplementationBriefTests
             Assert.Equal(ChatRole.System, policy.Role);
             Assert.Contains("two independently deliverable", policy.Text);
             Assert.Contains("Pseudocode:", policy.Text);
+            Assert.Contains("Chromium-only", policy.Text);
+            Assert.Contains("Preserve explicit accepted owner requirements", policy.Text);
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "{}")));
         }
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
