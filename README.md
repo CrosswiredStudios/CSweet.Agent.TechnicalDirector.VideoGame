@@ -49,7 +49,7 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `5.0.5`
+- Version: `5.0.6`
 
 Technical handoffs declare deterministic prerequisite task keys in `engineeringPrerequisiteKeys`.
 Producer 4.0.14 uses this declaration for bounded estimates and QA readiness without answering open

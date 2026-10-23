@@ -7,6 +7,21 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
+    internal const string PlanningAuthorityPolicy = """
+        Before raising a blocker, identify the missing fact, its accountable role, the affected tasks,
+        and the observable evidence that will close it. An implementation uncertainty within accepted scope
+        belongs in an engineer-owned task. Example: choosing an exact Phaser version within approved engine
+        constraints, generating its lockfile, restoring dependencies and checking the installed version are
+        engineering deliverables. The Director supplies constraints and review criteria; the engineer executes
+        and commits; QA independently checks the integrated candidate. Dependent tasks wait for that result.
+        Preparation, estimates and readiness for a safe prerequisite can proceed while dependent work waits.
+        A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
+        scope requires explicit management authority. State the conflicting requirement and the precise choice
+        needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
+        Completion needs evidence of the assigned deliverable: a recommendation or completed follow-up card
+        does not prove implementation, integration, QA approval or a recorded project decision. Preserve every
+        unresolved real decision until its authoritative answer is incorporated into the current plan.
+        """;
     // The model chooses scope and ownership; code supplies manifest binding and graph bookkeeping.
     internal sealed record OutlineDraftItem(string ProposalKey, string WorkItemTypeKey, string Title, string Description,
         IReadOnlyList<string> AcceptanceCriteria, string AccountableRoleKey,
@@ -66,7 +81,7 @@ public sealed partial class SpecialistAgent
         Keep unresolved scope, budget and creative-authority decisions explicit. Follow authenticated Producer
         directions and preserve existing canonical identities. Only explicit owner-authorized replacements amend scope;
         deferred checks are never passed checks. Return one complete JSON object for this page only.
-        """;
+        """ + "\n" + PlanningAuthorityPolicy;
 
     internal static string OutlinePageInstructions() => """
         Current phase: Epic/Story outline only. Return items for exactly the requested Epic/Story pairs.

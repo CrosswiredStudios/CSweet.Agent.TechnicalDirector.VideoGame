@@ -4,6 +4,29 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed class DependencyPinPlanningTests
 {
+    [Theory]
+    [InlineData("director")]
+    [InlineData("dependency")]
+    [InlineData("capability")]
+    [InlineData("criteria")]
+    public void Invalid_existing_prerequisite_is_rejected_before_handoff(string scenario)
+    {
+        var original = SpecialistAgent.BindDependencyPins(SpecialistAgent.PlanningContractExample() with {
+            TechnicalConstraints = ["Engine: Phaser"]
+        });
+        var pin = original.DeliveryItems.Single(x => x.ProposalKey == "dependency-pin-phaser");
+        var invalid = scenario switch {
+            "director" => pin with { AccountableRoleKey = VideoGameRoleKeys.TechnicalDirector },
+            "dependency" => pin with { DependencyProposalKeys = ["implementation"] },
+            "capability" => pin with { RequiredCapabilityKeys = [] },
+            _ => pin with { AcceptanceCriteria = [] }
+        };
+        var error = Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindDependencyPins(original with {
+            DeliveryItems = original.DeliveryItems.Select(x => x.ProposalKey == pin.ProposalKey ? invalid : x).ToArray()
+        }));
+        Assert.Contains("root game-engineer task", error.Message);
+    }
+
     [Fact]
     public void Unresolved_phaser_pin_becomes_executable_integrated_prerequisite()
     {

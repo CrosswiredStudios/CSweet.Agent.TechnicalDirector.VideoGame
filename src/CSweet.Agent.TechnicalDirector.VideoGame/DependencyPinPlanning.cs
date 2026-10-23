@@ -37,8 +37,11 @@ public sealed partial class SpecialistAgent
         {
             const string key = "dependency-pin-phaser";
             var existing = items.SingleOrDefault(x => x.ProposalKey == key);
-            if (existing is not null && (existing.AccountableRoleKey != VideoGameRoleKeys.Engineer || existing.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Task))
-                throw new InvalidOperationException("The canonical Phaser pin prerequisite key belongs to different work; reconcile the plan.");
+            if (existing is not null && (existing.AccountableRoleKey != VideoGameRoleKeys.Engineer ||
+                existing.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Task || existing.DependencyProposalKeys is not { Count: 0 } ||
+                existing.RequiredCapabilityKeys?.Contains("work.execution.run") != true ||
+                existing.AcceptanceCriteria is not { Count: > 0 } || existing.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace)))
+                throw new InvalidOperationException("The canonical Phaser pin prerequisite must be a root game-engineer task with work.execution.run and testable acceptance criteria. The Director supplies the plan and review; engineering performs and commits the pin. Reconcile the task without weakening accepted scope.");
             if (existing is null)
             {
                 var prerequisite = engineers[0] with { ProposalKey = key, Title = "Commit the exact Phaser dependency pin and lockfile",
