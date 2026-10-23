@@ -39,6 +39,8 @@ public sealed class PlanningPagesTests
         var result = await SpecialistAgent.GeneratePlanningPagesAsync((messages, type, _) =>
         {
             Assert.Equal(typeof(SpecialistAgent.PlanningDescriptionPage), type);
+            Assert.DoesNotContain(messages, x => x.Text?.Contains("Construct the proposal in this order") == true);
+            Assert.Contains(messages, x => x.Text?.Contains("Current phase: descriptions for existing tasks only") == true);
             Assert.DoesNotContain(messages, x => x.Role == ChatRole.Assistant); // never echo a huge malformed response
             calls++;
             if (calls == 1) return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, malformed)) { FinishReason = ChatFinishReason.Stop });

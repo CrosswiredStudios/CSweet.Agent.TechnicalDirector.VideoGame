@@ -60,7 +60,7 @@ public sealed partial class SpecialistAgent
         {
             var options = ResponseOptions(PlanningOutputTokens);
             options.ResponseFormat = ChatResponseFormat.ForJsonSchema(
-                JsonSerializer.SerializeToElement(PlanningJson.GetJsonSchemaAsNode(type)), "planning_page");
+                PlanningResponseSchema(type), "planning_page");
             return await client.GetResponseAsync(pageMessages, options, ct);
         }, messages, digest, retained, async (checkpoint, ct) =>
         {
@@ -111,6 +111,8 @@ public sealed partial class SpecialistAgent
         Func<PlanningCheckpoint, CancellationToken, Task> save, CancellationToken token)
     {
         var grounded = initialMessages.Append(new ChatMessage(ChatRole.System, PlanningConstructionGuidance())).ToArray();
+        var briefMessages = initialMessages.Append(new ChatMessage(ChatRole.System, ImplementationBrief.Guidance +
+            "\nCurrent phase: descriptions for existing tasks only. Preserve the frozen scope and identities; return only the requested descriptions.")).ToArray();
         try
         {
             if (saved is not null && saved.InputDigest != inputDigest)
@@ -139,13 +141,14 @@ public sealed partial class SpecialistAgent
             {
                 token.ThrowIfCancellationRequested();
                 var keys = page.Select(x => x.ProposalKey).ToHashSet(StringComparer.Ordinal);
-                var response = await ReadPlanningPageAsync<PlanningDescriptionPage>(generate, grounded,
+                var response = await ReadPlanningPageAsync<PlanningDescriptionPage>(generate, briefMessages,
                     "implementation briefs " + string.Join(", ", keys),
                     "Return ONLY {\"items\":[{\"proposalKey\":\"...\",\"description\":\"...\"}]} for exactly these tasks. " +
                     "Do not return or change the scope index, titles, roles, criteria, parents or dependencies. " +
                     "Engineering descriptions must include Outcome, Context, Pseudocode, Assumptions, Verification. " +
                     "Other roles need actionable role-appropriate instructions. Preserve all criteria and role boundaries. " +
-                    "Accepted complete scope index: " + JsonSerializer.Serialize(outline, PlanningJson) +
+                    "Existing identity/dependency ledger: " + JsonSerializer.Serialize(outline.DeliveryItems.Select(x =>
+                        new { x.ProposalKey, x.Title, x.WorkItemTypeKey, x.ParentProposalKey, x.DependencyProposalKeys, x.AccountableRoleKey }), PlanningJson) +
                     "\nTasks on this page: " + JsonSerializer.Serialize(page, PlanningJson),
                     value =>
                     {

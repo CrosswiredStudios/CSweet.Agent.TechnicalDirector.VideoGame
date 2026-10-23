@@ -98,16 +98,17 @@ public sealed class ProgressivePlanningTests
     private static void EnqueueOutline(Client client, SpecialistAgent.ProgressiveScopeIndex scope)
     {
         var manifest = Manifest(scope);
-        var digest = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(manifest)));
         client.Responses.Enqueue(JsonSerializer.Serialize(manifest, Web));
         foreach (var increments in manifest.Increments.Chunk(SpecialistAgent.PlanningPageSize))
         {
             var keys = increments.SelectMany(x => new[] { x.EpicKey, x.StoryKey }).ToHashSet();
-            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.OutlineItemPage(digest,
-                scope.Plan.DeliveryItems.Where(x => keys.Contains(x.ProposalKey)).ToArray()), Web));
+            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.OutlineDraftPage(
+                scope.Plan.DeliveryItems.Where(x => keys.Contains(x.ProposalKey)).Select(x => new SpecialistAgent.OutlineDraftItem(
+                    x.ProposalKey, x.WorkItemTypeKey, x.Title, x.Description, x.AcceptanceCriteria, x.AccountableRoleKey,
+                    x.RequiredSpecializationKeys, x.PreferredSpecializationKeys)).ToArray()), Web));
         }
         foreach (var coverage in scope.Coverage.Chunk(12))
-            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.OutlineCoveragePage(digest, coverage), Web));
+            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.OutlineCoverageDraft(coverage), Web));
     }
 
     private static AgentTestRuntime StateRuntime(Dictionary<string, AgentOperatingStateResponse> states) => new AgentTestRuntime()

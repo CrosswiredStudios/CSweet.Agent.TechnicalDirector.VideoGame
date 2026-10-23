@@ -37,6 +37,13 @@ public sealed partial class SpecialistAgent
 
     internal static void ValidateOutlineItemPage(OutlineItemPage page, string digest, IReadOnlyList<OutlineIncrement> selected)
     {
+        ValidateOutlinePageStructure(page, digest, selected);
+        var issues = page.Items.SelectMany(PlanningItemMetadataIssues).ToArray();
+        if (issues.Length > 0) throw new InvalidOperationException(string.Join("; ", issues));
+    }
+
+    private static void ValidateOutlinePageStructure(OutlineItemPage page, string digest, IReadOnlyList<OutlineIncrement> selected)
+    {
         if (page?.ManifestDigest != digest || page.Items is null || page.Items.Any(x => x is null) ||
             page.Items.Count != selected.Count * 2 ||
             !page.Items.Select(x => x.ProposalKey).ToHashSet().SetEquals(selected.SelectMany(x => new[] { x.EpicKey, x.StoryKey })))
@@ -45,13 +52,22 @@ public sealed partial class SpecialistAgent
         {
             var epic = page.Items.Single(x => x.ProposalKey == increment.EpicKey);
             var story = page.Items.Single(x => x.ProposalKey == increment.StoryKey);
-            if (epic.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone || epic.ParentProposalKey is not null ||
-                story.WorkItemTypeKey is not (VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content) ||
-                story.ParentProposalKey != epic.ProposalKey || !epic.DependencyProposalKeys.SequenceEqual(increment.DependencyEpicKeys) ||
-                story.DependencyProposalKeys.Count != 0 ||
-                new[] { epic, story }.Any(x => string.IsNullOrWhiteSpace(x.Description) || x.AcceptanceCriteria.Count == 0 ||
-                    x.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace)))
-                throw new InvalidOperationException("Outline pages must preserve the frozen hierarchy/dependencies and explicit acceptance criteria.");
+            void Require(bool valid, GameProposedWorkItemV1 item, string field, string expected)
+            {
+                if (!valid) throw new InvalidOperationException($"Item '{item.ProposalKey}': {field} must be {expected}.");
+            }
+            Require(epic.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone, epic, "workItemTypeKey", VideoGameWorkItemTypeKeys.Milestone);
+            Require(epic.ParentProposalKey is null, epic, "parentProposalKey", "null for an Epic");
+            Require(story.WorkItemTypeKey is VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content, story, "workItemTypeKey", "video-game.feature.v1 or video-game.content.v1");
+            Require(story.ParentProposalKey == epic.ProposalKey, story, "parentProposalKey", epic.ProposalKey);
+            Require(epic.DependencyProposalKeys is not null && epic.DependencyProposalKeys.SequenceEqual(increment.DependencyEpicKeys), epic, "dependencyProposalKeys", "the exact frozen manifest prerequisites");
+            Require(story.DependencyProposalKeys is { Count: 0 }, story, "dependencyProposalKeys", "[] for this outline phase");
+            foreach (var item in new[] { epic, story })
+            {
+                Require(!string.IsNullOrWhiteSpace(item.Title), item, "title", "nonblank");
+                Require(!string.IsNullOrWhiteSpace(item.Description), item, "description", "nonblank");
+                Require(item.AcceptanceCriteria is { Count: > 0 } && !item.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace), item, "acceptanceCriteria", "a nonempty array of nonblank criteria");
+            }
         }
     }
 
@@ -69,9 +85,10 @@ public sealed partial class SpecialistAgent
             "Return a compact complete identity/dependency manifest for ALL approved scope, including non-goals, content, polish, QA and release. " +
             "Do not write descriptions, acceptance criteria, coverage mappings, tasks or implementation briefs yet; they follow in checkpointed pages. " +
             "Each increment has epicKey, storyKey, title, dependencyEpicKeys. Each Epic owns exactly one bounded Story refinable into at most twelve tasks. " +
+            "Structure example only, not project scope: {\"increments\":[{\"epicKey\":\"example-epic\",\"storyKey\":\"example-story\",\"title\":\"Playable increment\",\"dependencyEpicKeys\":[]}],\"feasibilityFindings\":[],\"technicalConstraints\":[],\"openFeasibilityDecisions\":[]}. " +
             "Order increments by actual prerequisites, starting with a small end-to-end playable prototype. Dependencies name earlier Epics only. " +
             "Use explicit feasibilityFindings, technicalConstraints and openFeasibilityDecisions arrays. Do not drop any accepted requirement. " +
-            "Approved source ledger: " + JsonSerializer.Serialize(sources, PlanningJson), ValidateOutlineManifest, MaximumPlanningPageCharacters, token);
+            "Use the exact accepted source ledger supplied as project data.", ValidateOutlineManifest, MaximumPlanningPageCharacters, token);
         ValidateOutlineManifest(manifest);
         if (saved is null) await SaveProgressiveStateAsync(manifestKey, manifest, context, token);
         var digest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(manifest)));
@@ -85,14 +102,17 @@ public sealed partial class SpecialistAgent
             var retained = await context.Platform.ReadOperatingStateAsync<OutlineItemPage>(pageKey, token);
             if (retained is null && (!mayGenerate || completed is not null)) throw new InvalidOperationException("A completed outline is missing a validated page.");
             var selected = pages[number];
-            var page = retained?.Payload ?? await ReadPlanningPageAsync<OutlineItemPage>(generate, messages, "scope outline page " + number,
-                "Return manifestDigest and items for ONLY the requested increments, exactly one Epic and one Story per increment. " +
-                "Keep approved scope, testable acceptance criteria and non-goals; no executable tasks, briefs or pseudocode. " +
-                "Use PlanningOutput delivery-item field names, exact allowed roles and skills. Epic workItemTypeKey is video-game.milestone.v1 with no parent; " +
-                "Story workItemTypeKey is video-game.feature.v1 or video-game.content.v1, parent is its Epic, and Story dependencyProposalKeys is empty. " +
-                "Preserve Epic dependencyProposalKeys exactly from dependencyEpicKeys. Return only the requested identities. " +
-                JsonSerializer.Serialize(new { manifestDigest = digest, selected, completeManifest = manifest }, PlanningJson),
-                value => ValidateOutlineItemPage(value, digest, selected), MaximumPlanningPageCharacters, token);
+            OutlineItemPage page;
+            if (retained is not null)
+                page = await ReadOrRepairOutlinePageAsync(context, generate, messages, pageKey, retained.Payload, digest, selected,
+                    mayGenerate && completed is null, token);
+            else
+            {
+                var draft = await ReadPlanningPageAsync<OutlineDraftPage>(generate, messages, "scope outline page " + number,
+                    OutlinePageInstructions() + "\nRequested increments: " + JsonSerializer.Serialize(selected, PlanningJson),
+                    value => ValidateOutlineItemPage(BindOutlinePage(value, digest, selected), digest, selected), MaximumPlanningPageCharacters, token);
+                page = BindOutlinePage(draft, digest, selected);
+            }
             ValidateOutlineItemPage(page, digest, selected);
             if (retained is null) await SaveProgressiveStateAsync(pageKey, page, context, token);
             items.AddRange(selected.SelectMany(x => new[] { page.Items.Single(i => i.ProposalKey == x.EpicKey), page.Items.Single(i => i.ProposalKey == x.StoryKey) }));
@@ -111,12 +131,17 @@ public sealed partial class SpecialistAgent
                 if (value?.ManifestDigest != digest) throw new InvalidOperationException("The coverage page names a different scope manifest.");
                 ValidateScopeCoverage(value.Coverage, selected, storyKeys);
             }
-            var page = retained?.Payload ?? await ReadPlanningPageAsync<OutlineCoveragePage>(generate, messages, "scope coverage page " + number,
-                "Return manifestDigest and coverage. Map EVERY requested sourceKey exactly once to one or more owning Story proposalKeys from " +
+            var page = retained?.Payload;
+            if (page is null)
+            {
+                var draft = await ReadPlanningPageAsync<OutlineCoverageDraft>(generate, messages, "scope coverage page " + number,
+                "Current phase: source coverage only. Return coverage; code supplies manifestDigest, so omit it. Map EVERY requested sourceKey exactly once to one or more owning Story proposalKeys from " +
                 "the frozen outline. Retain all requirements, acceptance criteria and non-goals; identify missing scope as an error, never omit it. " +
-                "Do not recreate source text or change the outline. " + JsonSerializer.Serialize(new { manifestDigest = digest, sources = selected,
+                "Do not recreate source text, change the outline or generate tasks. " + JsonSerializer.Serialize(new { sources = selected,
                     stories = items.Where(x => storyKeys.Contains(x.ProposalKey)).Select(x => new { x.ProposalKey, x.Title, x.Description, x.AcceptanceCriteria }) }, PlanningJson),
-                Validate, MaximumPlanningPageCharacters, token);
+                value => Validate(new(digest, value.Coverage)), MaximumPlanningPageCharacters, token);
+                page = new(digest, draft.Coverage);
+            }
             Validate(page);
             if (retained is null) await SaveProgressiveStateAsync(pageKey, page, context, token);
             coverage.AddRange(page.Coverage);

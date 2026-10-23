@@ -4,6 +4,23 @@ Owns engine feasibility, runtime architecture, performance budgets, technical st
 
 `GenerateProgressivePlanningAsync` negotiates outline-first planning with the Producer. It publishes the complete approved scope as increment Epics with one bounded Story each, maps every accepted document paragraph to retained Story scope, then refines only the requested dependency-ready Story into at most twelve execution/QA tasks. Original Story criteria survive verbatim. Future scope remains visible without implementation briefs. The frozen outline, task index and three-task brief pages have separate immutable checkpoints; replay verifies the exact accepted inputs and reconstructs only validated work. Legacy callers retain the complete-plan path below.
 
+`ProgressivePlanningPolicy` and `OutlinePageInstructions` supply concise phase-specific guidance and
+contract examples. `PlanningResponseSchema` enumerates allowed roles, work types, skills and capabilities;
+server validation still corrects output from providers that ignore schemas. `BindOutlinePage` supplies
+the manifest digest, parents, dependencies and execution capabilities in code, and coverage generation
+also receives its digest from code. `ValidateOutlineItemPage` checks metadata before saving a page and
+reports exact invalid fields through the existing three-attempt correction loop.
+
+`ReadOrRepairOutlinePageAsync` recovers metadata on incomplete saved outlines. It retains each original
+page and writes a separate `:metadata-repair:v1` record bound to its SHA-256 digest. Only invalid role,
+skill or capability fields can change; valid fields and valid skills within a partly invalid list survive.
+Scope, criteria, hierarchy, identities, source coverage and accepted completions cannot be rewritten.
+Concurrent corrections consume the first accepted valid repair; replay uses it without another model call.
+Only the incomplete Outline phase can initiate a repair. Published legacy outlines remain immutable.
+`OutlineMetadataRecoveryTests` reproduces the Neon Shatter failure and covers correction limits,
+cancellation, replay, changed-source rejection and competing repairs. After publishing 5.0.4, install it
+through Installed Agents and retry the existing blocked Producer planning task to resume its saved outline.
+
 Technical planning publishes a compact milestone (epic), feature/content (story), and engineer/QA task hierarchy with testable acceptance criteria.
 
 `GenerateCheckpointedPlanningAsync` first generates and validates the complete compact scope index,
@@ -14,7 +31,7 @@ becomes a proposal or tickets. The assembled result still passes hierarchy, depe
 engineering-brief checks.
 
 The existing operating-state grant saves the frozen index and each brief page separately within
-the platform's 64 KiB record limit. Exact input digests include accepted documents, canonical work,
+the platform's 128,000-character payload limit. Exact input digests include accepted documents, canonical work,
 repository facts and authenticated Producer directions. Retries reuse only validated pages for those
 same inputs; concurrent writes cannot replace the accepted index or a saved brief. No grants changed.
 
@@ -32,13 +49,13 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `5.0.3`
+- Version: `5.0.4`
 
 Producer 4.0.10 can send an exact owner amendment in the authenticated planning cycle's
 `scopeAmendment` artifact field. The Director checks all canonical planning digests and exact
 replacement entries before constructing the proposal. This preserves full requirements, completed
 work, hierarchy, dependencies and roles without model transcription. It never reports unperformed
-QA as passed. Install Director 5.0.3 before Producer 4.0.10 to recover a saved correction.
+QA as passed. Install Director 5.0.3 or later before Producer 4.0.10 to recover a saved correction.
 
 Planning responses and durable checkpoint payloads allow 128,000 characters. Progressive planning saves a compact complete scope identity/dependency manifest, then separate detail pages of three increments and coverage pages of twelve approved source paragraphs. No outline is published until every page and source mapping validates. Restarts reuse immutable pages. Previously validated single-record outlines remain readable. Requires the matching platform operating-state/coordination limits. Generator failures report `[csweet.planning.generator]` as C-Sweet technical issues for manager-to-CEO code-correction escalation.
 
@@ -81,7 +98,7 @@ Keep `csweet-plugin.json` at the repository root. Import a reviewed GitHub commi
 clone this repository as an immediate child of C-Sweet's configured local agent catalog. Review
 the exact manifest, grants, activation mode, and source before approving installation.
 
-Built with `CSweet.Agent.SDK` 3.65.0, `CSweet.WorkManagement.Contracts` 3.24.0, and the bundled video-game extension source.
+Built with `CSweet.Agent.SDK` 5.0.2, `CSweet.WorkManagement.Contracts` 5.0.1, and the bundled video-game extension source.
 
 
 ## Extension ownership and isolated builds

@@ -39,9 +39,12 @@ public sealed partial class SpecialistAgent
 
     internal static void ValidateProgressiveOutline(ProgressiveScopeIndex outline, IReadOnlyList<ScopeSource> sources)
     {
-        if (outline?.Plan?.DeliveryItems is not { Count: > 0 } items || items.Any(x => x is null || !IsPlanningContainer(x)) ||
-            ValidContainerOutline(items)?.Count != items.Count)
+        if (outline?.Plan?.DeliveryItems is not { Count: > 0 } items || items.Any(x => x is null || !IsPlanningContainer(x)))
             throw new InvalidOperationException("The complete scope outline needs valid Epic and Story containers only; future executable tasks are not generated upfront.");
+        var issues = items.SelectMany(PlanningItemMetadataIssues).ToArray();
+        if (issues.Length > 0) throw new InvalidOperationException(string.Join("; ", issues));
+        if (ValidContainerOutline(items)?.Count != items.Count)
+            throw new InvalidOperationException("The scope outline has invalid identities, hierarchy or dependencies.");
         var stories = items.Where(x => x.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone).Select(x => x.ProposalKey).ToHashSet();
         if (items.Where(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone).Any(epic => items.Count(x => x.ParentProposalKey == epic.ProposalKey) != 1))
             throw new InvalidOperationException("Each increment Epic must contain exactly one bounded Story. Split larger milestones into independently deliverable increments without removing scope.");
@@ -86,10 +89,12 @@ public sealed partial class SpecialistAgent
             async Task<ChatResponse> Generate(IReadOnlyList<ChatMessage> input, Type type, CancellationToken ct)
             {
                 var options = ResponseOptions(PlanningOutputTokens);
-                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(JsonSerializer.SerializeToElement(PlanningJson.GetJsonSchemaAsNode(type)), "progressive_planning");
+                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(PlanningResponseSchema(type), "progressive_planning");
                 return await client.GetResponseAsync(input, options, ct);
             }
             var sources = AcceptedScopeSources(documents);
+            messages = messages.Append(new ChatMessage(ChatRole.User, "Exact accepted source ledger (project data): " +
+                JsonSerializer.Serialize(sources, PlanningJson))).ToArray();
             var scope = await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
                 request.Phase == "Outline", token);
             ValidateProgressiveOutline(scope, sources);

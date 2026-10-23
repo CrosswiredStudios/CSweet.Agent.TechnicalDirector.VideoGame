@@ -4,6 +4,31 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
+    internal static IReadOnlyList<string> PlanningItemMetadataIssues(GameProposedWorkItemV1 item)
+    {
+        var issues = new List<string>();
+        void Error(string field, string message) => issues.Add($"Item '{item.ProposalKey}': {field} {message}");
+        if (string.IsNullOrWhiteSpace(item.ProposalKey)) Error("proposalKey", "is required.");
+        if (string.IsNullOrWhiteSpace(item.Title)) Error("title", "is required.");
+        if (string.IsNullOrWhiteSpace(item.Description)) Error("description", "is required.");
+        if (item.AcceptanceCriteria is null || item.AcceptanceCriteria.Count == 0 || item.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace))
+            Error("acceptanceCriteria", "must contain nonblank, testable criteria.");
+        var roles = Constants(typeof(VideoGameRoleKeys));
+        if (!roles.Contains(item.AccountableRoleKey)) Error("accountableRoleKey", $"'{item.AccountableRoleKey}' is unsupported. Allowed roles: {string.Join(", ", roles.Order())}.");
+        var types = Constants(typeof(VideoGameWorkItemTypeKeys));
+        if (!types.Contains(item.WorkItemTypeKey)) Error("workItemTypeKey", $"'{item.WorkItemTypeKey}' is unsupported. Allowed types: {string.Join(", ", types.Order())}.");
+        var skills = Constants(typeof(VideoGameSpecializationKeys));
+        foreach (var (field, values) in new[] { ("requiredSpecializationKeys", item.RequiredSpecializationKeys), ("preferredSpecializationKeys", item.PreferredSpecializationKeys) })
+        {
+            if (values is null) { Error(field, "must be an array (use [] when empty)."); continue; }
+            var invalid = values.Where(x => !skills.Contains(x)).Distinct().ToArray();
+            if (invalid.Length > 0) Error(field, $"contains unsupported values [{string.Join(", ", invalid)}]. work.execution.run is a capability, not a specialization. Allowed skills: {string.Join(", ", skills.Order())}. Use [] when empty.");
+        }
+        if (item.RequiredCapabilityKeys is null || item.RequiredCapabilityKeys.Any(x => x != "work.execution.run"))
+            Error("requiredCapabilityKeys", "must be an array containing only work.execution.run.");
+        return issues;
+    }
+
     // Use the same diagnostics for acceptance, model correction, and the durable blocked result.
     internal static IReadOnlyList<string> PlanValidationIssues(IReadOnlyList<GameProposedWorkItemV1>? items)
     {
@@ -11,9 +36,6 @@ public sealed partial class SpecialistAgent
             return ["deliveryItems must contain 1 to 200 items."];
         if (items.Any(x => x is null)) return ["deliveryItems contains a null item; replace it with a complete work item."];
         var issues = new List<string>();
-        var roles = Constants(typeof(VideoGameRoleKeys));
-        var skills = Constants(typeof(VideoGameSpecializationKeys));
-        var types = Constants(typeof(VideoGameWorkItemTypeKeys));
         var stories = new HashSet<string>([VideoGameWorkItemTypeKeys.Feature, VideoGameWorkItemTypeKeys.Content], StringComparer.Ordinal);
         var byKey = items.Where(x => !string.IsNullOrWhiteSpace(x.ProposalKey))
             .GroupBy(x => x.ProposalKey, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First(), StringComparer.Ordinal);
@@ -23,25 +45,7 @@ public sealed partial class SpecialistAgent
         {
             var key = string.IsNullOrWhiteSpace(item.ProposalKey) ? "<missing key>" : item.ProposalKey;
             void Error(string message) => issues.Add($"Item '{key}': {message}");
-            if (string.IsNullOrWhiteSpace(item.ProposalKey)) Error("proposalKey is required.");
-            if (string.IsNullOrWhiteSpace(item.Title)) Error("title is required.");
-            if (string.IsNullOrWhiteSpace(item.Description)) Error("description is required.");
-            if (item.AcceptanceCriteria is null || item.AcceptanceCriteria.Count == 0 || item.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace))
-                Error("acceptanceCriteria must contain nonblank, testable criteria.");
-            if (!roles.Contains(item.AccountableRoleKey))
-                Error($"accountableRoleKey '{item.AccountableRoleKey}' is unsupported. Allowed roles: {string.Join(", ", roles.Order())}.");
-            if (!types.Contains(item.WorkItemTypeKey))
-                Error($"workItemTypeKey '{item.WorkItemTypeKey}' is unsupported. Allowed types: {string.Join(", ", types.Order())}.");
-            CheckSkills(item.RequiredSpecializationKeys, "requiredSpecializationKeys");
-            CheckSkills(item.PreferredSpecializationKeys, "preferredSpecializationKeys");
-            void CheckSkills(IReadOnlyList<string>? values, string field)
-            {
-                if (values is null) { Error($"{field} must be an array (use [] when empty)."); return; }
-                var invalid = values.Where(x => !skills.Contains(x)).Distinct().ToArray();
-                if (invalid.Length > 0) Error($"{field} contains unsupported values [{string.Join(", ", invalid)}]. Use only the supplied Skills list.");
-            }
-            if (item.RequiredCapabilityKeys is null || item.RequiredCapabilityKeys.Any(x => x != "work.execution.run"))
-                Error("requiredCapabilityKeys must be an array containing only work.execution.run.");
+            issues.AddRange(PlanningItemMetadataIssues(item));
             if (item.DependencyProposalKeys is null) Error("dependencyProposalKeys must be an array (use [] when empty).");
             else foreach (var dependency in item.DependencyProposalKeys)
             {
