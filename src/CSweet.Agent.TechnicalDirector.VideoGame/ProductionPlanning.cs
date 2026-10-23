@@ -215,7 +215,7 @@ public sealed partial class SpecialistAgent
             output.FeasibilityFindings ?? [], output.TechnicalConstraints ?? [], output.OpenFeasibilityDecisions ?? [], digest);
         return AgentCoordinationTurnResult.Completed("Proposed scope-specific delivery work and capability requirements.",
             new AgentCoordinationArtifactSubmission("video-game.production.technical-delivery-proposal.v1", "1.0",
-                cycle.PlanningFingerprint, 1, true, JsonSerializer.SerializeToElement(proposal)));
+                cycle.PlanningFingerprint, 1, true, JsonSerializer.SerializeToElement(PlanningProposalPayload(proposal))));
     }
 
     internal static ChatMessage PlanningCoordinationMessage(

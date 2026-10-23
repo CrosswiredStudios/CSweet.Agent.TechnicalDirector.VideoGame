@@ -6,6 +6,20 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
+    internal static System.Text.Json.Nodes.JsonObject PlanningProposalPayload(
+        CrosswiredStudios.VideoGame.Contracts.GameTechnicalDeliveryProposalV1 proposal)
+    {
+        var payload = JsonSerializer.SerializeToNode(proposal)!.AsObject();
+        // This declaration is derived from our deterministic task binder, not question prose.
+        // Keep the original decisions and frozen outline digest unchanged.
+        payload["engineeringPrerequisiteKeys"] = JsonSerializer.SerializeToNode(proposal.DeliveryItems
+            .Where(x => x.ProposalKey == "dependency-pin-phaser" &&
+                x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task &&
+                x.DependencyProposalKeys.Count == 0 && proposal.DeliveryItems.Any(other => other.DependencyProposalKeys.Contains(x.ProposalKey)))
+            .Select(x => x.ProposalKey).ToArray());
+        return payload;
+    }
+
     internal sealed record DependencyPin(string Package, string ExactVersion);
 
     internal static PlanningOutput BindDependencyPins(PlanningOutput output)

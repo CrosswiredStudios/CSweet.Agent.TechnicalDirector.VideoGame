@@ -26,4 +26,19 @@ public sealed class DependencyPinPlanningTests
         Assert.Contains(output.DeliveryItems, x => x.Description.Contains("dependency-pins.v1") && x.Description.Contains("3.80.1"));
         Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindDependencyPins(original with { DependencyPins = [new("phaser", "^3.80.1")] }));
     }
+
+    [Fact]
+    public void Handoff_declares_the_integrated_prerequisite_without_answering_or_removing_authority_questions()
+    {
+        var original = SpecialistAgent.PlanningContractExample() with {
+            TechnicalConstraints = ["Engine: Phaser (2D)"],
+            OpenFeasibilityDecisions = ["Specific Phaser version selection for optimal particle system performance"]
+        };
+        var bound = SpecialistAgent.BindDependencyPins(original);
+        var proposal = new GameTechnicalDeliveryProposalV1(null!, bound.DeliveryItems, bound.FeasibilityFindings!, bound.TechnicalConstraints!, bound.OpenFeasibilityDecisions!, "unchanged-proposal");
+        var payload = SpecialistAgent.PlanningProposalPayload(proposal);
+        Assert.Equal("dependency-pin-phaser", Assert.Single(payload["engineeringPrerequisiteKeys"]!.AsArray())!.GetValue<string>());
+        Assert.Equal(original.OpenFeasibilityDecisions.Single(), Assert.Single(payload["OpenFeasibilityDecisions"]!.AsArray())!.GetValue<string>());
+        Assert.Equal("unchanged-proposal", payload["ProposalDigest"]!.GetValue<string>());
+    }
 }
