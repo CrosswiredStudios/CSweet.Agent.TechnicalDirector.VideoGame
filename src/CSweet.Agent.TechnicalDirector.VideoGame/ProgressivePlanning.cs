@@ -31,10 +31,24 @@ public sealed partial class SpecialistAgent
     internal static void ValidateScopeCoverage(IReadOnlyList<ScopeCoverage> coverage, IReadOnlyList<ScopeSource> sources,
         IReadOnlySet<string> keys)
     {
-        if (coverage is null || coverage.Any(x => x is null || x.ProposalKeys is null || x.ProposalKeys.Count == 0 ||
-                x.ProposalKeys.Any(key => !keys.Contains(key))) || coverage.Count != sources.Count ||
-            !coverage.Select(x => x.SourceKey).ToHashSet().SetEquals(sources.Select(x => x.SourceKey)))
-            throw new InvalidOperationException("Every exact accepted source must map once to retained scope; no missing, duplicate or invented sources/keys.");
+        if (coverage is null || coverage.Any(x => x is null))
+            throw new InvalidOperationException("coverage must be an array of nonnull source mappings.");
+        var expected = sources.Select(x => x.SourceKey).ToHashSet(StringComparer.Ordinal);
+        var supplied = coverage.Select(x => x.SourceKey).ToHashSet(StringComparer.Ordinal);
+        var issues = new List<string>();
+        void List(string label, IEnumerable<string> values)
+        {
+            var bounded = values.Distinct(StringComparer.Ordinal).Take(20).ToArray();
+            if (bounded.Length > 0) issues.Add(label + ": " + JsonSerializer.Serialize(bounded));
+        }
+        List("Missing sourceKeys on THIS page", expected.Except(supplied));
+        List("Unexpected sourceKeys outside THIS page (omit them)", supplied.Except(expected));
+        List("Duplicate sourceKeys (return each once)", coverage.GroupBy(x => x.SourceKey).Where(x => x.Count() > 1).Select(x => x.Key));
+        List("Source mappings with no owning Story/task", coverage.Where(x => x.ProposalKeys is not { Count: > 0 }).Select(x => x.SourceKey));
+        List("Unknown proposalKeys (use the frozen ledger)", coverage.Where(x => x.ProposalKeys is not null)
+            .SelectMany(x => x.ProposalKeys).Where(key => !keys.Contains(key)));
+        if (issues.Count > 0)
+            throw new InvalidOperationException("Every exact accepted source on this page must map once to retained scope. " + string.Join("; ", issues));
     }
 
     internal static void ValidateProgressiveOutline(ProgressiveScopeIndex outline, IReadOnlyList<ScopeSource> sources)

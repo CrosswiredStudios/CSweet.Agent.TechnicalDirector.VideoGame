@@ -134,8 +134,13 @@ public sealed partial class SpecialistAgent
             var page = retained?.Payload;
             if (page is null)
             {
-                var draft = await ReadPlanningPageAsync<OutlineCoverageDraft>(generate, messages, "scope coverage page " + number,
-                "Current phase: source coverage only. Return coverage; code supplies manifestDigest, so omit it. Map EVERY requested sourceKey exactly once to one or more owning Story proposalKeys from " +
+                // Coverage only maps this batch to an already frozen outline. The global source ledger
+                // and earlier phase instructions caused the model to return other pages repeatedly.
+                IReadOnlyList<ChatMessage> coverageMessages = [new(ChatRole.System, ProgressivePlanningPolicy())];
+                var draft = await ReadPlanningPageAsync<OutlineCoverageDraft>(generate, coverageMessages, "scope coverage page " + number,
+                $"Current phase: source coverage page {number} only. Return exactly {selected.Length} coverage entries. " +
+                "Use ONLY the sourceKeys in the requested sources below, once each. Sources on other pages must be omitted from THIS response; they remain required and will be mapped separately. " +
+                "Return coverage; code supplies manifestDigest, so omit it. Map EVERY requested sourceKey exactly once to one or more owning Story proposalKeys from " +
                 "the frozen outline. Retain all requirements, acceptance criteria and non-goals; identify missing scope as an error, never omit it. " +
                 "Do not recreate source text, change the outline or generate tasks. " + JsonSerializer.Serialize(new { sources = selected,
                     stories = items.Where(x => storyKeys.Contains(x.ProposalKey)).Select(x => new { x.ProposalKey, x.Title, x.Description, x.AcceptanceCriteria }) }, PlanningJson),

@@ -9,6 +9,26 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed class OutlineMetadataRecoveryTests
 {
+    [Fact]
+    public async Task Coverage_correction_names_out_of_page_sources_and_preserves_every_accepted_source()
+    {
+        var f = new Fixture(); var client = new Client(); client.Enqueue(f.Corrections);
+        var sources = SpecialistAgent.AcceptedScopeSources(f.Documents);
+        foreach (var key in f.States.Keys.Where(x => x.Contains(":coverage:")).ToArray()) f.States.Remove(key);
+        // Reproduce a response to page zero containing the complete 41-source global ledger.
+        client.Enqueue(new SpecialistAgent.OutlineCoverageDraft(sources.Select(x => new SpecialistAgent.ScopeCoverage(x.SourceKey, ["story-0"])).ToArray()));
+        foreach (var page in sources.Chunk(12))
+            client.Enqueue(new SpecialistAgent.OutlineCoverageDraft(page.Select(x => new SpecialistAgent.ScopeCoverage(x.SourceKey, ["story-0"])).ToArray()));
+        var result = await f.Run(client);
+        Assert.NotNull(result.Artifact);
+        Assert.Equal(41, result.Artifact.Payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage").GetArrayLength());
+        var correction = client.Calls[2].Messages.Last().Text;
+        Assert.Contains("Unexpected sourceKeys outside THIS page", correction);
+        Assert.Contains("document-0:paragraph-12", correction);
+        Assert.DoesNotContain(client.Calls[1].Messages, x => x.Text.Contains("Exact accepted source ledger"));
+        Assert.Equal(4, f.Writes.Count(x => x.Contains(":coverage:")));
+    }
+
     private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
     private static string Digest<T>(T value) => Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
     private static SpecialistAgent.OutlineDraftItem Draft(GameProposedWorkItemV1 item) => new(item.ProposalKey, item.WorkItemTypeKey,
