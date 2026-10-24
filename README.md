@@ -49,7 +49,12 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `5.0.4`
+- Version: `5.0.12`
+
+Technical handoffs declare deterministic prerequisite task keys in `engineeringPrerequisiteKeys`.
+Producer 4.0.14 uses this declaration for bounded estimates and QA readiness without answering open
+authority questions or committing decision-dependent implementation. Existing outline digests and
+saved pages retain their original meaning; no new grants are required.
 
 Producer 4.0.10 can send an exact owner amendment in the authenticated planning cycle's
 `scopeAmendment` artifact field. The Director checks all canonical planning digests and exact
