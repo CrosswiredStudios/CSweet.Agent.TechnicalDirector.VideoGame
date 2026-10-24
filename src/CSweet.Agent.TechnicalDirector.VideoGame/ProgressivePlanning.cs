@@ -114,6 +114,8 @@ public sealed partial class SpecialistAgent
             ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
+            messages = messages.Append(new ChatMessage(ChatRole.User, "Frozen shared technical constraints (project data): " +
+                JsonSerializer.Serialize(scope.Plan.TechnicalConstraints, PlanningJson))).ToArray();
             var detailed = (request.DetailedStoryKeys ?? []).ToHashSet(StringComparer.Ordinal);
             var stories = scope.Plan.DeliveryItems.Where(x => x.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone).ToDictionary(x => x.ProposalKey);
             if (detailed.Any(key => !stories.ContainsKey(key)) || request.Phase == "Story" && (request.StoryKey is null || !stories.ContainsKey(request.StoryKey)))

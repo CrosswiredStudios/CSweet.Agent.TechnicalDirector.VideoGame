@@ -87,6 +87,10 @@ public sealed class ProgressivePlanningTests
             evidence.GetProperty("outlineDigest").GetString(), "example-story", []);
         var second = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
         Assert.NotNull(second.Artifact); Assert.Equal(6, client.Calls);
+        var storyPrompt = string.Join("\n", client.Prompts[3].Select(x => x.Text));
+        Assert.Contains("Frozen shared technical constraints", storyPrompt);
+        Assert.Contains("Exact accepted source ledger", storyPrompt);
+        Assert.Contains(JsonSerializer.Serialize(scope.Plan.DeliveryItems[1].AcceptanceCriteria[0], Web).Trim('"'), storyPrompt);
         var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
         Assert.NotNull(replay.Artifact); Assert.Equal(6, client.Calls);
         Assert.Equal(second.Artifact.Payload.GetRawText(), replay.Artifact.Payload.GetRawText());
@@ -195,8 +199,9 @@ public sealed class ProgressivePlanningTests
     private sealed class Client : IChatClient
     {
         public readonly Queue<string> Responses = new(); public int Calls;
+        public readonly List<ChatMessage[]> Prompts = new();
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-        { Calls++; Assert.NotNull(options?.ResponseFormat); return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, Responses.Dequeue())) { FinishReason = ChatFinishReason.Stop }); }
+        { Calls++; Prompts.Add(messages.ToArray()); Assert.NotNull(options?.ResponseFormat); return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, Responses.Dequeue())) { FinishReason = ChatFinishReason.Stop }); }
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public object? GetService(Type type, object? key = null) => null;
         public void Dispose() { }
