@@ -27,7 +27,6 @@ public sealed partial class SpecialistAgent
         IReadOnlyList<string> AcceptanceCriteria, string AccountableRoleKey,
         IReadOnlyList<string> RequiredSpecializationKeys, IReadOnlyList<string> PreferredSpecializationKeys);
     internal sealed record OutlineDraftPage(IReadOnlyList<OutlineDraftItem> Items);
-    internal sealed record OutlineCoverageDraft(IReadOnlyList<ScopeCoverage> Coverage);
 
     internal static JsonElement PlanningResponseSchema(Type type)
     {

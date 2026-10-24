@@ -7,7 +7,7 @@ public sealed class PlanningSchemaRootTests
     [Theory]
     [InlineData(typeof(SpecialistAgent.OutlineManifest))]
     [InlineData(typeof(SpecialistAgent.OutlineDraftPage))]
-    [InlineData(typeof(SpecialistAgent.OutlineCoverageDraft))]
+    [InlineData(typeof(SpecialistAgent.CoverageIndexDraft))]
     [InlineData(typeof(SpecialistAgent.OutlineMetadataCorrections))]
     [InlineData(typeof(SpecialistAgent.PlanningOutput))]
     [InlineData(typeof(SpecialistAgent.ProgressiveStoryIndex))]

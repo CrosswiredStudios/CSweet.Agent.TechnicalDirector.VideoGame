@@ -71,6 +71,11 @@ public sealed class ProgressivePlanningTests
         var first = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"],
             cycle, new("Outline", directions), default);
         Assert.NotNull(first.Artifact); Assert.Equal(3, client.Calls);
+        var outlineProgress = Assert.Single(runtime.Progress, x => x.GetProperty("stage").GetString() == "scope-outline");
+        Assert.Equal(1, outlineProgress.GetProperty("completedPages").GetInt32());
+        var coverageProgress = Assert.Single(runtime.Progress, x => x.GetProperty("stage").GetString() == "scope-coverage");
+        Assert.Equal(2, coverageProgress.GetProperty("completedSources").GetInt32());
+        Assert.Equal(2, coverageProgress.GetProperty("totalSources").GetInt32());
         var evidence = first.Artifact.Payload.GetProperty("progressivePlanning");
         Assert.Empty(evidence.GetProperty("detailedStoryKeys").EnumerateArray());
         Assert.Equal(4, first.Artifact.Payload.GetProperty("DeliveryItems").GetArrayLength());
@@ -108,7 +113,9 @@ public sealed class ProgressivePlanningTests
                     x.RequiredSpecializationKeys, x.PreferredSpecializationKeys)).ToArray()), Web));
         }
         foreach (var coverage in scope.Coverage.Chunk(12))
-            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.OutlineCoverageDraft(coverage), Web));
+            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.CoverageIndexDraft(coverage.Select((x, index) =>
+                new SpecialistAgent.CoverageIndex(index, x.ProposalKeys.Select(key => Array.FindIndex(
+                    scope.Plan.DeliveryItems.Where(item => item.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone).ToArray(), item => item.ProposalKey == key)).ToArray())).ToArray()), Web));
     }
 
     private static AgentTestRuntime StateRuntime(Dictionary<string, AgentOperatingStateResponse> states) => new AgentTestRuntime()

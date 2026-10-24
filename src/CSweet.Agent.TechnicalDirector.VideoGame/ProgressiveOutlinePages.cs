@@ -85,6 +85,7 @@ public sealed partial class SpecialistAgent
             "Return a compact complete identity/dependency manifest for ALL approved scope, including non-goals, content, polish, QA and release. " +
             "Do not write descriptions, acceptance criteria, coverage mappings, tasks or implementation briefs yet; they follow in checkpointed pages. " +
             "Each increment has epicKey, storyKey, title, dependencyEpicKeys. Each Epic owns exactly one bounded Story refinable into at most twelve tasks. " +
+            "Group related requirements into meaningful independently testable increments. Individual animations, settings, screens and acceptance checks normally become tasks within a Story, not separate Epics. " +
             "Structure example only, not project scope: {\"increments\":[{\"epicKey\":\"example-epic\",\"storyKey\":\"example-story\",\"title\":\"Playable increment\",\"dependencyEpicKeys\":[]}],\"feasibilityFindings\":[],\"technicalConstraints\":[],\"openFeasibilityDecisions\":[]}. " +
             "Order increments by actual prerequisites, starting with a small end-to-end playable prototype. Dependencies name earlier Epics only. " +
             "Use explicit feasibilityFindings, technicalConstraints and openFeasibilityDecisions arrays. Do not drop any accepted requirement. " +
@@ -116,10 +117,13 @@ public sealed partial class SpecialistAgent
             ValidateOutlineItemPage(page, digest, selected);
             if (retained is null) await SaveProgressiveStateAsync(pageKey, page, context, token);
             items.AddRange(selected.SelectMany(x => new[] { page.Items.Single(i => i.ProposalKey == x.EpicKey), page.Items.Single(i => i.ProposalKey == x.StoryKey) }));
+            await context.ReportProgressAsync(new { stage = "scope-outline", completedPages = number + 1,
+                totalPages = pages.Length, retained = retained is not null }, token);
         }
         var coverage = new List<ScopeCoverage>();
         var sourcePages = sources.Chunk(12).ToArray();
         var storyKeys = manifest.Increments.Select(x => x.StoryKey).ToHashSet(StringComparer.Ordinal);
+        var coverageStories = items.Where(x => storyKeys.Contains(x.ProposalKey)).ToArray();
         for (var number = 0; number < sourcePages.Length; number++)
         {
             var pageKey = key + ":coverage:" + number;
@@ -137,19 +141,17 @@ public sealed partial class SpecialistAgent
                 // Coverage only maps this batch to an already frozen outline. The global source ledger
                 // and earlier phase instructions caused the model to return other pages repeatedly.
                 IReadOnlyList<ChatMessage> coverageMessages = [new(ChatRole.System, ProgressivePlanningPolicy())];
-                var draft = await ReadPlanningPageAsync<OutlineCoverageDraft>(generate, coverageMessages, "scope coverage page " + number,
-                $"Current phase: source coverage page {number} only. Return exactly {selected.Length} coverage entries. " +
-                "Use ONLY the sourceKeys in the requested sources below, once each. Sources on other pages must be omitted from THIS response; they remain required and will be mapped separately. " +
-                "Return coverage; code supplies manifestDigest, so omit it. Map EVERY requested sourceKey exactly once to one or more owning Story proposalKeys from " +
-                "the frozen outline. Retain all requirements, acceptance criteria and non-goals; identify missing scope as an error, never omit it. " +
-                "Do not recreate source text, change the outline or generate tasks. " + JsonSerializer.Serialize(new { sources = selected,
-                    stories = items.Where(x => storyKeys.Contains(x.ProposalKey)).Select(x => new { x.ProposalKey, x.Title, x.Description, x.AcceptanceCriteria }) }, PlanningJson),
-                value => Validate(new(digest, value.Coverage)), MaximumPlanningPageCharacters, token);
-                page = new(digest, draft.Coverage);
+                var draft = await ReadPlanningPageAsync<CoverageIndexDraft>(generate, coverageMessages, "scope coverage page " + number,
+                    CoverageIndexInstructions(number, selected, coverageStories),
+                    value => Validate(BindCoverageIndexes(value, digest, selected, coverageStories)), MaximumPlanningPageCharacters, token);
+                page = BindCoverageIndexes(draft, digest, selected, coverageStories);
             }
             Validate(page);
             if (retained is null) await SaveProgressiveStateAsync(pageKey, page, context, token);
             coverage.AddRange(page.Coverage);
+            await context.ReportProgressAsync(new { stage = "scope-coverage", completedPages = number + 1,
+                totalPages = sourcePages.Length, completedSources = coverage.Count, totalSources = sources.Count,
+                retained = retained is not null }, token);
         }
         var scope = new ProgressiveScopeIndex(new(items, manifest.FeasibilityFindings, manifest.TechnicalConstraints, manifest.OpenFeasibilityDecisions), coverage);
         ValidateProgressiveOutline(scope, sources);
