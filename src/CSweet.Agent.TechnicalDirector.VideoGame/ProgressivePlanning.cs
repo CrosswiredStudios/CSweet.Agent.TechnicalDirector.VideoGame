@@ -131,7 +131,8 @@ public sealed partial class SpecialistAgent
                 var index = retained?.Payload ?? await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
                     "Do not detail or recreate future Stories, milestones or existing tasks. Descriptions are short scope summaries; " +
-                    "implementation briefs follow in separate pages. Include independent QA for the work that needs validation. " +
+                    "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
+                    "Declare only real data/source dependencies, allowing independent work to proceed. Include independent QA for the work that needs validation. " +
                     "Every original Story criterion must appear verbatim in at least one mapped task's acceptanceCriteria. Map its " +
                     "description and every criterion sourceKey exactly once in coverage. Dependencies may name tasks in this response " +
                     "or the existing prior task ledger, never tasks in unrefined future Stories. Requested Story and sources: " +

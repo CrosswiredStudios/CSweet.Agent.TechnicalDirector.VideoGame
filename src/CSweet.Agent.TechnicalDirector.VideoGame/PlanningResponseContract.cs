@@ -15,6 +15,12 @@ public sealed partial class SpecialistAgent
         engineering deliverables. The Director supplies constraints and review criteria; the engineer executes
         and commits; QA independently checks the integrated candidate. Dependent tasks wait for that result.
         Preparation, estimates and readiness for a safe prerequisite can proceed while dependent work waits.
+        One coherent dependency selection/pin/lockfile deliverable needs one engineering ticket, not a second
+        prerequisite with the same outcome. Reuse its canonical proposalKey and accepted criteria. For an
+        unresolved Phaser pin use dependency-pin-phaser when no owner exists; retain an existing explicit
+        pin task instead of adding another. Only real consumers depend on it; independent work stays ready.
+        Keep independent technical review and QA of changed source. Do not create separate tickets merely
+        to repeat a check already required by that deliverable; distinct runtime/product validation stays assigned.
         A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
         scope requires explicit management authority. State the conflicting requirement and the precise choice
         needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
