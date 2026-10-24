@@ -32,6 +32,9 @@ public sealed partial class SpecialistAgent
     internal static JsonElement PlanningResponseSchema(Type type)
     {
         var schema = PlanningJson.GetJsonSchemaAsNode(type);
+        // Reference-type roots are nullable in the reflection exporter. Planning always
+        // returns one object; structured-output providers reject a nullable root type array.
+        schema["type"] = "object";
         void Visit(JsonNode? node)
         {
             if (node is JsonObject obj)
