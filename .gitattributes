@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Provenance hashes must be stable on Windows and Linux.
+extensions/video-game/* text eol=lf
