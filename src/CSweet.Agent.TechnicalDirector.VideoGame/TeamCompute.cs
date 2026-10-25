@@ -57,14 +57,8 @@ public sealed partial class SpecialistAgent
                 var result = stage?.LatestOutcome?.Output.Deserialize<WorkDeliveryReviewResult>(new JsonSerializerOptions(JsonSerializerDefaults.Web));
                 if (result?.ComputeTests is not { Count: > 0 } || execution.Candidate?.Digest != result.CandidateDigest ||
                     result.ComputeTests.Any(x => x.UrlExpiresAt <= DateTimeOffset.UtcNow)) continue;
-                var snapshot = await context.Platform.ReadOrganizationSnapshotAsync(ct);
-                var roles = snapshot.Roles.Where(x => x.Name.Equals("CEO", StringComparison.OrdinalIgnoreCase) ||
-                    x.Name.Equals("Chief Executive Officer", StringComparison.OrdinalIgnoreCase)).Select(x => x.Id).ToHashSet();
-                var executives = snapshot.People.Where(x => x.IsActive && x.EmployeeType == "Human" &&
-                    x.RoleId is { } role && roles.Contains(role)).Select(x => x.Id).ToArray();
-                var rootHumans = snapshot.People.Where(x => x.IsActive && x.EmployeeType == "Human" && x.ReportsToId is null).ToArray();
-                var recipients = (executives.Length > 0 ? executives : rootHumans.Length == 1 ? new[] { rootHumans[0].Id } : Array.Empty<Guid>())
-                    .Append(plan.ManagerOrganizationUserId).Distinct();
+                // The Producer owns delivery evidence; the Director owns CEO communication.
+                var recipients = new[] { plan.ManagerOrganizationUserId };
 
                 foreach (var recipient in recipients)
                     await context.Platform.Communication.SendDirectMessageAsync(recipient,

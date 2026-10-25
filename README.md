@@ -1,4 +1,9 @@
-# Video Game Technical Director
+# Technical Director 6.0.0
+
+Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
+
+CEO communication and material business decisions belong to the Video Game Director. Specialists preserve independent discipline evidence; no role may manufacture another role's acceptance.
+
 
 Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.
 
