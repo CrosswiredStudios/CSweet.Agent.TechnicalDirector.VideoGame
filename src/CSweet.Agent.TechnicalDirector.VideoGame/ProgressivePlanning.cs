@@ -71,9 +71,9 @@ public sealed partial class SpecialistAgent
         [new("description", story.Description), .. story.AcceptanceCriteria.Select((text, index) => new ScopeSource("criterion-" + index, text))];
 
     internal static void ValidateStoryRefinement(ProgressiveStoryIndex index, GameProposedWorkItemV1 story,
-        PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves)
+        PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves, int maximumTasks = 12)
     {
-        if (index.Items is not { Count: > 0 and <= 12 } || index.Items.Any(x => x is null || IsPlanningContainer(x) || x.ParentProposalKey != story.ProposalKey))
+        if (index.Items is not { Count: > 0 } || index.Items.Count > maximumTasks || index.Items.Any(x => x is null || IsPlanningContainer(x) || x.ParentProposalKey != story.ProposalKey))
             throw new InvalidOperationException("Refine exactly the requested Story into at most twelve small executable tasks; retain all other scope for later increments.");
         var known = outline.DeliveryItems.Concat(priorLeaves).Select(x => x.ProposalKey).ToHashSet();
         if (index.Items.Any(x => known.Contains(x.ProposalKey))) throw new InvalidOperationException("A refined task cannot replace an existing scope identity.");
@@ -126,7 +126,8 @@ public sealed partial class SpecialistAgent
             if (request.Phase == "Story" && !detailed.Contains(request.StoryKey!))
             {
                 var story = stories[request.StoryKey!];
-                var indexKey = ProgressiveStoryKey(scopeKey, story.ProposalKey);
+                var baseIndexKey = ProgressiveStoryKey(scopeKey, story.ProposalKey);
+                var indexKey = baseIndexKey;
                 var retained = await context.Platform.ReadOperatingStateAsync<ProgressiveStoryIndex>(indexKey, token);
                 var index = retained?.Payload ?? await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
@@ -143,7 +144,16 @@ public sealed partial class SpecialistAgent
                 index = index with { Items = index.Items.Select(NormalizeCoreRoleSkills).ToArray() };
                 ValidateStoryRefinement(index, story, scope.Plan, leaves);
                 await SaveProgressiveStateAsync(indexKey, index, context, token);
+                var bound = BindStoryDependencyPins(index, story, scope.Plan, leaves);
+                var hasBoundIndex = JsonSerializer.Serialize(index) != JsonSerializer.Serialize(bound);
+                index = bound;
+                ValidateStoryRefinement(index, story, scope.Plan, leaves, 13);
                 var indexDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(index)));
+                if (hasBoundIndex)
+                {
+                    indexKey = BoundStoryIndexKey(baseIndexKey, indexDigest);
+                    await SaveProgressiveStateAsync(indexKey, index, context, token);
+                }
                 var descriptions = leaves.ToDictionary(x => x.ProposalKey, x => x.Description);
                 var pages = index.Items.Chunk(PlanningPageSize).ToArray();
                 var persisted = new HashSet<int>();
@@ -170,8 +180,8 @@ public sealed partial class SpecialistAgent
                 if (generated.Output is null) return AgentCoordinationTurnResult.Blocked(PlanningGeneratorFailure + " C-Sweet technical issue: " + generated.Error);
                 leaves = generated.Output.DeliveryItems.Where(x => !IsPlanningContainer(x)).ToList();
                 var completed = index.Items.Select(x => x with { Description = leaves.Single(leaf => leaf.ProposalKey == x.ProposalKey).Description }).ToArray();
-                await SaveProgressiveStateAsync(indexKey + ":completed", new CompletedProgressiveStory(outlineDigest, indexDigest,
-                    completed.Select(x => x.ProposalKey).ToArray()), context, token);
+                await SaveProgressiveStateAsync(baseIndexKey + ":completed", new CompletedProgressiveStory(outlineDigest, indexDigest,
+                    completed.Select(x => x.ProposalKey).ToArray(), hasBoundIndex), context, token);
                 detailed.Add(story.ProposalKey);
             }
             var output = scope.Plan with { DeliveryItems = [.. scope.Plan.DeliveryItems, .. leaves] };
@@ -190,7 +200,18 @@ public sealed partial class SpecialistAgent
         }
     }
 
-    private sealed record CompletedProgressiveStory(string OutlineDigest, string IndexDigest, IReadOnlyList<string> ProposalKeys);
+    internal static ProgressiveStoryIndex BindStoryDependencyPins(ProgressiveStoryIndex index, GameProposedWorkItemV1 story,
+        PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves)
+    {
+        var bound = BindDependencyPins(outline with { DeliveryItems = [.. outline.DeliveryItems, .. priorLeaves, .. index.Items] }, story.ProposalKey);
+        foreach (var prior in priorLeaves)
+            if (JsonSerializer.Serialize(prior) != JsonSerializer.Serialize(bound.DeliveryItems.Single(x => x.ProposalKey == prior.ProposalKey)))
+                throw new InvalidOperationException("A prerequisite cannot rewrite a retained prior increment.");
+        return index with { Items = bound.DeliveryItems.Where(x => !IsPlanningContainer(x) && x.ParentProposalKey == story.ProposalKey).ToArray() };
+    }
+
+    private sealed record CompletedProgressiveStory(string OutlineDigest, string IndexDigest, IReadOnlyList<string> ProposalKeys, bool HasBoundIndex = false);
+    private static string BoundStoryIndexKey(string baseKey, string digest) => baseKey + ":bound:" + digest[..12];
     private static string ProgressiveStoryKey(string scopeKey, string story) => scopeKey + ":story:" +
         Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(story)))[..16];
     private static async Task<IReadOnlyList<GameProposedWorkItemV1>> LoadCompletedProgressiveStoryAsync(string scopeKey, string outlineDigest,
@@ -199,7 +220,8 @@ public sealed partial class SpecialistAgent
         var saved = await context.Platform.ReadOperatingStateAsync<CompletedProgressiveStory>(ProgressiveStoryKey(scopeKey, story) + ":completed", token);
         if (saved?.Payload.OutlineDigest != outlineDigest)
             throw new InvalidOperationException("A claimed detailed Story has no matching validated saved increment.");
-        var indexKey = ProgressiveStoryKey(scopeKey, story);
+        var baseKey = ProgressiveStoryKey(scopeKey, story);
+        var indexKey = saved.Payload.HasBoundIndex ? BoundStoryIndexKey(baseKey, saved.Payload.IndexDigest) : baseKey;
         var index = await context.Platform.ReadOperatingStateAsync<ProgressiveStoryIndex>(indexKey, token);
         if (index is null || Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(index.Payload))) != saved.Payload.IndexDigest ||
             !saved.Payload.ProposalKeys.SequenceEqual(index.Payload.Items.Select(x => x.ProposalKey)))
@@ -216,9 +238,18 @@ public sealed partial class SpecialistAgent
             throw new InvalidOperationException("A completed increment has invalid retained implementation briefs.");
         return items;
     }
-    private static Task<AgentOperatingState<T>> SaveProgressiveStateAsync<T>(string key, T value, AgentRuntimeContext context, CancellationToken token) where T : class =>
-        new RevisionSafeProjectState(context.Platform).MergeAsync<T>(key, "video-game.progressive-planning.v1", 1,
+    private static async Task<AgentOperatingState<T>> SaveProgressiveStateAsync<T>(string key, T value, AgentRuntimeContext context, CancellationToken token) where T : class
+    {
+        var retained = await context.Platform.ReadOperatingStateAsync<T>(key, token);
+        if (retained is not null)
+        {
+            if (JsonSerializer.Serialize(retained.Payload) != JsonSerializer.Serialize(value))
+                throw new InvalidOperationException("Progressive planning cannot replace validated scope or a saved increment.");
+            return retained;
+        }
+        return await new RevisionSafeProjectState(context.Platform).MergeAsync<T>(key, "video-game.progressive-planning.v1", 1,
             current => current is null || JsonSerializer.Serialize(current) == JsonSerializer.Serialize(value) ? value :
                 throw new InvalidOperationException("Progressive planning cannot replace validated scope or a saved increment."),
             new Dictionary<string, string>(), "progressive-state:" + Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key))), token);
+    }
 }

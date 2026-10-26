@@ -99,6 +99,58 @@ public sealed class ProgressivePlanningTests
         Assert.Null(stale.Artifact); Assert.Equal(6, client.Calls);
     }
 
+    [Fact]
+    public async Task Phaser_story_name_collision_binds_and_checkpoints_executable_pin_before_briefs_and_replays()
+    {
+        var scope = Scope();
+        // A future scope container legitimately uses the reserved-looking identity.
+        scope = scope with { Plan = scope.Plan with { TechnicalConstraints = ["Engine: Phaser"], DeliveryItems = scope.Plan.DeliveryItems.Select(x =>
+            x.ProposalKey == "later-story" ? x with { ProposalKey = "dependency-pin-phaser" } : x).ToArray() },
+            Coverage = scope.Coverage.Select(x => x with { ProposalKeys = x.ProposalKeys.Select(k => k == "later-story" ? "dependency-pin-phaser" : k).ToArray() }).ToArray() };
+        var detail = Detail(scope) with { Items = Detail(scope).Items.Select(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer
+            ? x with { Description = x.Description + " Build the Phaser scene." } : x).ToArray() };
+        var story = scope.Plan.DeliveryItems[1];
+        var bound = SpecialistAgent.BindStoryDependencyPins(detail, story, scope.Plan, []);
+        SpecialistAgent.ValidateStoryRefinement(bound, story, scope.Plan, [], 13);
+        var pin = Assert.Single(bound.Items, x => x.ProposalKey == "dependency-pin-phaser-task");
+        Assert.Equal(VideoGameRoleKeys.Engineer, pin.AccountableRoleKey);
+        Assert.Equal(story.ProposalKey, pin.ParentProposalKey); Assert.Empty(pin.DependencyProposalKeys);
+        Assert.Contains("work.execution.run", pin.RequiredCapabilityKeys);
+        Assert.Contains(pin.ProposalKey, bound.Items.Single(x => x.ProposalKey == detail.Items[0].ProposalKey).DependencyProposalKeys);
+        Assert.Equal(detail.Coverage, bound.Coverage);
+        var client = new Client(); EnqueueOutline(client, scope);
+        var states = new Dictionary<string, AgentOperatingStateResponse>(); var runtime = StateRuntime(states);
+        var cycle = Cycle(); var agent = new SpecialistAgent(); var directions = new string('d',64);
+        var first = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, new("Outline", directions), default);
+        Assert.NotNull(first.Artifact);
+        var evidence = first.Artifact.Payload.GetProperty("progressivePlanning");
+        client.Responses.Enqueue(JsonSerializer.Serialize(detail, Web));
+        // Exhaustion saves the raw and bound index but does not claim any completed work.
+        for (var attempt = 0; attempt < 3; attempt++) client.Responses.Enqueue("{bad-json");
+        var request = new SpecialistAgent.ProgressivePlanningRequest("Story", directions, evidence.GetProperty("scopeKey").GetString(),
+            evidence.GetProperty("outlineDigest").GetString(), story.ProposalKey, []);
+        var failed = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
+        Assert.Null(failed.Artifact);
+        Assert.Single(states.Keys, x => x.Contains(":bound:") && !x.Contains(":page:"));
+        var originals = states.ToDictionary(x => x.Key, x => x.Value.Payload.GetRawText());
+        foreach (var page in bound.Items.Chunk(SpecialistAgent.PlanningPageSize))
+            client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(page.Select(x =>
+                new SpecialistAgent.PlanningDescription(x.ProposalKey, x.AccountableRoleKey == VideoGameRoleKeys.Engineer ?
+                    SpecialistAgent.PlanningContractExample().DeliveryItems[2].Description + "\n" + x.Description : x.Description)).ToArray()), Web));
+        var recovered = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
+        Assert.True(recovered.Artifact is not null, recovered.Content);
+        Assert.Equal(pin.ProposalKey, Assert.Single(recovered.Artifact.Payload.GetProperty("engineeringPrerequisiteKeys").EnumerateArray()).GetString());
+        foreach (var original in originals) Assert.Equal(original.Value, states[original.Key].Payload.GetRawText());
+        var calls = client.Calls;
+        var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle,
+            request with { DetailedStoryKeys = [story.ProposalKey] }, default);
+        Assert.NotNull(replay.Artifact); Assert.Equal(calls, client.Calls);
+        Assert.Equal(recovered.Artifact.Payload.GetRawText(), replay.Artifact.Payload.GetRawText());
+        var items = replay.Artifact.Payload.GetProperty("DeliveryItems").Deserialize<GameProposedWorkItemV1[]>()!;
+        Assert.Equal(JsonSerializer.Serialize(scope.Plan.DeliveryItems.Single(x => x.ProposalKey == "dependency-pin-phaser")),
+            JsonSerializer.Serialize(items.Single(x => x.ProposalKey == "dependency-pin-phaser")));
+    }
+
     private static SpecialistAgent.OutlineManifest Manifest(SpecialistAgent.ProgressiveScopeIndex scope) => new(
         scope.Plan.DeliveryItems.Where(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone).Select(x =>
             new SpecialistAgent.OutlineIncrement(x.ProposalKey, scope.Plan.DeliveryItems.Single(s => s.ParentProposalKey == x.ProposalKey).ProposalKey,
@@ -172,7 +224,7 @@ public sealed class ProgressivePlanningTests
         Assert.Null(blocked.Artifact); Assert.Equal(2, states.Count); Assert.Equal(5, client.Calls);
         foreach (var response in responses.Skip(2)) client.Responses.Enqueue(response);
         var recovered = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], documents, cycle, request, default);
-        Assert.NotNull(recovered.Artifact); Assert.Equal(9, client.Calls);
+        Assert.True(recovered.Artifact is not null, recovered.Content); Assert.Equal(9, client.Calls);
         Assert.Equal(10, recovered.Artifact.Payload.GetProperty("DeliveryItems").GetArrayLength());
         Assert.Equal(25, recovered.Artifact.Payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage").GetArrayLength());
         var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], documents, cycle, request, default);

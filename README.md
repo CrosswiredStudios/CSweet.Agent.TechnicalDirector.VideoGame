@@ -1,4 +1,4 @@
-# Technical Director 6.0.0
+# Technical Director 6.0.1
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
@@ -282,3 +282,4 @@ SDK 5.0.2 prepares public npm dependencies from the exact candidate lockfile bef
 ### Sprint flow (5.0.13)
 
 Dependency pinning reuses one explicit engineering owner with its existing key, criteria and declared dependencies. Ambiguous duplicate owners require a planning correction before publication. A synthesized Phaser prerequisite gates only actual Phaser consumers; a global engine constraint alone does not add work to an unrelated increment. Repeated binding does not duplicate concrete-pin instructions. Independent technical review and QA remain required; published work and accepted scope are retained.
+Progressive refinement binds executable dependency prerequisites before implementation briefs. Planning containers keep their frozen identities; derived engineering tasks use distinct keys and digest-bound checkpoints. Retries preserve earlier indexes and pages and never mark prerequisite work integrated without execution evidence.
