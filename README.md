@@ -1,4 +1,4 @@
-# Technical Director 6.0.1
+# Technical Director 6.0.2
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
@@ -283,3 +283,5 @@ SDK 5.0.2 prepares public npm dependencies from the exact candidate lockfile bef
 
 Dependency pinning reuses one explicit engineering owner with its existing key, criteria and declared dependencies. Ambiguous duplicate owners require a planning correction before publication. A synthesized Phaser prerequisite gates only actual Phaser consumers; a global engine constraint alone does not add work to an unrelated increment. Repeated binding does not duplicate concrete-pin instructions. Independent technical review and QA remain required; published work and accepted scope are retained.
 Progressive refinement binds executable dependency prerequisites before implementation briefs. Planning containers keep their frozen identities; derived engineering tasks use distinct keys and digest-bound checkpoints. Retries preserve earlier indexes and pages and never mark prerequisite work integrated without execution evidence.
+
+Task technical review uses the SDK's pre-integration candidate policy. A review assesses exact candidate source and supplied validation; it does not claim that platform integration, independent QA or final acceptance has already completed. Those downstream gates remain required.
