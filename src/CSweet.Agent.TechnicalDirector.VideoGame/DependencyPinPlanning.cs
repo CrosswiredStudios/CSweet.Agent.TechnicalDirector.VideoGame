@@ -36,7 +36,7 @@ public sealed partial class SpecialistAgent
     private static bool UsesPhaser(GameProposedWorkItemV1 item) =>
         (item.Title + " " + item.Description + " " + string.Join(" ", item.AcceptanceCriteria)).Contains("Phaser", StringComparison.OrdinalIgnoreCase);
 
-    internal static PlanningOutput BindDependencyPins(PlanningOutput output)
+    internal static PlanningOutput BindDependencyPins(PlanningOutput output, string? prerequisiteParentKey = null)
     {
         if (output.DependencyPins.Count > 16 || output.DependencyPins.Any(x => x is null || string.IsNullOrWhiteSpace(x.Package) ||
             x.Package.Length > 100 || !Regex.IsMatch(x.ExactVersion ?? "", @"\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\z")) ||
@@ -52,11 +52,14 @@ public sealed partial class SpecialistAgent
             (output.TechnicalConstraints ?? []).Any(x => x.Contains("Phaser", StringComparison.OrdinalIgnoreCase));
         if (mentionsPhaser && !output.DependencyPins.Any(x => x.Package.Equals("phaser", StringComparison.OrdinalIgnoreCase)))
         {
-            var existing = owners.SingleOrDefault() ?? items.SingleOrDefault(x => x.ProposalKey == "dependency-pin-phaser");
+            var existing = owners.SingleOrDefault() ?? items.SingleOrDefault(x => x.ProposalKey == "dependency-pin-phaser" && !IsPlanningContainer(x));
             // A future/global engine constraint alone does not create executable work in an
             // unrelated current increment. The pin is needed when an actual consumer is planned.
             if (existing is null && !engineers.Any(UsesPhaser)) return output;
             var key = existing?.ProposalKey ?? "dependency-pin-phaser";
+            if (existing is null)
+                for (var suffix = 0; items.Any(x => x.ProposalKey == key); suffix++)
+                    key = "dependency-pin-phaser-task" + (suffix == 0 ? "" : "-" + suffix);
             if (existing is not null && (existing.AccountableRoleKey != VideoGameRoleKeys.Engineer ||
                 existing.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Task || existing.DependencyProposalKeys is not { Count: 0 } ||
                 existing.RequiredCapabilityKeys?.Contains("work.execution.run") != true ||
@@ -64,7 +67,7 @@ public sealed partial class SpecialistAgent
                 throw new InvalidOperationException("The canonical Phaser pin prerequisite must be a root game-engineer task with work.execution.run and testable acceptance criteria. The Director supplies the plan and review; engineering performs and commits the pin. Reconcile the task without weakening accepted scope.");
             if (existing is null)
             {
-                var prerequisite = engineers[0] with { ProposalKey = key, Title = "Commit the exact Phaser dependency pin and lockfile",
+                var prerequisite = (prerequisiteParentKey is null ? engineers[0] : engineers.First(x => x.ParentProposalKey == prerequisiteParentKey)) with { ProposalKey = key, Title = "Commit the exact Phaser dependency pin and lockfile",
                     Description = "Resolve the exact Phaser version within the approved engine constraints. Reuse an existing approved exact pin when present. Commit package.json and its lockfile, restore dependencies and verify the resolved installed version. If the approved engine constraints conflict, request the actual missing decision. This is executable engineering work; no human kickoff is required and the pin is unresolved until this task is integrated.",
                     AcceptanceCriteria = ["An exact Phaser version and reproducible lockfile are committed and integrated.", "A focused executed check proves the installed Phaser version matches the committed pin."],
                     DependencyProposalKeys = [] };
