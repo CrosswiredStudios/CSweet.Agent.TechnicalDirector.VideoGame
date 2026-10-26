@@ -31,10 +31,24 @@ public sealed partial class SpecialistAgent
     internal static void ValidateScopeCoverage(IReadOnlyList<ScopeCoverage> coverage, IReadOnlyList<ScopeSource> sources,
         IReadOnlySet<string> keys)
     {
-        if (coverage is null || coverage.Any(x => x is null || x.ProposalKeys is null || x.ProposalKeys.Count == 0 ||
-                x.ProposalKeys.Any(key => !keys.Contains(key))) || coverage.Count != sources.Count ||
-            !coverage.Select(x => x.SourceKey).ToHashSet().SetEquals(sources.Select(x => x.SourceKey)))
-            throw new InvalidOperationException("Every exact accepted source must map once to retained scope; no missing, duplicate or invented sources/keys.");
+        if (coverage is null || coverage.Any(x => x is null))
+            throw new InvalidOperationException("coverage must be an array of nonnull source mappings.");
+        var expected = sources.Select(x => x.SourceKey).ToHashSet(StringComparer.Ordinal);
+        var supplied = coverage.Select(x => x.SourceKey).ToHashSet(StringComparer.Ordinal);
+        var issues = new List<string>();
+        void List(string label, IEnumerable<string> values)
+        {
+            var bounded = values.Distinct(StringComparer.Ordinal).Take(20).ToArray();
+            if (bounded.Length > 0) issues.Add(label + ": " + JsonSerializer.Serialize(bounded));
+        }
+        List("Missing sourceKeys on THIS page", expected.Except(supplied));
+        List("Unexpected sourceKeys outside THIS page (omit them)", supplied.Except(expected));
+        List("Duplicate sourceKeys (return each once)", coverage.GroupBy(x => x.SourceKey).Where(x => x.Count() > 1).Select(x => x.Key));
+        List("Source mappings with no owning Story/task", coverage.Where(x => x.ProposalKeys is not { Count: > 0 }).Select(x => x.SourceKey));
+        List("Unknown proposalKeys (use the frozen ledger)", coverage.Where(x => x.ProposalKeys is not null)
+            .SelectMany(x => x.ProposalKeys).Where(key => !keys.Contains(key)));
+        if (issues.Count > 0)
+            throw new InvalidOperationException("Every exact accepted source on this page must map once to retained scope. " + string.Join("; ", issues));
     }
 
     internal static void ValidateProgressiveOutline(ProgressiveScopeIndex outline, IReadOnlyList<ScopeSource> sources)
@@ -100,6 +114,8 @@ public sealed partial class SpecialistAgent
             ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
+            messages = messages.Append(new ChatMessage(ChatRole.User, "Frozen shared technical constraints (project data): " +
+                JsonSerializer.Serialize(scope.Plan.TechnicalConstraints, PlanningJson))).ToArray();
             var detailed = (request.DetailedStoryKeys ?? []).ToHashSet(StringComparer.Ordinal);
             var stories = scope.Plan.DeliveryItems.Where(x => x.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone).ToDictionary(x => x.ProposalKey);
             if (detailed.Any(key => !stories.ContainsKey(key)) || request.Phase == "Story" && (request.StoryKey is null || !stories.ContainsKey(request.StoryKey)))
@@ -115,7 +131,8 @@ public sealed partial class SpecialistAgent
                 var index = retained?.Payload ?? await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
                     "Do not detail or recreate future Stories, milestones or existing tasks. Descriptions are short scope summaries; " +
-                    "implementation briefs follow in separate pages. Include independent QA for the work that needs validation. " +
+                    "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
+                    "Declare only real data/source dependencies, allowing independent work to proceed. Include independent QA for the work that needs validation. " +
                     "Every original Story criterion must appear verbatim in at least one mapped task's acceptanceCriteria. Map its " +
                     "description and every criterion sourceKey exactly once in coverage. Dependencies may name tasks in this response " +
                     "or the existing prior task ledger, never tasks in unrefined future Stories. Requested Story and sources: " +

@@ -1,4 +1,9 @@
-# Video Game Technical Director
+# Technical Director 6.0.0
+
+Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
+
+CEO communication and material business decisions belong to the Video Game Director. Specialists preserve independent discipline evidence; no role may manufacture another role's acceptance.
+
 
 Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.
 
@@ -49,7 +54,12 @@ After upgrading an already blocked review, request a ticket retry to run a new a
 ## Contract
 
 - Package ID: `com.csweet.video-game-technical-director`
-- Version: `5.0.4`
+- Version: `5.0.13`
+
+Technical handoffs declare deterministic prerequisite task keys in `engineeringPrerequisiteKeys`.
+Producer 4.0.14 uses this declaration for bounded estimates and QA readiness without answering open
+authority questions or committing decision-dependent implementation. Existing outline digests and
+saved pages retain their original meaning; no new grants are required.
 
 Producer 4.0.10 can send an exact owner amendment in the authenticated planning cycle's
 `scopeAmendment` artifact field. The Director checks all canonical planning digests and exact
@@ -268,3 +278,7 @@ Uses SDK 5.0.2 for 128,000-character technical review inputs/responses and 16,00
 ## Managed compute npm restore (5.0.1)
 
 SDK 5.0.2 prepares public npm dependencies from the exact candidate lockfile before Node tests/build. The added network.outbound.v1 declaration requires a separate current scoped grant; registry-limited grants permit only managed package ingress and never authorize general VM networking. Package integrity, source/lockfile hashes and adjacent restore/build/publication receipts remain required. Missing grants produce an explicit dependency-restore wait; installation never supplies acceptance.
+
+### Sprint flow (5.0.13)
+
+Dependency pinning reuses one explicit engineering owner with its existing key, criteria and declared dependencies. Ambiguous duplicate owners require a planning correction before publication. A synthesized Phaser prerequisite gates only actual Phaser consumers; a global engine constraint alone does not add work to an unrelated increment. Repeated binding does not duplicate concrete-pin instructions. Independent technical review and QA remain required; published work and accepted scope are retained.
