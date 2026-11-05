@@ -1,4 +1,4 @@
-# Technical Director 6.0.4
+# Technical Director 6.0.5
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
