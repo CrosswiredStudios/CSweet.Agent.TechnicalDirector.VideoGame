@@ -28,8 +28,8 @@ public sealed partial class SpecialistAgent
             // Dispatch carries raw deliverySpecificationJson. The shared reviewer reads the
             // current typed item and checks its independent assignment before reading a candidate.
             return await DeliveryTaskTechnicalReview.ExecuteAsync(assignment, context,
-                context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ??
-                    throw new InvalidOperationException("Configure an approved review provider."), Settings.GetString("llmModel"))), token);
+                new MechanicalReviewChatClient(context.CreateChatClient(new AgentLlmSelection(Settings.GetGuid("llmProviderId") ??
+                    throw new InvalidOperationException("Configure an approved review provider."), Settings.GetString("llmModel")))), token);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception error) when (error is not OutOfMemoryException)

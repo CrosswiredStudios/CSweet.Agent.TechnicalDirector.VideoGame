@@ -24,6 +24,13 @@ public sealed partial class SpecialistAgent
         A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
         scope requires explicit management authority. State the conflicting requirement and the precise choice
         needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
+        Treat already accepted package/brief status supplied by the platform as current; old document wording
+        about pending approval is historical. Missing budgets or dates do not block authorized planning.
+        Delegated design parameters, future evidence collection, and optional non-MVP work are not management
+        decisions. Request authority only for a concrete conflict, scope change, expenditure, or reserved choice.
+        Engineering validation must use standalone assertion commands such as node scripts/verify-pin.mjs or
+        npm test that fail on a defect. Do not offer inline node -e scripts, ls, cat or bare hashes as proof.
+        Publish to the assignment's authorized branch; integration into main is a downstream governed action.
         Completion needs evidence of the assigned deliverable: a recommendation or completed follow-up card
         does not prove implementation, integration, QA approval or a recorded project decision. Preserve every
         unresolved real decision until its authoritative answer is incorporated into the current plan.

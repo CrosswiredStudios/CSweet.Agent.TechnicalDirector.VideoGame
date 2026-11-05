@@ -12,7 +12,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 public sealed partial class SpecialistAgent
 {
     internal sealed record ProgressivePlanningRequest(string Phase, string DirectionsDigest, string? ScopeKey = null,
-        string? OutlineDigest = null, string? StoryKey = null, IReadOnlyList<string>? DetailedStoryKeys = null);
+        string? OutlineDigest = null, string? StoryKey = null, IReadOnlyList<string>? DetailedStoryKeys = null, string? ReviewDirectionsDigest = null, IReadOnlyList<string>? ManagerDirections = null);
     internal sealed record ScopeCoverage(string SourceKey, IReadOnlyList<string> ProposalKeys);
     internal sealed record ScopeSource(string SourceKey, string Text);
     internal sealed record ProgressiveScopeIndex(PlanningOutput Plan, IReadOnlyList<ScopeCoverage> Coverage);
@@ -96,9 +96,11 @@ public sealed partial class SpecialistAgent
     {
         try
         {
-            if (request is null || request.Phase is not ("Outline" or "Story") || request.DirectionsDigest.Length != 64)
+            if (request is null || request.Phase is not ("Outline" or "Story" or "Direction") || request.DirectionsDigest.Length != 64)
                 throw new InvalidOperationException("Unsupported or unbound progressive planning request.");
             var scopeKey = ProgressiveScopeKey(cycle, request.DirectionsDigest);
+            if (request.Phase == "Direction" && (request.ScopeKey is null || request.OutlineDigest is null || request.ReviewDirectionsDigest?.Length != 64))
+                throw new InvalidOperationException("Direction review requires the exact frozen outline and new direction digest.");
             if (request.ScopeKey is not null && request.ScopeKey != scopeKey) throw new InvalidOperationException("The accepted inputs or Producer directions changed.");
             async Task<ChatResponse> Generate(IReadOnlyList<ChatMessage> input, Type type, CancellationToken ct)
             {
@@ -114,8 +116,12 @@ public sealed partial class SpecialistAgent
             ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
+            messages = await ApplyRetainedPlanningDirectionAsync(scopeKey, outlineDigest, request, context, messages, token);
             messages = messages.Append(new ChatMessage(ChatRole.User, "Frozen shared technical constraints (project data): " +
                 JsonSerializer.Serialize(scope.Plan.TechnicalConstraints, PlanningJson))).ToArray();
+            var assessment = await ReviewPlanningQuestionsAsync(scope, scopeKey, outlineDigest, request, context, Generate, messages, token);
+            if (assessment.AmendmentRequired)
+                return AgentCoordinationTurnResult.Blocked("Planning direction requires an explicit scope amendment: " + assessment.Rationale);
             var detailed = (request.DetailedStoryKeys ?? []).ToHashSet(StringComparer.Ordinal);
             var stories = scope.Plan.DeliveryItems.Where(x => x.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Milestone).ToDictionary(x => x.ProposalKey);
             if (detailed.Any(key => !stories.ContainsKey(key)) || request.Phase == "Story" && (request.StoryKey is null || !stories.ContainsKey(request.StoryKey)))
@@ -188,8 +194,11 @@ public sealed partial class SpecialistAgent
             var result = CompletePlanningProposal(cycle, output);
             var payload = JsonNode.Parse(result.Artifact!.Payload.GetRawText())!.AsObject();
             payload["progressivePlanning"] = JsonSerializer.SerializeToNode(new { phase = request.Phase, scopeKey, outlineDigest,
-                directionsDigest = request.DirectionsDigest, detailedStoryKeys = detailed.Order().ToArray(), scopeCoverage = scope.Coverage }, PlanningJson);
-            return result with { Content = detailed.Count == 0 ? "Complete approved scope outline ready for publication; execution detail is deferred to the next increment." :
+                directionsDigest = request.DirectionsDigest, detailedStoryKeys = detailed.Order().ToArray(), scopeCoverage = scope.Coverage,
+                reviewedDirectionsDigest = request.ReviewDirectionsDigest ?? request.DirectionsDigest,
+                reviewedAuthorityQuestions = assessment.Questions.Where(x => x.Disposition == "authority")
+                    .Select(x => scope.Plan.OpenFeasibilityDecisions![x.Index]).ToArray() }, PlanningJson);
+            return result with { Content = request.Phase == "Direction" ? "Recorded direction assessed against retained scope; the graph, criteria and task briefs remain unchanged." : detailed.Count == 0 ? "Complete approved scope outline ready for publication; execution detail is deferred to the next increment." :
                 "The requested increment has validated briefs. Future Stories remain visible scope and have not been detailed or marked complete.",
                 Artifact = result.Artifact with { Payload = JsonSerializer.SerializeToElement(payload) } };
         }

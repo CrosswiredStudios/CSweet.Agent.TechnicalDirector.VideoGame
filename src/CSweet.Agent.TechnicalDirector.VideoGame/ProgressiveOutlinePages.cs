@@ -18,7 +18,8 @@ public sealed partial class SpecialistAgent
     internal static void ValidateOutlineManifest(OutlineManifest manifest)
     {
         if (manifest?.Increments is not { Count: > 0 } || manifest.FeasibilityFindings is null ||
-            manifest.TechnicalConstraints is null || manifest.OpenFeasibilityDecisions is null)
+            manifest.TechnicalConstraints is null || manifest.OpenFeasibilityDecisions is null ||
+            manifest.OpenFeasibilityDecisions.Any(x => string.IsNullOrWhiteSpace(x) || !x.Any(char.IsLetter)))
             throw new InvalidOperationException("The scope manifest requires bounded increments and explicit findings/constraints/decisions arrays.");
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var increment in manifest.Increments)

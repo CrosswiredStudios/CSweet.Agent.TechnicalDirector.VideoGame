@@ -5,7 +5,7 @@ using Microsoft.Extensions.AI;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
-public sealed class ProgressivePlanningTests
+public sealed partial class ProgressivePlanningTests
 {
     private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
     private static SpecialistAgent.ProgressiveScopeIndex Scope()

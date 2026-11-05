@@ -1,4 +1,4 @@
-# Technical Director 6.0.2
+# Technical Director 6.0.3
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
@@ -285,3 +285,11 @@ Dependency pinning reuses one explicit engineering owner with its existing key, 
 Progressive refinement binds executable dependency prerequisites before implementation briefs. Planning containers keep their frozen identities; derived engineering tasks use distinct keys and digest-bound checkpoints. Retries preserve earlier indexes and pages and never mark prerequisite work integrated without execution evidence.
 
 Task technical review uses the SDK's pre-integration candidate policy. A review assesses exact candidate source and supplied validation; it does not claim that platform integration, independent QA or final acceptance has already completed. Those downstream gates remain required.
+
+## Planning and runner flow (6.0.3)
+
+Review changed manager direction against the exact retained outline, using one cached question assessment without regenerating identities, dependencies, criteria, source coverage or completed task briefs. Preserve authenticated direction separately and include it when refining future Stories. Classify routine specialist tasks, resolved approval questions and deferred optional work separately from actual management blockers. Reject malformed question dispositions and require explicit amendments for scope changes.
+
+Supply deterministic SHA-512/base64 measurements to independent technical review. A contradictory encoding finding receives one bounded reassessment; persistence fails review processing without fabricating approval. Keep independent source, integration and QA checks. Engineering planning now specifies standalone assertion commands and the assignment-authorized publication branch.
+
+Publish/install this release before Producer 6.2.1. Historical outputs remain intact. No capability, grant, SDK or public contract changes.
