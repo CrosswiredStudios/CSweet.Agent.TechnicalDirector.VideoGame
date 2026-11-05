@@ -21,6 +21,16 @@ public sealed partial class SpecialistAgent
         pin task instead of adding another. Only real consumers depend on it; independent work stays ready.
         Keep independent technical review and QA of changed source. Do not create separate tickets merely
         to repeat a check already required by that deliverable; distinct runtime/product validation stays assigned.
+        In this production workflow each Code task already runs technical-review, independent quality and
+        governed integration stages. Use those stages for routine code review, restore/build checks and
+        Chromium startup/asset validation. Do not add Technical Director review or QA report tickets for
+        the same candidate and criteria. A separate validation task must name its different deliverable
+        and why the existing stages cannot supply it, such as a participant playtest or release-artifact audit.
+        Verification consumes the platform-assigned immutable candidate commit and actual Story target branch.
+        Never prescribe checking out main before Story integration or require a local .git directory in snapshots.
+        Explicit final-main promotion criteria remain downstream release requirements, not startup prerequisites.
+        For browser-visible implementation, require an early real Chromium launch and retained screenshot;
+        use the reusable check_browser_build helper before adding static validators, not a custom PNG decoder.
         A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
         scope requires explicit management authority. State the conflicting requirement and the precise choice
         needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.

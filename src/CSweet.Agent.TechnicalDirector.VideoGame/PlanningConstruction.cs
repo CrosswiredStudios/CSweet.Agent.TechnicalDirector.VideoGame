@@ -22,6 +22,8 @@ public sealed partial class SpecialistAgent
            not a previous task, and never the item's own key.
         3. Assign one exact role from Roles to each item. Coding, scaffolding, packaging and measured
            prototypes belong to game-engineer; independent validation belongs to game-quality-assurance.
+           Routine technical review and QA are stages of the Code task, not extra leaves. A separate
+           review/validation leaf needs a genuinely different deliverable unavailable from those stages.
            Keep Technical Director work limited to plans, decisions and reviews. Assign specialist
            asset production only when the accepted scope needs it; never erase an original-asset requirement.
         4. Copy specialization strings exactly from Skills. Do not invent synonyms such as game-audio
@@ -45,7 +47,8 @@ public sealed partial class SpecialistAgent
         The following is a valid CONTRACT EXAMPLE, not project scope, accepted identities, approvals,
         or completed work. Do not copy its example-* keys or movement scope into the project. Adapt
         its structure using the actual accepted deliverables and canonical keys. Notice that containment
-        and sequencing are separate, and the QA task validates the implementation rather than its parent.
+        and sequencing are separate. The example QA task is for a distinct participant observation;
+        routine build/browser/technical checks belong to the implementation's independent review stages.
         """ + "\n" + JsonSerializer.Serialize(PlanningContractExample(), new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
     internal static PlanningOutput PlanningContractExample()
@@ -71,9 +74,9 @@ public sealed partial class SpecialistAgent
                 "Verification: Check both directions, no input, and clamping at each boundary.",
                 "Left/right keys move in the correct direction; player position never leaves the playfield.",
                 VideoGameRoleKeys.Engineer, "example-story", [VideoGameSpecializationKeys.GameplayProgramming], []),
-            Item("example-qa", VideoGameWorkItemTypeKeys.Task, "Independently validate movement",
-                "Test the implementation and record results and reproducible defects.",
-                "An independent report covers left/right input, focus loss and both playfield boundaries.",
+            Item("example-qa", VideoGameWorkItemTypeKeys.Task, "Observe player movement comprehension",
+                "Distinct validation deliverable: observe a participant using the integrated movement feature and record control comprehension and reported friction. Routine code and browser validation stays in the implementation's quality stage; that stage cannot supply participant observations.",
+                "A participant observation report records control comprehension and any movement friction without claiming an unperformed session.",
                 VideoGameRoleKeys.QualityAssurance, "example-story", [VideoGameSpecializationKeys.TestPlanning], ["example-implementation"])
         ], [], [], []);
     }

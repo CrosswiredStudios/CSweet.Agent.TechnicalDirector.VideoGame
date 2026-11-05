@@ -32,7 +32,7 @@ public sealed partial class SpecialistAgent
     {
         var items = boardItems.Where(x => x.Status != WorkStatuses.Cancelled && x.ProposalProvenance is not null)
             .OrderBy(x => x.ProposalProvenance!.ProposalItemKey, StringComparer.Ordinal).ToArray();
-        if (items.Length is 0 or > 198 || items.Select(x => x.Id).Distinct().Count() != items.Length ||
+        if (items.Length is 0 or > 199 || items.Select(x => x.Id).Distinct().Count() != items.Length ||
             items.Select(x => x.ProposalProvenance!.ProposalItemKey).Distinct(StringComparer.Ordinal).Count() != items.Length)
             throw new InvalidOperationException("Role repair requires a bounded board with unique canonical identities.");
         var source = items.SingleOrDefault(x => x.Id == instruction.SourceWorkItemId);
@@ -64,7 +64,7 @@ public sealed partial class SpecialistAgent
                 requirements?.RequiredSpecializationKeys ?? [], requirements?.PreferredSpecializationKeys ?? [],
                 requirements?.RequiredCapabilityKeys ?? [],
                 planning.DependencyItemIds.Select(id => id == source.Id && item.Status is not ("Done" or "Completed")
-                    ? validationKey : Key(id)).Distinct(StringComparer.Ordinal).ToArray())
+                    ? implementationKey : Key(id)).Distinct(StringComparer.Ordinal).ToArray())
             { ParentProposalKey = item.ParentItemId is { } parent ? Key(parent) : null });
         }
         var sourceIndex = proposals.FindIndex(x => x.ProposalKey == Key(source.Id));
@@ -84,13 +84,9 @@ public sealed partial class SpecialistAgent
         };
         proposals.Add(new(implementationKey, VideoGameWorkItemTypeKeys.Task, "Implement foundation: " + DisplayTitle(source.Title),
             "Implement the original delivery scope using the completed Technical Director plan. Produce the required repository artifacts and measurement evidence; " +
-            "report unmet requirements as blockers rather than claiming completion.\n\n" + scope, original.AcceptanceCriteria,
+            "report unmet requirements as blockers rather than claiming completion. The Code task's independent technical-review and quality stages " +
+            "verify the exact delivered revision before completion; do not create another ticket for those same checks.\n\n" + scope, original.AcceptanceCriteria,
             VideoGameRoleKeys.Engineer, [], [], ["work.execution.run"], [original.ProposalKey]) { ParentProposalKey = original.ParentProposalKey });
-        proposals.Add(new(validationKey, VideoGameWorkItemTypeKeys.Task, "Independently validate: " + DisplayTitle(source.Title),
-            "Independently verify the engineering deliverables against every original acceptance criterion below, using the Technical Director's validation plan. " +
-            "Inspect the delivered revision and execute the required tests; record unavailable environments and failed checks as blockers.\n\n" + scope,
-            ["Independent QA records a pass or failure with reproducible evidence for every original delivery acceptance criterion against the exact delivered revision; all required checks pass."],
-            VideoGameRoleKeys.QualityAssurance, [], [], ["work.execution.run"], [implementationKey]) { ParentProposalKey = original.ParentProposalKey });
         if (!IsValidPlan(proposals))
             throw new InvalidOperationException("The canonical role split failed hierarchy, role, capability or dependency validation; no replacement scope was produced.");
         return new(proposals, ["The role split defines future work. Technical planning, implementation and independent validation still require execution."],

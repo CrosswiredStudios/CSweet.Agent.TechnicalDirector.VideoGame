@@ -67,8 +67,9 @@ public sealed partial class SpecialistAgent
         if (!items.Any(x => stories.Contains(x.WorkItemTypeKey))) issues.Add("Add a feature or content story under a milestone.");
         if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.Engineer))
             issues.Add("Add an engineering task with accountableRoleKey game-engineer.");
-        if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance))
-            issues.Add("Add a separate QA task with accountableRoleKey game-quality-assurance.");
+        // Code tasks already receive independent technical-review and quality stages from
+        // the Producer's delivery workflow. A QA leaf is optional, for a distinct product
+        // validation deliverable; requiring one here manufactured duplicate review tickets.
         // Find an actual cycle, not the unrelated descendants that merely wait on it.
         if (byKey.Count == items.Count && items.All(x => x.DependencyProposalKeys is not null))
         {

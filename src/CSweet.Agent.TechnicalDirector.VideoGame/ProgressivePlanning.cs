@@ -139,7 +139,8 @@ public sealed partial class SpecialistAgent
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
                     "Do not detail or recreate future Stories, milestones or existing tasks. Descriptions are short scope summaries; " +
                     "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
-                    "Declare only real data/source dependencies, allowing independent work to proceed. Include independent QA for the work that needs validation. " +
+                    "Declare only real data/source dependencies, allowing independent work to proceed. Independent technical review and QA already run as Code-task stages. " +
+                    "Do not add review-only siblings for the same candidate. Add a validation leaf only for different evidence unavailable from those stages, and explain that difference. " +
                     "Every original Story criterion must appear verbatim in at least one mapped task's acceptanceCriteria. Map its " +
                     "description and every criterion sourceKey exactly once in coverage. Dependencies may name tasks in this response " +
                     "or the existing prior task ledger, never tasks in unrefined future Stories. Requested Story and sources: " +

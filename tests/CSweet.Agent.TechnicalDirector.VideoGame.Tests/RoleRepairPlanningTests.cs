@@ -36,23 +36,23 @@ public sealed class RoleRepairPlanningTests
         JsonSerializer.SerializeToUtf8Bytes(planning))).ToLowerInvariant();
 
     [Fact]
-    public void SplitCopiesExactScopeAndWaitsForIndependentValidationWithoutModelTranscription()
+    public void SplitPreservesScopeAndDependsOnReviewedImplementationWithoutDuplicateQaTicket()
     {
         var (items, instruction) = Fixture();
         var output = SpecialistAgent.BuildRoleRepairPlanning(items, instruction);
         var source = items.Single(x => x.Id == instruction.SourceWorkItemId);
         var plan = output.DeliveryItems.Single(x => x.ProposalKey == "foundation");
         var engineer = output.DeliveryItems.Single(x => x.ProposalKey.EndsWith("-implementation"));
-        var qa = output.DeliveryItems.Single(x => x.ProposalKey.EndsWith("-validation"));
+        Assert.Equal(items.Length + 1, output.DeliveryItems.Count);
+        Assert.DoesNotContain(output.DeliveryItems, x => x.ProposalKey.EndsWith("-validation"));
         Assert.True(SpecialistAgent.IsValidPlan(output.DeliveryItems));
         Assert.Equal(VideoGameRoleKeys.TechnicalDirector, plan.AccountableRoleKey);
         Assert.Empty(plan.AcceptanceCriteria.Intersect(source.Planning!.AcceptanceCriteria));
         Assert.Equal(source.Planning.AcceptanceCriteria, engineer.AcceptanceCriteria);
         Assert.Equal(VideoGameRoleKeys.Engineer, engineer.AccountableRoleKey);
-        Assert.Equal(VideoGameRoleKeys.QualityAssurance, qa.AccountableRoleKey);
         Assert.Equal(new[] { plan.ProposalKey }, engineer.DependencyProposalKeys);
-        Assert.Equal(new[] { engineer.ProposalKey }, qa.DependencyProposalKeys);
-        Assert.Equal(new[] { qa.ProposalKey }, output.DeliveryItems.Single(x => x.ProposalKey == "game").DependencyProposalKeys);
+        Assert.Contains("independent technical-review and quality stages", engineer.Description);
+        Assert.Equal(new[] { engineer.ProposalKey }, output.DeliveryItems.Single(x => x.ProposalKey == "game").DependencyProposalKeys);
         foreach (var original in items)
         {
             var retained = output.DeliveryItems.Single(x => x.ProposalKey == original.ProposalProvenance!.ProposalItemKey);
@@ -88,6 +88,19 @@ public sealed class RoleRepairPlanningTests
             case "unsupported-version": instruction = instruction with { SchemaVersion = 2 }; break;
         }
         Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BuildRoleRepairPlanning(items, instruction));
+    }
+
+    [Fact]
+    public void SplitKeepsExistingDistinctQaWorkAndWaitsForReviewedImplementation()
+    {
+        var (items, instruction) = Fixture();
+        items[3] = items[3] with { StageAssignments = [new("specialist-execution", "AgentInstallation")
+            { Requirements = new(VideoGameRoleKeys.QualityAssurance, [], [], ["work.execution.run"]) }] };
+        var output = SpecialistAgent.BuildRoleRepairPlanning(items, instruction);
+        var qa = Assert.Single(output.DeliveryItems, x => x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance);
+        Assert.Equal("game", qa.ProposalKey);
+        Assert.Equal(items[3].Planning!.AcceptanceCriteria, qa.AcceptanceCriteria);
+        Assert.Equal(new[] { output.DeliveryItems.Single(x => x.ProposalKey.EndsWith("-implementation")).ProposalKey }, qa.DependencyProposalKeys);
     }
 
     [Fact]

@@ -58,7 +58,7 @@ public sealed class ProductionPlanningTests
         Assert.Contains("Item 'implementation': accountableRoleKey 'invented-role'", result.Error);
         Assert.Contains("preferredSpecializationKeys contains unsupported values [invented-skill]", result.Error);
         Assert.Contains("story -> implementation -> story", result.Error);
-        Assert.Contains("game-quality-assurance", result.Error);
+        Assert.DoesNotContain("Add a separate QA task", result.Error);
     }
 
     [Fact]
@@ -137,12 +137,12 @@ public sealed class ProductionPlanningTests
         Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { DependencyProposalKeys = ["missing"] }, plan[3]]));
     }
     [Fact]
-    public void Requires_epic_story_and_separate_testable_engineering_and_qa_tasks()
+    public void Requires_epic_story_and_testable_engineering_without_mandatory_duplicate_qa_leaf()
     {
         var plan = Hierarchy();
         Assert.False(SpecialistAgent.IsValidPlan(plan.Skip(1).ToArray()));
         Assert.False(SpecialistAgent.IsValidPlan([plan[0], .. plan.Skip(2)]));
-        Assert.False(SpecialistAgent.IsValidPlan(plan.Take(3).ToArray()));
+        Assert.True(SpecialistAgent.IsValidPlan(plan.Take(3).ToArray()));
         Assert.False(SpecialistAgent.IsValidPlan([.. plan.Take(2), plan[2] with { ParentProposalKey = plan[0].ProposalKey }, plan[3]]));
         Assert.False(SpecialistAgent.IsValidPlan([plan[0], plan[1] with { ParentProposalKey = null }, plan[2], plan[3]]));
     }

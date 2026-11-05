@@ -109,7 +109,8 @@ public sealed partial class SpecialistAgent
                 accountableRoleKey, requiredSpecializationKeys (array), preferredSpecializationKeys (array),
                 requiredCapabilityKeys (["work.execution.run"]), dependencyProposalKeys (array), parentProposalKey (nullable).
                 Prefer small deliverables over a small ticket count. Build an Epic > Story > Task hierarchy: at least one milestone, one feature or
-                content story, and separate engineering and QA tasks. Milestones have no parent;
+                content story, and testable engineering tasks. Code tasks already have independent technical-review
+                and quality stages; separate QA tasks require a distinct validation deliverable. Milestones have no parent;
                 every feature/content item belongs to a milestone, and every executable item belongs
                 to a feature/content item. Split the playable game into small independently testable
                 increments instead of one broad implementation task. Include only work the accepted
@@ -130,8 +131,9 @@ public sealed partial class SpecialistAgent
                 with decisions, implementation guidance, measurement methods, and review criteria. Their completion
                 criteria must evaluate that plan, never require unperformed implementation or measured results.
                 When correcting a mixed planning/implementation ticket, split its responsibilities into linked
-                planning, engineering, and QA tasks. Preserve every original deliverable and acceptance criterion
-                across those tasks; moving responsibility must not weaken, omit, or mark any execution requirement
+                planning and engineering tasks, using the Code task's independent technical-review and quality stages.
+                Add a separate QA task only for a distinct validation deliverable. Preserve every original deliverable and acceptance criterion
+                across that work; moving responsibility must not weaken, omit, or mark any execution requirement
                 fulfilled. Downstream consumers must depend on the actual implementation/validation result, not
                 just the plan. Preserve unrelated tasks and completed work. Reuse canonical keys for retained work.
                 Every leaf needs testable criteria and one accountable role. Preserve the accepted creative direction;

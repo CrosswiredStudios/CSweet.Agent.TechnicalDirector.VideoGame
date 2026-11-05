@@ -85,7 +85,7 @@ public sealed partial class SpecialistAgent
         (accepted is null
             ? "No container outline was accepted; regenerate a lean Epic > Story > Task hierarchy from the accepted scope. "
             : $"Accepted container outline (immutable): {JsonSerializer.Serialize(accepted)} Repair only the executable leaves; do not rename, remove, reorder, or replace these containers. ") +
-        $"Return one complete JSON object{(compact ? " with concise deliveryItems; never combine independently deliverable tasks to reduce the count" : "")}, including separate testable engineer and QA tasks. " +
+        $"Return one complete JSON object{(compact ? " with concise deliveryItems; never combine independently deliverable tasks to reduce the count" : "")}. Code tasks already have independent technical-review and quality stages; add a QA leaf only for a distinct validation deliverable. " +
         "Preserve all accepted deliverables, do not invent approvals, and add no Markdown or commentary.";
 
     internal static IReadOnlyList<string> EngineeringBriefIssues(IReadOnlyList<GameProposedWorkItemV1> items) =>

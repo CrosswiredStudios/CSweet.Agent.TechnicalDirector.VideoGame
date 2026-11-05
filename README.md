@@ -1,4 +1,4 @@
-# Technical Director 6.0.3
+# Technical Director 6.0.4
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
@@ -293,3 +293,12 @@ Review changed manager direction against the exact retained outline, using one c
 Supply deterministic SHA-512/base64 measurements to independent technical review. A contradictory encoding finding receives one bounded reassessment; persistence fails review processing without fabricating approval. Keep independent source, integration and QA checks. Engineering planning now specifies standalone assertion commands and the assignment-authorized publication branch.
 
 Publish/install this release before Producer 6.2.1. Historical outputs remain intact. No capability, grant, SDK or public contract changes.
+
+## Sprint execution improvements (6.0.4)
+
+- Remove the blanket requirement to create a separate QA ticket in every plan. Code tasks already carry independent technical-review and quality stages.
+- Plan standalone validation only for a distinct deliverable, with a participant-observation example rather than duplicated startup checks. Keep original accepted scope and criteria.
+- Bind verification to the platform's immutable candidate and actual Story target, not an assumed checkout of main.
+- Require an early real Chromium check and screenshot; reuse browser tooling instead of inventing PNG decoders or scaffold validation frameworks.
+
+Published scope/history remains intact. The change affects new planning and refinement; it does not erase or auto-approve existing reviews.
