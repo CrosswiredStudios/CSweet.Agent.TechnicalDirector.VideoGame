@@ -18,7 +18,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "6.0.5",
+  "version": "6.1.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -1102,6 +1102,18 @@
       "scope": "workstream",
       "modelVisible": false,
       "purpose": "Restore exact lockfile-pinned public npm packages into project test compute under a separate scoped outbound grant. No general VM network access or public endpoint."
+    },
+    {
+      "name": "platform.resource.request.v1",
+      "scope": "organization",
+      "purpose": "Request, review or observe durable manager-approved project resource fulfillment.",
+      "modelVisible": false
+    },
+    {
+      "name": "platform.resource.read.v1",
+      "scope": "organization",
+      "purpose": "Request, review or observe durable manager-approved project resource fulfillment.",
+      "modelVisible": false
     }
   ],
   "events": {
@@ -1116,7 +1128,8 @@
       "com.csweet.work-delivery.changed.v1",
       "com.csweet.work.delegation.received.v1",
       "com.csweet.work.tracking.changed.v1",
-      "com.csweet.user.message.received.v1"
+      "com.csweet.user.message.received.v1",
+      "com.csweet.resource.changed.v1"
     ]
   },
   "configuration": [

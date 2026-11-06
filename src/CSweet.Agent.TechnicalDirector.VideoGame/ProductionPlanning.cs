@@ -12,6 +12,16 @@ public sealed partial class SpecialistAgent
     public override async Task<AgentCoordinationTurnResult> HandleCoordinationTurnAsync(
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact is { Type: "platform.resource.requirement.v1" } resourceArtifact)
+        {
+            var need = resourceArtifact.Payload.Deserialize<ResourceRequest>(new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                ?? throw new InvalidOperationException("Resource requirements are missing.");
+            if (request.WorkContext?.WorkstreamId != need.WorkstreamId || need.ResourceType != ResourceCapabilities.BuildToolchain)
+                return AgentCoordinationTurnResult.Blocked("Resource requirements must match the assigned project.");
+            var resource = await context.Platform.Resources.RequestAsync(need, cancellationToken);
+            return AgentCoordinationTurnResult.Completed("The build capacity request is recorded for current-manager approval and verified fulfillment.",
+                new("platform.resource.requested.v1", "1.0", resource.Id.ToString("N"), 1, true, JsonSerializer.SerializeToElement(resource)));
+        }
         if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact?.Type == ProjectDeliveryPlanning.RequestType)
         {
             using var planningClient = new ImplementationPlanningClient(context.CreateChatClient(new AgentLlmSelection(

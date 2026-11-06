@@ -1,4 +1,4 @@
-# Technical Director 6.0.5
+# Technical Director 6.1.0
 
 Route exact-build test readiness to the project delivery manager. Remove direct CEO broadcasting; retain independent technical review and QA boundaries.
 
@@ -302,3 +302,9 @@ Publish/install this release before Producer 6.2.1. Historical outputs remain in
 - Require an early real Chromium check and screenshot; reuse browser tooling instead of inventing PNG decoders or scaffold validation frameworks.
 
 Published scope/history remains intact. The change affects new planning and refinement; it does not erase or auto-approve existing reviews.
+
+Project build capacity uses durable resource fulfillment. The Director delegates the requirement
+to technical leadership; the Technical Director requests a project-scoped exact plan; the Producer
+reviews it within current authority. Published provider installation and real certification run
+as host-owned work. Resource-change events wake continuation; attention reads recover missed wakes.
+An approval is not a completed installation or a passing build.
