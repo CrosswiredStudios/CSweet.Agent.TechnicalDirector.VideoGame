@@ -19,7 +19,7 @@ public sealed partial class SpecialistAgent
             if (request.WorkContext?.WorkstreamId != need.WorkstreamId || need.ResourceType != ResourceCapabilities.BuildToolchain)
                 return AgentCoordinationTurnResult.Blocked("Resource requirements must match the assigned project.");
             var resource = await context.Platform.Resources.RequestAsync(need, cancellationToken);
-            return AgentCoordinationTurnResult.Completed("The build capacity request is recorded for current-manager approval and verified fulfillment.",
+            return AgentCoordinationTurnResult.Completed($"Build capacity request {resource.Id:D} is durably recorded: {resource.Status}. {resource.Condition} Installation still requires an exact approved plan and verified fulfillment.",
                 new("platform.resource.requested.v1", "1.0", resource.Id.ToString("N"), 1, true, JsonSerializer.SerializeToElement(resource)));
         }
         if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact?.Type == ProjectDeliveryPlanning.RequestType)
