@@ -35,7 +35,7 @@ public sealed partial class ProgressivePlanningTests
         {
             var payload = result.Artifact!.Payload;
             Assert.Equal(JsonSerializer.Serialize(scope.Plan.DeliveryItems), JsonSerializer.Serialize(payload.GetProperty("DeliveryItems").Deserialize<
-                IReadOnlyList<CrosswiredStudios.VideoGame.Contracts.GameProposedWorkItemV1>>()));
+                IReadOnlyList<CSweet.Agent.SDK.VideoGame.Contracts.GameProposedWorkItemV1>>()));
             Assert.Equal(digest, payload.GetProperty("progressivePlanning").GetProperty("outlineDigest").GetString());
             Assert.Equal(0, payload.GetProperty("progressivePlanning").GetProperty("reviewedAuthorityQuestions").GetArrayLength());
             var follow = (Task<IReadOnlyList<ChatMessage>>)typeof(SpecialistAgent).GetMethod("ApplyRetainedPlanningDirectionAsync",

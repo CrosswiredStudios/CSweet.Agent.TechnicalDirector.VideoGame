@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
-using CrosswiredStudios.VideoGame.Contracts;
+using CSweet.Agent.SDK.VideoGame.Contracts;
 using CSweet.Agent.SDK;
 using Microsoft.Extensions.AI;
 

@@ -1,13 +1,13 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CrosswiredStudios.VideoGame.Contracts;
+using CSweet.Agent.SDK.VideoGame.Contracts;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
     internal static System.Text.Json.Nodes.JsonObject PlanningProposalPayload(
-        CrosswiredStudios.VideoGame.Contracts.GameTechnicalDeliveryProposalV1 proposal)
+        CSweet.Agent.SDK.VideoGame.Contracts.GameTechnicalDeliveryProposalV1 proposal)
     {
         var payload = JsonSerializer.SerializeToNode(proposal)!.AsObject();
         // This declaration is derived from our deterministic task binder, not question prose.

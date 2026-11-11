@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using CSweet.Agent.SDK;
 using CSweet.WorkManagement.Contracts;
-using CrosswiredStudios.VideoGame.Contracts;
+using CSweet.Agent.SDK.VideoGame.Contracts;
 
 namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 

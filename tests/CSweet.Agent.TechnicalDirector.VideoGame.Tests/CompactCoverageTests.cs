@@ -5,7 +5,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 public sealed class CompactCoverageTests
 {
     private static readonly SpecialistAgent.ScopeSource[] Sources = [new("document-0:paragraph-4", "Paddle controls"), new("document-1:paragraph-8", "Colour-safe palette")];
-    private static readonly CrosswiredStudios.VideoGame.Contracts.GameProposedWorkItemV1[] Stories =
+    private static readonly CSweet.Agent.SDK.VideoGame.Contracts.GameProposedWorkItemV1[] Stories =
         [SpecialistAgent.PlanningContractExample().DeliveryItems[1], SpecialistAgent.PlanningContractExample().DeliveryItems[1] with { ProposalKey = "palette-story", Title = "Palette" }];
 
     [Fact]
