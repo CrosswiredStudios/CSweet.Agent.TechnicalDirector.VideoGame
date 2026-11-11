@@ -40,6 +40,8 @@ public sealed class DependencyPinPlanningTests
         var output = SpecialistAgent.BindDependencyPins(original with { TechnicalConstraints = ["Phaser version will be pinned at kickoff."] });
         var pin = Assert.Single(output.DeliveryItems, x => x.ProposalKey == "dependency-pin-phaser");
         Assert.Equal(VideoGameRoleKeys.Engineer, pin.AccountableRoleKey);
+        // The pin copies an engineer task; it must not inherit that task's browser evidence.
+        Assert.Equal(GameBrowserVerification.None, pin.BrowserVerification);
         Assert.Contains("integrated", pin.Description);
         Assert.All(output.DeliveryItems.Where(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.ProposalKey != pin.ProposalKey &&
             (x.Title + " " + x.Description).Contains("Phaser", StringComparison.OrdinalIgnoreCase)), x => Assert.Contains(pin.ProposalKey, x.DependencyProposalKeys));

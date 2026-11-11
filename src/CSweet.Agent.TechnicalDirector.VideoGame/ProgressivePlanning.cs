@@ -71,7 +71,7 @@ public sealed partial class SpecialistAgent
         [new("description", story.Description), .. story.AcceptanceCriteria.Select((text, index) => new ScopeSource("criterion-" + index, text))];
 
     internal static void ValidateStoryRefinement(ProgressiveStoryIndex index, GameProposedWorkItemV1 story,
-        PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves, int maximumTasks = 12)
+        PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves, int maximumTasks = 12, bool requireVerification = false)
     {
         if (index.Items is not { Count: > 0 } || index.Items.Count > maximumTasks || index.Items.Any(x => x is null || IsPlanningContainer(x) || x.ParentProposalKey != story.ProposalKey))
             throw new InvalidOperationException("Refine exactly the requested Story into at most twelve small executable tasks; retain all other scope for later increments.");
@@ -87,8 +87,15 @@ public sealed partial class SpecialistAgent
                 index.Items.Single(x => x.ProposalKey == key).AcceptanceCriteria.Contains(source.Text, StringComparer.Ordinal)))
                 throw new InvalidOperationException("Each original Story criterion must survive verbatim on at least one mapped execution/QA task.");
         var issues = PlanValidationIssues(outline.DeliveryItems.Concat(priorLeaves).Concat(index.Items).ToArray());
+        // Indexes retained from before browserVerification existed stay valid; the Producer records them as undeclared.
+        if (requireVerification)
+            issues = [.. issues, .. BrowserVerificationIssues(index.Items)];
         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
     }
+
+    internal static IReadOnlyList<string> BrowserVerificationIssues(IReadOnlyList<GameProposedWorkItemV1> tasks) =>
+        tasks.Where(task => !GameBrowserVerification.All.Contains(task.BrowserVerification ?? "", StringComparer.Ordinal))
+            .Select(task => $"{task.ProposalKey}: set browserVerification to canvas, page or none.").ToArray();
 
     internal async Task<AgentCoordinationTurnResult> GenerateProgressivePlanningAsync(AgentRuntimeContext context,
         IChatClient client, IReadOnlyList<ChatMessage> messages, IReadOnlyList<string> documents,
@@ -135,26 +142,28 @@ public sealed partial class SpecialistAgent
                 var baseIndexKey = ProgressiveStoryKey(scopeKey, story.ProposalKey);
                 var indexKey = baseIndexKey;
                 var retained = await context.Platform.ReadOperatingStateAsync<ProgressiveStoryIndex>(indexKey, token);
+                var fresh = retained is null;
                 var index = retained?.Payload ?? await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
                     "Do not detail or recreate future Stories, milestones or existing tasks. Descriptions are short scope summaries; " +
                     "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
                     "Declare only real data/source dependencies, allowing independent work to proceed. Independent technical review and QA already run as Code-task stages. " +
                     "Do not add review-only siblings for the same candidate. Add a validation leaf only for different evidence unavailable from those stages, and explain that difference. " +
+                    "Set browserVerification on every task (canvas, page or none). " +
                     "Every original Story criterion must appear verbatim in at least one mapped task's acceptanceCriteria. Map its " +
                     "description and every criterion sourceKey exactly once in coverage. Dependencies may name tasks in this response " +
                     "or the existing prior task ledger, never tasks in unrefined future Stories. Requested Story and sources: " +
                     JsonSerializer.Serialize(new { story, sources = StoryScopeSources(story) }, PlanningJson) +
                     "\nExisting identity/dependency ledger: " + JsonSerializer.Serialize(scope.Plan.DeliveryItems.Concat(leaves).Select(x =>
                         new { x.ProposalKey, x.Title, x.ParentProposalKey, x.WorkItemTypeKey }), PlanningJson),
-                    value => ValidateStoryRefinement(value, story, scope.Plan, leaves), MaximumPlanningPageCharacters, token);
+                    value => ValidateStoryRefinement(value, story, scope.Plan, leaves, requireVerification: true), MaximumPlanningPageCharacters, token);
                 index = index with { Items = index.Items.Select(NormalizeCoreRoleSkills).ToArray() };
-                ValidateStoryRefinement(index, story, scope.Plan, leaves);
+                ValidateStoryRefinement(index, story, scope.Plan, leaves, requireVerification: fresh);
                 await SaveProgressiveStateAsync(indexKey, index, context, token);
                 var bound = BindStoryDependencyPins(index, story, scope.Plan, leaves);
                 var hasBoundIndex = JsonSerializer.Serialize(index) != JsonSerializer.Serialize(bound);
                 index = bound;
-                ValidateStoryRefinement(index, story, scope.Plan, leaves, 13);
+                ValidateStoryRefinement(index, story, scope.Plan, leaves, 13, requireVerification: fresh);
                 var indexDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(index)));
                 if (hasBoundIndex)
                 {

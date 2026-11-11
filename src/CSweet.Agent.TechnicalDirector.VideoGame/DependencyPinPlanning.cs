@@ -70,7 +70,7 @@ public sealed partial class SpecialistAgent
                 var prerequisite = (prerequisiteParentKey is null ? engineers[0] : engineers.First(x => x.ParentProposalKey == prerequisiteParentKey)) with { ProposalKey = key, Title = "Commit the exact Phaser dependency pin and lockfile",
                     Description = "Resolve the exact Phaser version within the approved engine constraints. Reuse an existing approved exact pin when present. Commit package.json and its lockfile, restore dependencies and verify the resolved installed version. If the approved engine constraints conflict, request the actual missing decision. This is executable engineering work; no human kickoff is required and the pin is unresolved until this task is integrated.",
                     AcceptanceCriteria = ["An exact Phaser version and reproducible lockfile are committed and integrated.", "A focused executed check proves the installed Phaser version matches the committed pin."],
-                    DependencyProposalKeys = [] };
+                    DependencyProposalKeys = [], BrowserVerification = GameBrowserVerification.None };
                 items.Add(prerequisite);
             }
             // With an existing explicit owner, its declared dependency graph already owns sequencing.
