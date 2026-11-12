@@ -1,4 +1,4 @@
-# Technical Director 6.2.0
+# Technical Director 6.2.1
 
 Plans declare browser evidence per task (`browserVerification`: canvas, page or none) instead of a constraint sentence. Technical review checks a declared browser requirement in code: a missing receipt is rejected with the exact command to bind, and a bound receipt or a declared "none" stops the reviewer from asking for browser evidence.
 

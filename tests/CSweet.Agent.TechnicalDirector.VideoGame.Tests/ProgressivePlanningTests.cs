@@ -20,7 +20,9 @@ public sealed partial class ProgressivePlanningTests
     private static SpecialistAgent.ProgressiveStoryIndex Detail(SpecialistAgent.ProgressiveScopeIndex scope)
     {
         var example = SpecialistAgent.PlanningContractExample(); var story = scope.Plan.DeliveryItems[1];
-        return new([example.DeliveryItems[2] with { AcceptanceCriteria = story.AcceptanceCriteria }, example.DeliveryItems[3]],
+        // Fresh task indexes must declare browser evidence since 6.2.0; the engineering task needs the running scene.
+        return new([example.DeliveryItems[2] with { AcceptanceCriteria = story.AcceptanceCriteria, BrowserVerification = GameBrowserVerification.Canvas },
+                example.DeliveryItems[3] with { BrowserVerification = GameBrowserVerification.None }],
             [new("description", [example.DeliveryItems[2].ProposalKey]), new("criterion-0", [example.DeliveryItems[2].ProposalKey])]);
     }
 
