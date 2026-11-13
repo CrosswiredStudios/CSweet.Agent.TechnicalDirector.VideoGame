@@ -108,7 +108,7 @@ public sealed partial class SpecialistAgent
     internal static async Task<(PlanningOutput? Output, string? Error)> GeneratePlanningPagesAsync(
         Func<IReadOnlyList<ChatMessage>, Type, CancellationToken, Task<ChatResponse>> generate,
         IReadOnlyList<ChatMessage> initialMessages, string inputDigest, PlanningCheckpoint? saved,
-        Func<PlanningCheckpoint, CancellationToken, Task> save, CancellationToken token)
+        Func<PlanningCheckpoint, CancellationToken, Task> save, CancellationToken token, bool partialIncrement = false)
     {
         var grounded = initialMessages.Append(new ChatMessage(ChatRole.System, PlanningConstructionGuidance())).ToArray();
         var briefMessages = initialMessages.Append(new ChatMessage(ChatRole.System, ImplementationBrief.Guidance +
@@ -129,7 +129,7 @@ public sealed partial class SpecialistAgent
                         throw new InvalidOperationException("The compact scope index exceeds durable-state bounds. Remove repeated wording without dropping requirements or tasks.");
                 }, MaximumPlanningPageCharacters, token);
             outline = outline with { DeliveryItems = outline.DeliveryItems.Select(NormalizeCoreRoleSkills).ToArray() };
-            ValidatePlanningOutline(outline);
+            ValidatePlanningOutline(outline, partialIncrement);
             var descriptions = saved?.Descriptions.ToDictionary() ?? new Dictionary<string, string>();
             var leaves = outline.DeliveryItems.Where(x => !IsPlanningContainer(x)).ToArray();
             if (descriptions.Any(x => !leaves.Any(leaf => leaf.ProposalKey == x.Key) || string.IsNullOrWhiteSpace(x.Value)))
@@ -164,7 +164,7 @@ public sealed partial class SpecialistAgent
             }
             var output = outline with { DeliveryItems = outline.DeliveryItems.Select(x => IsPlanningContainer(x)
                 ? x : x with { Description = descriptions[x.ProposalKey] }).ToArray() };
-            ValidatePlanningOutline(output);
+            ValidatePlanningOutline(output, partialIncrement);
             var finalIssues = EngineeringBriefIssues(output.DeliveryItems);
             if (finalIssues.Count > 0) throw new InvalidOperationException(string.Join("; ", finalIssues));
             return (output, null);
@@ -179,10 +179,10 @@ public sealed partial class SpecialistAgent
     private static bool IsPlanningContainer(GameProposedWorkItemV1 item) => item.WorkItemTypeKey is
         VideoGameWorkItemTypeKeys.Milestone or VideoGameWorkItemTypeKeys.Feature or VideoGameWorkItemTypeKeys.Content;
 
-    private static void ValidatePlanningOutline(PlanningOutput output)
+    private static void ValidatePlanningOutline(PlanningOutput output, bool partialIncrement = false)
     {
         _ = BindDependencyPins(output);
-        var issues = PlanValidationIssues(output.DeliveryItems);
+        var issues = PlanValidationIssues(output.DeliveryItems, partialIncrement);
         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
         if (output.FeasibilityFindings is null || output.TechnicalConstraints is null || output.OpenFeasibilityDecisions is null ||
             output.FeasibilityFindings.Concat(output.TechnicalConstraints).Concat(output.OpenFeasibilityDecisions).Any(string.IsNullOrWhiteSpace))

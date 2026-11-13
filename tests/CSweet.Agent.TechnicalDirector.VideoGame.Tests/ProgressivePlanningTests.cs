@@ -27,6 +27,44 @@ public sealed partial class ProgressivePlanningTests
     }
 
     [Fact]
+    public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation()
+    {
+        var runtime = StateRuntime(new Dictionary<string, AgentOperatingStateResponse>());
+        var client = new Client();
+        var agent = new SpecialistAgent();
+        var directions = new string('d', 64);
+        var cycle = new GameProductionPlanningCycleV1(Guid.NewGuid(), Guid.NewGuid(), 1, Guid.NewGuid(), new string('a',64),
+            Guid.NewGuid(), 1, new string('b',64), "concept", "vision", new string('c',64));
+        var detail = Detail(Scope());
+        var text = detail.Items[0].AcceptanceCriteria.Single();
+        var roadmap = new SpecialistAgent.RoadmapDraft([
+            new("Playable loop", "Verify the core interaction", [text], [0], []),
+            new("Scoring", "Award points for hits", ["Each brick scores once"], [1], [0])], [], [], []);
+        client.Responses.Enqueue(JsonSerializer.Serialize(roadmap, Web));
+        string[] docs = ["Prototype\n\nScoring"];
+        var outline = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle,
+            new("Outline", directions, Adaptive: true), default);
+        Assert.True(outline.Artifact != null, outline.Content);
+        Assert.Equal(1, client.Calls);
+        var outlineEvidence = outline.Artifact!.Payload.GetProperty("progressivePlanning");
+        var key = "roadmap-epic-1.story-1";
+        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.StorySlices([
+            new("Rebound", "Prove the core loop", [], [0], [])]), Web));
+        detail = detail with { Items = detail.Items.Select(t => t with { ParentProposalKey = key }).ToArray() };
+        client.Responses.Enqueue(JsonSerializer.Serialize(detail, Web));
+        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(detail.Items.Select(t =>
+            new SpecialistAgent.PlanningDescription(t.ProposalKey, t.Description)).ToArray()), Web));
+        var request = new SpecialistAgent.ProgressivePlanningRequest("Story", directions, outlineEvidence.GetProperty("scopeKey").GetString(),
+            outlineEvidence.GetProperty("outlineDigest").GetString(), key, [], Adaptive: true, DraftBasis: new string('f',64));
+        var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default);
+        Assert.True(ready.Artifact != null, ready.Content);
+        var count = client.Calls;
+        var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default);
+        Assert.Equal(ready.Artifact!.Payload.GetRawText(), replay.Artifact!.Payload.GetRawText());
+        Assert.Equal(count, client.Calls);
+    }
+
+    [Fact]
     public void Complete_outline_retains_every_source_without_future_executable_work()
     {
         var scope = Scope(); var sources = SpecialistAgent.AcceptedScopeSources(["First playable\n\nAll levels and polish"]);

@@ -12,6 +12,13 @@ public sealed partial class SpecialistAgent
     public override async Task<AgentCoordinationTurnResult> HandleCoordinationTurnAsync(
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        var sourceTurn = request.Transcript.LastOrDefault(x => x.Artifact is not null);
+        if (sourceTurn?.Artifact is { Type: FeasibilityRequestType } feasibility)
+        {
+            if (sourceTurn.SpeakerOrganizationUserId != request.Counterpart.OrganizationUserId)
+                return AgentCoordinationTurnResult.Blocked("The Director must supply the feasibility review request.");
+            return await ReviewToolchainAsync(request, feasibility, context, AssessToolchainAsync, cancellationToken);
+        }
         if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact is { Type: "platform.resource.requirement.v1" } resourceArtifact)
         {
             var need = resourceArtifact.Payload.Deserialize<ResourceRequest>(new JsonSerializerOptions(JsonSerializerDefaults.Web))
@@ -46,6 +53,9 @@ public sealed partial class SpecialistAgent
         if (package.Status is not ("Accepted" or "Approved") || package.Version != cycle.ApprovedPackageVersion)
             return AgentCoordinationTurnResult.Blocked("Planning inputs are not accepted or their version changed.");
         var grounding = new List<string>();
+        var adaptive = artifact.Payload.TryGetProperty("progressivePlanning", out var mode) &&
+            mode.TryGetProperty("adaptive", out var enabled) && enabled.ValueKind == JsonValueKind.True;
+        var ledger = new List<GameOutcomeSource>();
         var members = new List<ArtifactPackageMemberDigest>();
         foreach (var member in package.Members)
         {
@@ -55,6 +65,8 @@ public sealed partial class SpecialistAgent
                 return AgentCoordinationTurnResult.Blocked("Every planning input must pin an accepted revision.");
             members.Add(new(document.Id, revision.Id, member.RequiredDocumentType, revision.ContentSha256));
             grounding.Add(revision.Content);
+            if (adaptive) ledger.AddRange(GameOutcomeLedger.Read(cycle.WorkstreamId, cycle.TeamId, document.Id, revision.Id,
+                revision.ContentSha256, member.RequiredDocumentType, revision.Content));
         }
         if (ArtifactPackageDigestCalculator.Calculate(package.Id, package.Version, members) != cycle.ApprovedPackageDigest)
             return AgentCoordinationTurnResult.Blocked("The planning package digest changed.");
@@ -182,7 +194,7 @@ public sealed partial class SpecialistAgent
         ];
         if (progressivePlanning)
             return await GenerateProgressivePlanningAsync(context, client, planningMessages, grounding, cycle,
-                progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken);
+                progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken, adaptive ? ledger : null);
         var generated = await GenerateCheckpointedPlanningAsync(context, client, planningMessages, cancellationToken);
         if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],
@@ -190,7 +202,7 @@ public sealed partial class SpecialistAgent
         return CompletePlanningProposal(cycle, output);
     }
 
-    private static AgentCoordinationTurnResult CompletePlanningProposal(GameProductionPlanningCycleV1 cycle, PlanningOutput output)
+    private static AgentCoordinationTurnResult CompletePlanningProposal(GameProductionPlanningCycleV1 cycle, PlanningOutput output, bool partialIncrement = false)
     {
         output = BindDependencyPins(output);
         // Progressive outline/story pages deliberately contain only part of the global
@@ -198,7 +210,7 @@ public sealed partial class SpecialistAgent
         if (output.DeliveryItems.Any(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task) &&
             output.DeliveryItems.Any(x => x.AccountableRoleKey == VideoGameRoleKeys.QualityAssurance && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task))
         {
-            var issues = PlanValidationIssues(output.DeliveryItems);
+            var issues = PlanValidationIssues(output.DeliveryItems, partialIncrement);
             if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
         }
         var digest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(output))).ToLowerInvariant();

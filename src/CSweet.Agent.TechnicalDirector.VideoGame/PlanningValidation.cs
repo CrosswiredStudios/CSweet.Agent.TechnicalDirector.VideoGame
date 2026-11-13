@@ -30,9 +30,9 @@ public sealed partial class SpecialistAgent
     }
 
     // Use the same diagnostics for acceptance, model correction, and the durable blocked result.
-    internal static IReadOnlyList<string> PlanValidationIssues(IReadOnlyList<GameProposedWorkItemV1>? items)
+    internal static IReadOnlyList<string> PlanValidationIssues(IReadOnlyList<GameProposedWorkItemV1>? items, bool partialIncrement = false)
     {
-        if (items is null || items.Count is 0 or > 200)
+        if (items is null || items.Count == 0 || !partialIncrement && items.Count > 200)
             return ["deliveryItems must contain 1 to 200 items."];
         if (items.Any(x => x is null)) return ["deliveryItems contains a null item; replace it with a complete work item."];
         var issues = new List<string>();
@@ -65,7 +65,7 @@ public sealed partial class SpecialistAgent
         }
         if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone)) issues.Add("Add a milestone (Epic).");
         if (!items.Any(x => stories.Contains(x.WorkItemTypeKey))) issues.Add("Add a feature or content story under a milestone.");
-        if (!items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.Engineer))
+        if (!partialIncrement && !items.Any(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.ResearchSpike || x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.AccountableRoleKey == VideoGameRoleKeys.Engineer))
             issues.Add("Add an engineering task with accountableRoleKey game-engineer.");
         // Code tasks already receive independent technical-review and quality stages from
         // the Producer's delivery workflow. A QA leaf is optional, for a distinct product
