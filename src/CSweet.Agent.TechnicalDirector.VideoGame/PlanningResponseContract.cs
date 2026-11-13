@@ -33,6 +33,12 @@ public sealed partial class SpecialistAgent
         page for other browser-visible output, none when the task changes no runnable browser output (dependency pins,
         tooling, documents). Engineering, technical review and QA all apply that one field, so never restate
         browser-evidence rules in technicalConstraints or acceptance criteria. Do not ask for custom PNG decoders.
+        List interactionCriteria (zero-based indexes into that task's acceptanceCriteria) only for criteria that need
+        behavior observed in the running build: input, gameplay, audio or UI behavior. Leave it empty otherwise; QA then
+        judges those criteria from the build, tests, source and browser startup, without live interaction testing.
+        Interaction criteria need browserVerification canvas or page. Plan an investigation whose deliverable is a
+        record of observations as video-game.research-spike.v1; it is judged on that record, so list interaction
+        criteria for it only when the record cannot be checked without observing the build.
         A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
         scope requires explicit management authority. State the conflicting requirement and the precise choice
         needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
@@ -83,6 +89,10 @@ public sealed partial class SpecialistAgent
                         Choices(field, Constants(typeof(VideoGameSpecializationKeys)), "Skills only. Use [] when empty. work.execution.run is a capability and cannot appear here.", true);
                     Choices("requiredCapabilityKeys", ["work.execution.run"], "Execution capability only; never place this value in a specialization field.", true);
                     Choices("browserVerification", GameBrowserVerification.All, "Browser evidence this executable task's candidate must carry: canvas when acceptance needs the running game scene, page for other browser-visible output, none when it changes no runnable browser output.");
+                    if (properties["interactionCriteria"] is JsonObject)
+                        properties["interactionCriteria"] = new JsonObject { ["type"] = "array",
+                            ["description"] = "Zero-based indexes of this task's acceptanceCriteria that need behavior observed in the running build (input, gameplay, audio, UI). Use [] when none do.",
+                            ["items"] = new JsonObject { ["type"] = "integer", ["minimum"] = 0 } };
                     if (type != typeof(OutlineMetadataCorrections) && properties["requiredCapabilityKeys"] is JsonObject capabilities)
                     { capabilities["minItems"] = 1; capabilities["maxItems"] = 1; }
                 }

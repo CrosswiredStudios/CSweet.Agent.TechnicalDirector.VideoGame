@@ -89,9 +89,22 @@ public sealed partial class SpecialistAgent
         var issues = PlanValidationIssues(outline.DeliveryItems.Concat(priorLeaves).Concat(index.Items).ToArray());
         // Indexes retained from before browserVerification existed stay valid; the Producer records them as undeclared.
         if (requireVerification)
-            issues = [.. issues, .. BrowserVerificationIssues(index.Items)];
+            issues = [.. issues, .. BrowserVerificationIssues(index.Items), .. InteractionCriteriaIssues(index.Items)];
         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
     }
+
+    /// <summary>Interaction criteria must name the task's own criteria, once each, and need a browser build to observe.</summary>
+    internal static IReadOnlyList<string> InteractionCriteriaIssues(IReadOnlyList<GameProposedWorkItemV1> tasks) =>
+        tasks.Where(task => task.InteractionCriteria is { Count: > 0 } indexes && (
+                indexes.Distinct().Count() != indexes.Count || indexes.Any(i => i < 0 || i >= task.AcceptanceCriteria.Count) ||
+                task.BrowserVerification is not (GameBrowserVerification.Canvas or GameBrowserVerification.Page)))
+            .Select(task => $"{task.ProposalKey}: interactionCriteria must list distinct zero-based indexes of its own acceptanceCriteria " +
+                $"(0-{task.AcceptanceCriteria.Count - 1}) and needs browserVerification canvas or page; use [] when no criterion needs live interaction.").ToArray();
+
+    /// <summary>An empty interaction list means none; store it as absent so proposal JSON matches tasks without one.</summary>
+    internal static GameProposedWorkItemV1 NormalizeInteractionCriteria(GameProposedWorkItemV1 task) =>
+        task.InteractionCriteria is { Count: 0 } ? task with { InteractionCriteria = null } :
+        task.InteractionCriteria is { } indexes ? task with { InteractionCriteria = indexes.Order().ToArray() } : task;
 
     internal static IReadOnlyList<string> BrowserVerificationIssues(IReadOnlyList<GameProposedWorkItemV1> tasks) =>
         tasks.Where(task => !GameBrowserVerification.All.Contains(task.BrowserVerification ?? "", StringComparer.Ordinal))
@@ -149,7 +162,7 @@ public sealed partial class SpecialistAgent
                     "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
                     "Declare only real data/source dependencies, allowing independent work to proceed. Independent technical review and QA already run as Code-task stages. " +
                     "Do not add review-only siblings for the same candidate. Add a validation leaf only for different evidence unavailable from those stages, and explain that difference. " +
-                    "Set browserVerification on every task (canvas, page or none). " +
+                    "Set browserVerification on every task (canvas, page or none), and interactionCriteria to the indexes of the task's own criteria that need behavior observed in the running build ([] when none). " +
                     "Every original Story criterion must appear verbatim in at least one mapped task's acceptanceCriteria. Map its " +
                     "description and every criterion sourceKey exactly once in coverage. Dependencies may name tasks in this response " +
                     "or the existing prior task ledger, never tasks in unrefined future Stories. Requested Story and sources: " +
@@ -157,7 +170,7 @@ public sealed partial class SpecialistAgent
                     "\nExisting identity/dependency ledger: " + JsonSerializer.Serialize(scope.Plan.DeliveryItems.Concat(leaves).Select(x =>
                         new { x.ProposalKey, x.Title, x.ParentProposalKey, x.WorkItemTypeKey }), PlanningJson),
                     value => ValidateStoryRefinement(value, story, scope.Plan, leaves, requireVerification: true), MaximumPlanningPageCharacters, token);
-                index = index with { Items = index.Items.Select(NormalizeCoreRoleSkills).ToArray() };
+                index = index with { Items = index.Items.Select(NormalizeCoreRoleSkills).Select(NormalizeInteractionCriteria).ToArray() };
                 ValidateStoryRefinement(index, story, scope.Plan, leaves, requireVerification: fresh);
                 await SaveProgressiveStateAsync(indexKey, index, context, token);
                 var bound = BindStoryDependencyPins(index, story, scope.Plan, leaves);

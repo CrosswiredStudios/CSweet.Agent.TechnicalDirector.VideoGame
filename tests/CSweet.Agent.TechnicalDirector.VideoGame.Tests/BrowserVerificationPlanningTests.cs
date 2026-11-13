@@ -53,4 +53,28 @@ public sealed class BrowserVerificationPlanningTests
         Assert.Contains("Declare browserVerification on every executable task", SpecialistAgent.PlanningAuthorityPolicy);
         Assert.DoesNotContain("check_browser_build", SpecialistAgent.PlanningAuthorityPolicy);
     }
+
+    [Fact]
+    public void Interaction_criteria_name_the_tasks_own_criteria_and_need_a_browser_build()
+    {
+        var two = Proposal("a", GameBrowserVerification.Canvas) with { AcceptanceCriteria = ["Scene renders", "Ball breaks a brick"] };
+        Assert.Empty(SpecialistAgent.InteractionCriteriaIssues([two with { InteractionCriteria = [1] }, two, two with { InteractionCriteria = [] }]));
+        Assert.Single(SpecialistAgent.InteractionCriteriaIssues([two with { InteractionCriteria = [2] }]));
+        Assert.Single(SpecialistAgent.InteractionCriteriaIssues([two with { InteractionCriteria = [1, 1] }]));
+        Assert.Single(SpecialistAgent.InteractionCriteriaIssues([two with { BrowserVerification = GameBrowserVerification.None, InteractionCriteria = [0] }]));
+
+        Assert.Null(SpecialistAgent.NormalizeInteractionCriteria(two with { InteractionCriteria = [] }).InteractionCriteria);
+        Assert.Equal(new[] { 0, 1 }, SpecialistAgent.NormalizeInteractionCriteria(two with { InteractionCriteria = [1, 0] }).InteractionCriteria);
+    }
+
+    [Fact]
+    public void The_task_schema_and_policy_ask_for_interaction_criteria()
+    {
+        var schema = JsonNode.Parse(SpecialistAgent.PlanningResponseSchema(typeof(SpecialistAgent.ProgressiveStoryIndex)).GetRawText())!;
+        var field = schema["properties"]!["items"]!["items"]!["properties"]!["interactionCriteria"]!;
+        Assert.Equal("array", field["type"]!.GetValue<string>());
+        Assert.Equal("integer", field["items"]!["type"]!.GetValue<string>());
+        Assert.Contains("List interactionCriteria", SpecialistAgent.PlanningAuthorityPolicy);
+        Assert.Contains("video-game.research-spike.v1", SpecialistAgent.PlanningAuthorityPolicy);
+    }
 }

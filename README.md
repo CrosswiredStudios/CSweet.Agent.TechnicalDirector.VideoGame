@@ -1,4 +1,6 @@
-# Technical Director 6.2.3
+# Technical Director 6.3.0
+
+Tasks can also name the acceptance criteria that need behavior observed in the running build (`interactionCriteria`, video-game contracts 1.2.0); QA requires live interaction evidence for those only. Investigations whose deliverable is a record of observations are planned as research spikes.
 
 Plans declare browser evidence per task (`browserVerification`: canvas, page or none) instead of a constraint sentence. Technical review checks a declared browser requirement in code: a missing receipt is rejected with the exact command to bind, and a bound receipt or a declared "none" stops the reviewer from asking for browser evidence.
 
