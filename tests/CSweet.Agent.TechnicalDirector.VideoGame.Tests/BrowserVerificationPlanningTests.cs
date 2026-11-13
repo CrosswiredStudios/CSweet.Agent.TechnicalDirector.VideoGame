@@ -75,6 +75,9 @@ public sealed class BrowserVerificationPlanningTests
         Assert.Equal("array", field["type"]!.GetValue<string>());
         Assert.Equal("integer", field["items"]!["type"]!.GetValue<string>());
         Assert.Contains("List interactionCriteria", SpecialistAgent.PlanningAuthorityPolicy);
+        // Super Awesome Games ticket 38 (2026-11-13): a record of a run is only as good as the run behind it.
+        Assert.Contains("that a record of a run must report", SpecialistAgent.PlanningAuthorityPolicy);
+        Assert.DoesNotContain("it is judged on that record", SpecialistAgent.PlanningAuthorityPolicy);
         Assert.Contains("video-game.research-spike.v1", SpecialistAgent.PlanningAuthorityPolicy);
     }
 }

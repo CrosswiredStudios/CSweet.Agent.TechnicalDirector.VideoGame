@@ -33,12 +33,15 @@ public sealed partial class SpecialistAgent
         page for other browser-visible output, none when the task changes no runnable browser output (dependency pins,
         tooling, documents). Engineering, technical review and QA all apply that one field, so never restate
         browser-evidence rules in technicalConstraints or acceptance criteria. Do not ask for custom PNG decoders.
-        List interactionCriteria (zero-based indexes into that task's acceptanceCriteria) only for criteria that need
-        behavior observed in the running build: input, gameplay, audio or UI behavior. Leave it empty otherwise; QA then
-        judges those criteria from the build, tests, source and browser startup, without live interaction testing.
-        Interaction criteria need browserVerification canvas or page. Plan an investigation whose deliverable is a
-        record of observations as video-game.research-spike.v1; it is judged on that record, so list interaction
-        criteria for it only when the record cannot be checked without observing the build.
+        List interactionCriteria (zero-based indexes into that task's acceptanceCriteria) for every criterion about
+        behavior in the running build: input, gameplay, physics, collisions, audio or UI behavior, and every criterion
+        that a record of a run must report (what was observed, measured or heard while the build ran). A recorded
+        observation is only as good as the run behind it: never leave such a criterion out because the deliverable is
+        a document. For those criteria the engineer builds the shared browser scenario harness, its runner judges each
+        check from emitted events and generates the record's measured section, and QA repeats the same run. Leave the
+        list empty only when no criterion depends on observed behavior; QA then judges from the build, tests, source and
+        browser startup. Interaction criteria need browserVerification canvas or page. A pure research note that
+        observes no build of this project remains video-game.research-spike.v1 without interaction criteria.
         A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
         scope requires explicit management authority. State the conflicting requirement and the precise choice
         needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
