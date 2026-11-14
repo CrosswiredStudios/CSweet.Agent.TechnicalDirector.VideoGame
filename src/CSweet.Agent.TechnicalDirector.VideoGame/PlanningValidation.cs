@@ -70,30 +70,35 @@ public sealed partial class SpecialistAgent
         // Code tasks already receive independent technical-review and quality stages from
         // the Producer's delivery workflow. A QA leaf is optional, for a distinct product
         // validation deliverable; requiring one here manufactured duplicate review tickets.
-        // Find an actual cycle, not the unrelated descendants that merely wait on it.
         if (byKey.Count == items.Count && items.All(x => x.DependencyProposalKeys is not null))
+            issues.AddRange(DependencyCycleIssues(byKey));
+        return issues;
+    }
+
+    private static IReadOnlyList<string> DependencyCycleIssues(IReadOnlyDictionary<string, GameProposedWorkItemV1> byKey)
+    {
+        var issues = new List<string>();
+        // Find an actual cycle, not the unrelated descendants that merely wait on it.
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var path = new List<string>();
+        bool Visit(string key)
         {
-            var visited = new HashSet<string>(StringComparer.Ordinal);
-            var path = new List<string>();
-            bool Visit(string key)
+            var index = path.IndexOf(key);
+            if (index >= 0)
             {
-                var index = path.IndexOf(key);
-                if (index >= 0)
-                {
-                    issues.Add($"Parent/dependency cycle: {string.Join(" -> ", path.Skip(index).Append(key))}. Remove the cycle; a story cannot depend on its descendants.");
-                    return true;
-                }
-                if (!visited.Add(key)) return false;
-                path.Add(key);
-                var item = byKey[key];
-                var edges = item.DependencyProposalKeys.Concat(item.ParentProposalKey is null ? [] : new[] { item.ParentProposalKey });
-                foreach (var edge in edges.Where(x => x is not null && byKey.ContainsKey(x)))
-                    if (Visit(edge)) return true;
-                path.RemoveAt(path.Count - 1);
-                return false;
+                issues.Add($"Parent/dependency cycle: {string.Join(" -> ", path.Skip(index).Append(key))}. Remove the cycle; a story cannot depend on its descendants.");
+                return true;
             }
-            foreach (var key in byKey.Keys) if (Visit(key)) break;
+            if (!visited.Add(key)) return false;
+            path.Add(key);
+            var item = byKey[key];
+            var edges = item.DependencyProposalKeys.Concat(item.ParentProposalKey is null ? [] : new[] { item.ParentProposalKey });
+            foreach (var edge in edges.Where(x => x is not null && byKey.ContainsKey(x)))
+                if (Visit(edge)) return true;
+            path.RemoveAt(path.Count - 1);
+            return false;
         }
+        foreach (var key in byKey.Keys) if (Visit(key)) break;
         return issues;
     }
 }

@@ -27,16 +27,30 @@ public sealed partial class SpecialistAgent
         foreach (var epic in draft.Epics)
         {
             int index = items.Count;
-            if (epic is null || epic.SourceIndexes is not { Count: > 0 } || epic.SourceIndexes.Any(i => i < 0 || i >= sources.Count) ||
-                epic.PrerequisiteIndexes is null || epic.PrerequisiteIndexes.Any(i => i < 0 || i >= index))
-                throw new InvalidOperationException("Give each Epic valid source indexes and only earlier prerequisites.");
-            var item = new GameProposedWorkItemV1(Key(index), VideoGameWorkItemTypeKeys.Milestone, epic.Title, epic.Outcome + "\nApproved sources: " + string.Join(", ", epic.SourceIndexes.Distinct().Select(i => sources[i].SourceKey)),
+            if (epic is null) throw new InvalidOperationException($"Epic at index {index} is missing.");
+            var label = $"Epic {index} ({epic.Title})";
+            if (epic.SourceIndexes is not { Count: > 0 })
+                throw new InvalidOperationException($"{label} needs at least one sourceIndexes entry from the numbered ledger.");
+            var invalidSources = epic.SourceIndexes.Where(i => i < 0 || i >= sources.Count).Distinct().Take(12).ToArray();
+            if (invalidSources.Length > 0)
+                throw new InvalidOperationException($"{label} sourceIndexes contains {string.Join(", ", invalidSources)} outside the supplied range 0..{sources.Count - 1}.");
+            if (epic.PrerequisiteIndexes is null)
+                throw new InvalidOperationException($"{label} needs prerequisiteIndexes. Use [] for independent work.");
+            foreach (var prerequisite in epic.PrerequisiteIndexes)
+                if (prerequisite < 0 || prerequisite >= draft.Epics.Count || prerequisite == index)
+                    throw new InvalidOperationException($"{label} prerequisiteIndexes contains {prerequisite}. Use another Epic index in 0..{draft.Epics.Count - 1}.");
+            var item = new GameProposedWorkItemV1(Key(index), VideoGameWorkItemTypeKeys.Milestone, epic.Title, epic.Outcome,
                 epic.AcceptanceCriteria, VideoGameRoleKeys.TechnicalDirector, [], [], [], epic.PrerequisiteIndexes.Distinct().Select(Key).ToArray());
             var issues = PlanningItemMetadataIssues(item);
             if (issues.Count != 0) throw new InvalidOperationException(string.Join(". ", issues));
             items.Add(item);
             foreach (var i in epic.SourceIndexes.Distinct()) owners[i].Add(item.ProposalKey);
         }
+        var issuesWithDependencies = DependencyCycleIssues(items.ToDictionary(item => item.ProposalKey));
+        if (issuesWithDependencies.Count > 0) throw new InvalidOperationException(string.Join(". ", issuesWithDependencies));
+        var missing = Enumerable.Range(0, owners.Length).Where(i => owners[i].Count == 0).ToArray();
+        if (missing.Length > 0)
+            throw new InvalidOperationException($"Assign all {missing.Length} uncovered sources to relevant Epics. Missing sourceIndexes include {string.Join(", ", missing.Take(24))}.");
         var coverage = sources.Select((s, i) => new ScopeCoverage(s.SourceKey, owners[i])).ToArray();
         ValidateScopeCoverage(coverage, sources, items.Select(i => i.ProposalKey).ToHashSet());
         return new(new(items, draft.FeasibilityFindings, draft.TechnicalConstraints, draft.OpenFeasibilityDecisions), coverage);
@@ -74,10 +88,11 @@ public sealed partial class SpecialistAgent
         if (saved is not null) return saved.Payload;
         if (!mayGenerate) throw new InvalidOperationException("The requested approved roadmap is missing.");
         var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, messages, "Epic roadmap",
-            "Group the supplied accepted sources into outcome Epics. Give each a concise title, outcome, testable acceptanceCriteria, zero-based sourceIndexes and earlier prerequisiteIndexes. " +
-            "Cover every source including constraints and non-goals. Choose the smallest first experiment or deliverable that resolves the most consequential uncertainty. " +
+            "Group the supplied accepted sources into outcome Epics. Give each a concise title, outcome, testable acceptanceCriteria, sourceIndexes from the numbered ledger and prerequisiteIndexes referring to positions in your Epic array (zero-based, acyclic, [] for independent work). " +
+            $"Use the displayed sourceIndex values, from 0 through {sources.Count - 1} inclusive. Assign each entry to the Epic or Epics whose outcome it affects. " +
+            "Treat headings and non-goals as context for the relevant work. They need no separate delivery ticket. Cover every source including constraints and non-goals. Choose the smallest first experiment or deliverable that resolves the most consequential uncertainty. " +
             "Keep hypotheses distinct from authority questions. Specialist workload depends on this game's decisions, content and evidence. Return only Epics and the three findings arrays.",
-            value => BindRoadmap(value, sources), MaximumPlanningPageCharacters, token);
+            value => BindRoadmap(value, sources), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
         return (await SaveProgressiveStateAsync(key, BindRoadmap(draft, sources), context, token)).Payload;
     }
 

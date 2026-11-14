@@ -192,13 +192,15 @@ public sealed partial class SpecialistAgent
     private static async Task<T> ReadPlanningPageAsync<T>(
         Func<IReadOnlyList<ChatMessage>, Type, CancellationToken, Task<ChatResponse>> generate,
         IReadOnlyList<ChatMessage> grounded, string phase, string instruction, Action<T> validate,
-        int maximumCharacters, CancellationToken token)
+        int maximumCharacters, CancellationToken token, bool includeRejectedDraft = false)
     {
+        string? rejectedDraft = null;
         string? issue = null;
         for (var attempt = 0; attempt < 3; attempt++)
         {
             token.ThrowIfCancellationRequested();
             var messages = grounded.Append(new ChatMessage(ChatRole.System, instruction)).ToList();
+            if (rejectedDraft is not null) messages.Add(new(ChatRole.Assistant, rejectedDraft));
             if (issue is not null) messages.Add(new(ChatRole.User, "Correct only this page: " + issue +
                 ". Return one complete JSON object. Preserve all requested tasks and accepted scope."));
             var response = await generate(messages, typeof(T), token);
@@ -214,6 +216,9 @@ public sealed partial class SpecialistAgent
             }
             catch (Exception error) when (error is JsonException or InvalidOperationException)
             {
+                if (includeRejectedDraft)
+                    rejectedDraft = response.Text.Length <= maximumCharacters && response.FinishReason != ChatFinishReason.Length
+                        ? response.Text : null;
                 issue = $"{phase} (finish={response.FinishReason?.ToString() ?? "unknown"}, characters={response.Text.Length}): {error.Message}";
             }
         }

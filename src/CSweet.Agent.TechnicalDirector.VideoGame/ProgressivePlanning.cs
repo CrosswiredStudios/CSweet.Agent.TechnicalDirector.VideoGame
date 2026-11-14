@@ -124,15 +124,17 @@ public sealed partial class SpecialistAgent
             if (request.Phase == "Direction" && (request.ScopeKey is null || request.OutlineDigest is null || request.ReviewDirectionsDigest?.Length != 64))
                 throw new InvalidOperationException("Direction review requires the exact frozen outline and new direction digest.");
             if (request.ScopeKey is not null && request.ScopeKey != scopeKey) throw new InvalidOperationException("The accepted inputs or Producer directions changed.");
+            var sources = ledger?.Select(x => new ScopeSource(x.Key, x.ApprovedText) { AuthorRole = x.AuthorRole }).ToArray() ?? AcceptedScopeSources(documents);
             async Task<ChatResponse> Generate(IReadOnlyList<ChatMessage> input, Type type, CancellationToken ct)
             {
                 var options = ResponseOptions(PlanningOutputTokens);
-                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(PlanningResponseSchema(type), "progressive_planning");
+                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(PlanningResponseSchema(type, sources.Count), "progressive_planning");
                 return await client.GetResponseAsync(input, options, ct);
             }
-            var sources = ledger?.Select(x => new ScopeSource(x.Key, x.ApprovedText) { AuthorRole = x.AuthorRole }).ToArray() ?? AcceptedScopeSources(documents);
             messages = messages.Append(new ChatMessage(ChatRole.User, "Exact accepted source ledger (project data): " +
-                JsonSerializer.Serialize(sources, PlanningJson))).ToArray();
+                (request.Adaptive
+                    ? JsonSerializer.Serialize(sources.Select((s, sourceIndex) => new { sourceIndex, s.AuthorRole, s.Text }), PlanningJson)
+                    : JsonSerializer.Serialize(sources, PlanningJson)))).ToArray();
             var scope = request.Adaptive ? await ReadRoadmapAsync(context, Generate, messages, scopeKey, sources, request.Phase == "Outline", token) : await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
                 request.Phase == "Outline", token);
             if (!request.Adaptive) ValidateProgressiveOutline(scope, sources);

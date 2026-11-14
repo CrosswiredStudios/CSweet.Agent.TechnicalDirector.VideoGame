@@ -1,0 +1,207 @@
+{
+  "epics": [
+    {
+      "title": "Canonical approved scope, constraints, and procedural asset baseline",
+      "outcome": "A traceable technical delivery outline that records the accepted Prism Break PoC scope, non-goals, constraints, Director decisions, and procedural asset strategy without expanding scope.",
+      "acceptanceCriteria": [
+        "A single outline records the accepted desktop-web Chromium PoC, Phaser direction, eight levels, four power-ups, four hero tracks, three dynamic layers, approved options set, non-goals, no date/budget/hiring/release assumptions, and no cross-browser/mobile certification.",
+        "All supplied source indexes are represented by Epic 0 and mapped to at least one downstream outcome.",
+        "Asset strategy decision 97e69fd5-9f3c-4ad0-9d01-5e84073be0c6 revision 2 is reflected as reproducible code-native visual and audio generation with declared project-use rights and hash-bound provenance; older sprite or external track wording does not create a new external media requirement.",
+        "Specialist ownership is justified only for creative specification and review; implementation remains game-engineer work and validation remains game-quality-assurance work."
+      ],
+      "sourceIndexes": [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+        30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+        40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+        50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+        60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+        70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+        80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+        90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+        100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+        110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+        120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+        130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
+        140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+        150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+        160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
+        170, 171, 172, 173, 174, 175, 176, 177, 178, 179,
+        180, 181, 182, 183, 184, 185, 186, 187, 188, 189,
+        190, 191, 192, 193, 194, 195, 196, 197, 198, 199,
+        200, 201, 202, 203, 204, 205, 206, 207, 208, 209,
+        210, 211, 212, 213, 214, 215, 216, 217, 218, 219,
+        220, 221, 222, 223, 224, 225, 226, 227, 228, 229,
+        230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
+        240, 241, 242, 243, 244, 245, 246, 247, 248, 249,
+        250, 251, 252, 253, 254, 255, 256, 257, 258, 259,
+        260, 261, 262, 263, 264, 265, 266, 267, 268, 269,
+        270, 271, 272, 273, 274, 275, 276, 277, 278, 279,
+        280, 281, 282, 283, 284, 285, 286, 287, 288, 289,
+        290, 291, 292, 293, 294, 295, 296, 297, 298, 299,
+        300, 301, 302, 303, 304, 305, 306, 307, 308, 309,
+        310, 311, 312, 313, 314, 315, 316, 317, 318, 319,
+        320, 321, 322, 323, 324, 325, 326, 327, 328, 329,
+        330, 331, 332, 333, 334, 335, 336, 337, 338, 339,
+        340, 341, 342, 343, 344, 345, 346, 347, 348, 349,
+        350, 351, 352, 353, 354, 355, 356, 357, 358, 359,
+        360, 361, 362, 363, 364, 365, 366, 367, 368, 369,
+        370, 371, 372, 373, 374, 375, 376, 377, 378, 379,
+        380, 381, 382, 383, 384, 385, 386, 387, 388, 389,
+        390, 391, 392, 393, 394, 395, 396, 397, 398, 399,
+        400, 401, 402, 403, 404, 405, 406, 407
+      ],
+      "prerequisiteIndexes": []
+    },
+    {
+      "title": "First increment: Phaser runtime and local-persistence proof",
+      "outcome": "Resolve the most consequential implementation uncertainty before content production by proving the engine pin, Chromium startup, and local best-score persistence mechanism.",
+      "acceptanceCriteria": [
+        "An engineer-owned dependency-pin-phaser outcome selects one exact Phaser version within the accepted engine direction and produces a restored lockfile and standalone assertion output on the assigned authorized branch.",
+        "A local persistence probe records Chromium latest stable reload behaviour for best score and fails when persistence is not restored; no account system, cloud save, or privacy bypass is introduced.",
+        "The validation candidate launches in Chromium latest stable with a minimal scene and no blocking startup error; no cross-browser or real-device certification is requested.",
+        "This increment is the first experiment or deliverable chosen to resolve engine/runtime and persistence uncertainty before the playable core loop."
+      ],
+      "sourceIndexes": [
+        1,
+        2,
+        3,
+        4,
+        9,
+        12,
+        13,
+        14,
+        43
+      ],
+      "prerequisiteIndexes": [
+        0
+      ]
+    },
+    {
+      "title": "Controllable core arcade loop",
+      "outcome": "Deliver a playable controllable core loop that makes the Prism Break promise observable and provides state hooks for levels, FX, audio, options, and scoring.",
+      "acceptanceCriteria": [
+        "A Chromium build implements mouse paddle, click launch, arrow-key paddle alternative, ball motion, wall/paddle/brick collisions, brick destruction, lives, score, minimal HUD, and immediate restart.",
+        "A full run is possible: launch, paddle, bounce, destroy bricks, lose ball, lose lives, restart; score and HUD do not compete with play-field readability.",
+        "Core interactions produce distinct feedback hooks that later FX and audio can drive without forcing required FX-off variants."
+      ],
+      "sourceIndexes": [
+        1,
+        2,
+        5,
+        6,
+        9
+      ],
+      "prerequisiteIndexes": [
+        1
+      ]
+    },
+    {
+      "title": "Eight-level progression and four power-ups",
+      "outcome": "Make the short arcade session legible and progressive through eight distinct clearable levels and four readable power-ups without scope expansion.",
+      "acceptanceCriteria": [
+        "Eight static levels are clearable in Chromium with distinct layouts and palettes, preserving indigo-to-gold progression and avoiding unreachable brick pockets or unfair power-up spawns.",
+        "Multiball, wide paddle, laser, and slow-time can be acquired, show readable active states and expiry, do not obscure primary ball or paddle, and support fair level completion.",
+        "Power-up introduction order, drop rules, durations, strengths, and tuning are documented as delegated specialist design outputs and validated in an integrated build rather than treated as planning blockers.",
+        "No moving bricks, hazards, extra brick variants, procedural level generation, or other scope expansions are included."
+      ],
+      "sourceIndexes": [
+        1,
+        2,
+        7,
+        8,
+        9,
+        11,
+        12,
+        14
+      ],
+      "prerequisiteIndexes": [
+        2
+      ]
+    },
+    {
+      "title": "Procedural presentation, approved options, and accessibility evidence",
+      "outcome": "Deliver bounded high-juice presentation, the exact approved option set, and colour-safety/readability evidence without adding option scope or certification work.",
+      "acceptanceCriteria": [
+        "Procedural visual presentation implements particles, screen shake, hit-stop, glow, chromatic aberration, and combined CRT scanline/vignette treatment at bounded high-juice defaults; optional particle intensity/density is not an acceptance requirement.",
+        "Pause/options exposes only the approved controls: global FX toggle, screen-shake intensity slider, CRT treatment toggle combining scanlines and vignette, and chromatic aberration toggle.",
+        "Global FX preserves legibility and necessary audio/visual cues; CRT and chromatic aberration allow selective reduction when global FX is enabled.",
+        "Representative gameplay captures during multiball, laser, slow-time, high multiplier, cluster destruction, and level clear show primary ball and paddle silhouettes remain legible.",
+        "Colour-safe evidence uses documented simulation or review plus representative captures reviewed by the responsible visual/accessibility lead and accepted by the game-director; formal accessibility certification is not required."
+      ],
+      "sourceIndexes": [
+        2,
+        3,
+        6,
+        9,
+        11
+      ],
+      "prerequisiteIndexes": [
+        2,
+        3
+      ]
+    },
+    {
+      "title": "Procedural hero chiptune and dynamic layers",
+      "outcome": "Make music a co-star through four final-quality original hero chiptune tracks and three reactive dynamic layers implemented with the approved procedural asset strategy.",
+      "acceptanceCriteria": [
+        "Four original hero chiptune tracks are implemented through reproducible code-native procedural audio with declared project-use rights and hash-bound provenance; placeholder or temporary audio is not accepted as the final deliverable.",
+        "Three dynamic layers for rally, danger, and victory are implemented and triggered by gameplay state, rally escalation, threat, or level clear while remaining balanced against SFX.",
+        "Important audio cues are duplicated through visible multiplier, danger, power-up, or level-transition presentation so accessibility does not depend only on audio.",
+        "Playable Chromium playback is reviewed against the accepted quality bar; if procedural audio cannot meet the accepted quality, the evidence is recorded for game-director decision rather than silently reducing scope."
+      ],
+      "sourceIndexes": [
+        1,
+        2,
+        3,
+        9,
+        11
+      ],
+      "prerequisiteIndexes": [
+        2
+      ]
+    },
+    {
+      "title": "Acceptance evidence and post-acceptance planning outputs",
+      "outcome": "Produce a coherent PoC evidence pack and post-acceptance planning outputs while preserving hypotheses, budgets, and forecasts as planning evidence rather than commitments.",
+      "acceptanceCriteria": [
+        "An acceptance evidence pack is assembled from an integrated Chromium candidate: gameplay captures, build notes, option screenshots, colour-safety review, audio review, design review notes, and performance/readability notes.",
+        "Representative normal desktop Chromium gameplay is observed to remain stable and readable; 60 fps is treated as a target, not a hard measured gate unless instability is observed.",
+        "H1, H2, and H3 are treated as optional non-blocking planning hypotheses; any captured notes come from a playable build and do not add required variants or instrumentation scope.",
+        "Post-acceptance planning outputs—forecast, dependency map, and staffing proposal—are produced as planning artifacts, including audio/asset resourcing evaluation; no hiring, spending, or release authority is implied."
+      ],
+      "sourceIndexes": [
+        4,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "prerequisiteIndexes": [
+        1,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "feasibilityFindings": [
+    "The largest near-term feasibility uncertainty is the exact Phaser package version and persistence mechanism; Epic 1 is the smallest first increment that resolves both without detailing content production.",
+    "Procedural visual and audio generation is an asset-production strategy, not permission to lower accepted content or quality; evidence must show code-native assets meet the same originality, readability, dynamic-layer, and licensing expectations.",
+    "No external date, budget, hiring, release, cross-browser, mobile, certification, or test-variant scope is treated as approved."
+  ],
+  "technicalConstraints": [
+    "Desktop-web Chromium latest stable verification only.",
+    "Phaser remains the accepted engine direction; exact version selection and lockfile ownership are engineering prerequisites.",
+    "Procedural assets require declared project-use rights and hash-bound provenance.",
+    "Only the approved option controls are implemented: global FX, screen-shake intensity slider, CRT treatment combining scanlines and vignette, and chromatic aberration toggle.",
+    "H1-H3 are optional non-blocking planning hypotheses, not PoC acceptance gates.",
+    "60 fps is a target, not a hard measured frame-rate gate unless instability is observed."
+  ],
+  "openFeasibilityDecisions": [
+    "If code-native procedural audio evidence shows it cannot meet the accepted final-quality original hero-track quality bar, the Director must decide whether to accept a documented procedural quality compromise, authorize composer/hybrid resourcing, or amend audio scope."
+  ]
+}

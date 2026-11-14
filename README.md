@@ -1,4 +1,4 @@
-# Technical Director 6.5.0
+# Technical Director 6.5.1
 
 Tasks can also name the acceptance criteria that need behavior observed in the running build (`interactionCriteria`, video-game contracts 1.2.0); QA requires live interaction evidence for those only. Investigations whose deliverable is a record of observations are planned as research spikes.
 

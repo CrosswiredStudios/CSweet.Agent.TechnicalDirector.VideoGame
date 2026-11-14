@@ -27,6 +27,46 @@ public sealed partial class ProgressivePlanningTests
     }
 
     [Fact]
+    public async Task Prism_break_roadmap_retries_name_the_bad_reference_and_publish_the_corrected_graph()
+    {
+        string Reply(int attempt) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures",
+            $"prism-break-roadmap-{attempt}.json"));
+        var agent = new SpecialistAgent();
+        var runtime = StateRuntime(new Dictionary<string, AgentOperatingStateResponse>());
+        var client = new Client();
+        var cycle = Cycle();
+        var sources = Enumerable.Range(0, 407).Select(i => new GameOutcomeSource($"approved-source-{i}", Guid.Empty,
+            Guid.Empty, "digest", "author", $"Accepted paragraph {i}")).ToArray();
+        var request = new SpecialistAgent.ProgressivePlanningRequest("Outline", new string('d', 64), Adaptive: true);
+        for (int i = 1; i <= 3; i++) client.Responses.Enqueue(Reply(i));
+        var blocked = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], [], cycle, request, default, sources);
+        Assert.Equal("Blocked", blocked.Disposition);
+        Assert.Contains("Epic 0 (Canonical approved scope, constraints, and procedural asset baseline) sourceIndexes contains 407 outside the supplied range 0..406", blocked.Content);
+        Assert.Contains("Epic 9 (Acceptance evidence pack and full scope traceability) sourceIndexes contains 407", client.Prompts[2].Last().Text);
+        Assert.Contains(client.Prompts[2], m => m.Role == ChatRole.Assistant && m.Text == Reply(2));
+        var ledger = client.Prompts[0].Single(m => m.Text!.StartsWith("Exact accepted source ledger"));
+        Assert.Contains("\"sourceIndex\":406", ledger.Text);
+        var schema = SpecialistAgent.PlanningResponseSchema(typeof(SpecialistAgent.RoadmapDraft), sources.Length);
+        Assert.Contains("\"maximum\":406", JsonSerializer.Serialize(schema));
+
+        // Simulate the model correcting the single bad citation in its last reply.
+        var draft = JsonSerializer.Deserialize<SpecialistAgent.RoadmapDraft>(Reply(3), Web)!;
+        var corrected = draft with { Epics = draft.Epics.Select((epic, i) => i == 0
+            ? epic with { SourceIndexes = epic.SourceIndexes.Where(s => s != 407).ToArray() } : epic).ToArray() };
+        client.Responses.Enqueue(JsonSerializer.Serialize(corrected, Web));
+        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningQuestionAssessment(
+            draft.OpenFeasibilityDecisions.Select((_, i) => new SpecialistAgent.PlanningQuestionDisposition(i, "authority",
+                "game-director", "Assess the recorded audio scope decision.")).ToArray(), false, "Preserve the review question."), Web));
+        var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], [], cycle, request, default, sources);
+        Assert.True(ready.Artifact is not null, ready.Content);
+        var payload = ready.Artifact.Payload;
+        Assert.Equal(draft.Epics.Count, payload.GetProperty("DeliveryItems").GetArrayLength());
+        var coverage = payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage").EnumerateArray().ToArray();
+        Assert.Equal(sources.Select(s => s.Key), coverage.Select(s => s.GetProperty("sourceKey").GetString()));
+        Assert.All(coverage, source => Assert.NotEmpty(source.GetProperty("proposalKeys").EnumerateArray()));
+    }
+
+    [Fact]
     public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation()
     {
         var runtime = StateRuntime(new Dictionary<string, AgentOperatingStateResponse>());

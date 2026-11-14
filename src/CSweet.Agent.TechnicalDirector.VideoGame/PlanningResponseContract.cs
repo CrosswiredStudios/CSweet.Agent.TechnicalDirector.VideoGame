@@ -62,7 +62,7 @@ public sealed partial class SpecialistAgent
         IReadOnlyList<string> RequiredSpecializationKeys, IReadOnlyList<string> PreferredSpecializationKeys);
     internal sealed record OutlineDraftPage(IReadOnlyList<OutlineDraftItem> Items);
 
-    internal static JsonElement PlanningResponseSchema(Type type)
+    internal static JsonElement PlanningResponseSchema(Type type, int? sourceCount = null)
     {
         var schema = PlanningJson.GetJsonSchemaAsNode(type);
         // Reference-type roots are nullable in the reflection exporter. Planning always
@@ -95,6 +95,11 @@ public sealed partial class SpecialistAgent
                         Choices(field, Constants(typeof(VideoGameSpecializationKeys)), "Skills only. Use [] when empty. work.execution.run is a capability and cannot appear here.", true);
                     Choices("requiredCapabilityKeys", ["work.execution.run"], "Execution capability only; never place this value in a specialization field.", true);
                     Choices("browserVerification", GameBrowserVerification.All, "Browser evidence this executable task's candidate must carry: canvas when acceptance needs the running game scene, page for other browser-visible output, none when it changes no runnable browser output.");
+                    if (type == typeof(RoadmapDraft) && sourceCount is > 0 && properties.ContainsKey("sourceIndexes"))
+                        properties["sourceIndexes"] = new JsonObject { ["type"] = "array", ["minItems"] = 1,
+                            ["items"] = new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["maximum"] = sourceCount.Value - 1 } };
+                    if (type == typeof(RoadmapDraft) && properties["epics"] is JsonObject epics)
+                        epics["minItems"] = 1;
                     if (properties["interactionCriteria"] is JsonObject)
                         properties["interactionCriteria"] = new JsonObject { ["type"] = "array",
                             ["description"] = "Zero-based indexes of this task's acceptanceCriteria that need behavior observed in the running build (input, gameplay, audio, UI). Use [] when none do.",
