@@ -12,8 +12,6 @@ public sealed class DependencyPinPlanningTests
     }
     [Theory]
     [InlineData("director")]
-    [InlineData("dependency")]
-    [InlineData("capability")]
     [InlineData("criteria")]
     public void Invalid_existing_prerequisite_is_rejected_before_handoff(string scenario)
     {
@@ -23,14 +21,38 @@ public sealed class DependencyPinPlanningTests
         var pin = original.DeliveryItems.Single(x => x.ProposalKey == "dependency-pin-phaser");
         var invalid = scenario switch {
             "director" => pin with { AccountableRoleKey = VideoGameRoleKeys.TechnicalDirector },
-            "dependency" => pin with { DependencyProposalKeys = ["implementation"] },
-            "capability" => pin with { RequiredCapabilityKeys = [] },
             _ => pin with { AcceptanceCriteria = [] }
         };
         var error = Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindDependencyPins(original with {
             DeliveryItems = original.DeliveryItems.Select(x => x.ProposalKey == pin.ProposalKey ? invalid : x).ToArray()
         }));
-        Assert.Contains("root game-engineer task", error.Message);
+        Assert.Contains(pin.ProposalKey, error.Message);
+    }
+
+    [Fact]
+    public void Retained_Prism_Break_index_keeps_the_prior_scope_dependency_and_its_consumers()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "prism-break-pin-index.json");
+        var index = System.Text.Json.JsonSerializer.Deserialize<SpecialistAgent.ProgressiveStoryIndex>(File.ReadAllText(path))!;
+        var plan = PhaserExample();
+        var template = plan.DeliveryItems.First(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Feature);
+        var pin = index.Items[0];
+        var story = template with { ProposalKey = pin.ParentProposalKey! };
+        var priorScope = pin with { ProposalKey = pin.DependencyProposalKeys.Single(), ParentProposalKey = template.ProposalKey,
+            Title = "Publish the scope outline", AccountableRoleKey = VideoGameRoleKeys.TechnicalDirector, DependencyProposalKeys = [] };
+        var outline = plan with { DeliveryItems = [.. plan.DeliveryItems.Where(x => x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Milestone), template, story] };
+        var bound = SpecialistAgent.BindStoryDependencyPins(index, story, outline, [priorScope]);
+        Assert.Equal(index.Items.Count, bound.Items.Count);
+        Assert.Equal(pin with { RequiredCapabilityKeys = bound.Items[0].RequiredCapabilityKeys }, bound.Items[0]);
+        Assert.Equal(["work.execution.run"], bound.Items[0].RequiredCapabilityKeys);
+        Assert.Equal(index.Items.Skip(1), bound.Items.Skip(1));
+        var items = outline.DeliveryItems.Concat([priorScope]).Concat(bound.Items).ToArray();
+        Assert.Empty(SpecialistAgent.PlanValidationIssues(items, partialIncrement: true));
+        var cyclic = items.Select(x => x.ProposalKey == pin.ProposalKey
+            ? x with { DependencyProposalKeys = [bound.Items[1].ProposalKey] } : x).ToArray();
+        Assert.Contains(SpecialistAgent.PlanValidationIssues(cyclic, partialIncrement: true), x => x.Contains("cycle"));
+        var proposal = new GameTechnicalDeliveryProposalV1(null!, items, [], [], [], "approved");
+        Assert.Empty(SpecialistAgent.PlanningProposalPayload(proposal)["engineeringPrerequisiteKeys"]!.AsArray());
     }
 
     [Fact]

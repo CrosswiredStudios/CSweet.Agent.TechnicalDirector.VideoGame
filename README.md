@@ -1,4 +1,4 @@
-# Technical Director 6.7.0
+# Technical Director 6.7.1
 
 The sprint-estimate-review specialization advertises board coordination support for reviewing Producer-owned estimates against the exact requested tickets. Gabriel supplies the estimates. Victor can verify coverage and provenance before sprint staffing.
 

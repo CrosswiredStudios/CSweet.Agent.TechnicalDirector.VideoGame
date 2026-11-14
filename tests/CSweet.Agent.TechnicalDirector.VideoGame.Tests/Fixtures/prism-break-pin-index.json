@@ -1,0 +1,162 @@
+{
+  "Items": [
+    {
+      "Title": "Pin Phaser dependency and lockfile with standalone version validation",
+      "Description": "Select the exact Phaser package within the approved engine direction, commit the dependency and lockfile to the authorized branch, and add restore/version assertions without creating a duplicate prerequisite.",
+      "ProposalKey": "roadmap-epic-2.story-1.task-1",
+      "WorkItemTypeKey": "video-game.task.v1",
+      "ParentProposalKey": "roadmap-epic-2.story-1",
+      "AcceptanceCriteria": [
+        "One coherent engineering deliverable selects the exact Phaser package version within the approved Phaser direction, commits it with a reproducible lockfile to the assignment's authorized branch, and restores dependencies without adding a second prerequisite ticket for the same outcome.",
+        "A standalone assertion command such as npm test or node scripts/verify-pin.mjs fails if the installed Phaser version differs from the committed pin or if the lockfile is absent or inconsistent."
+      ],
+      "AccountableRoleKey": "game-engineer",
+      "BrowserVerification": "none",
+      "DependencyProposalKeys": [
+        "roadmap-epic-1.story-1.task-1"
+      ],
+      "RequiredCapabilityKeys": [],
+      "RequiredSpecializationKeys": [],
+      "PreferredSpecializationKeys": [
+        "engine-integration",
+        "build-diagnostics",
+        "automated-testing"
+      ]
+    },
+    {
+      "Title": "Boot placeholder Phaser scene in Chromium latest stable",
+      "Description": "Start the committed project as a desktop-web placeholder Phaser scene in Chromium latest stable without blocking runtime or console errors.",
+      "ProposalKey": "roadmap-epic-2.story-1.task-2",
+      "WorkItemTypeKey": "video-game.task.v1",
+      "ParentProposalKey": "roadmap-epic-2.story-1",
+      "AcceptanceCriteria": [
+        "The committed project starts as a desktop-web build in Chromium latest stable from the platform-assigned immutable candidate and the actual Story target branch, showing a browser-visible placeholder Phaser scene without blocking runtime or console errors."
+      ],
+      "AccountableRoleKey": "game-engineer",
+      "BrowserVerification": "canvas",
+      "DependencyProposalKeys": [
+        "roadmap-epic-2.story-1.task-1"
+      ],
+      "RequiredCapabilityKeys": [],
+      "RequiredSpecializationKeys": [],
+      "PreferredSpecializationKeys": [
+        "runtime-architecture",
+        "engine-integration",
+        "build-validation"
+      ]
+    },
+    {
+      "Title": "Commit local best-score persistence spike with automated reload test",
+      "Description": "Select and commit a local browser storage mechanism for best-score persistence, and add an automated Chromium write/clear/read reload test under normal browser storage behaviour.",
+      "ProposalKey": "roadmap-epic-2.story-1.task-3",
+      "WorkItemTypeKey": "video-game.task.v1",
+      "ParentProposalKey": "roadmap-epic-2.story-1",
+      "AcceptanceCriteria": [
+        "The increment selects and commits a local browser storage mechanism for best-score persistence, with an automated test that writes, clears, and reads a key across page reload in Chromium under normal browser storage behaviour."
+      ],
+      "AccountableRoleKey": "game-engineer",
+      "BrowserVerification": "page",
+      "InteractionCriteria": [
+        0
+      ],
+      "DependencyProposalKeys": [
+        "roadmap-epic-2.story-1.task-2"
+      ],
+      "RequiredCapabilityKeys": [],
+      "RequiredSpecializationKeys": [],
+      "PreferredSpecializationKeys": [
+        "engine-integration",
+        "automated-testing",
+        "build-validation"
+      ]
+    },
+    {
+      "Title": "Implement minimal core scene and assemble first-increment candidate evidence",
+      "Description": "Add minimal paddle/ball/brick interactions, an internal score counter, and placeholder readability checks; assemble candidate-scoped command, pin, run, and persistence evidence without claiming approval or release.",
+      "ProposalKey": "roadmap-epic-2.story-1.task-4",
+      "WorkItemTypeKey": "video-game.task.v1",
+      "ParentProposalKey": "roadmap-epic-2.story-1",
+      "AcceptanceCriteria": [
+        "The minimal scene demonstrates mouse paddle X movement, click-to-launch, arrow-key paddle movement, and one ball interaction that destroys a brick and updates an internal score counter.",
+        "The placeholder primary ball silhouette remains legible during launch, paddle bounce, wall bounce, and brick destruction with no presentation FX.",
+        "Evidence from the assigned candidate includes command output, committed pin/lockfile, a short observed run record, and a persistence test result; no Director acceptance, QA sign-off, integration into main, or release is claimed.",
+        "60 fps remains a normal-play target, not a hard measured gate; no profiling or stress testing is performed unless observed instability or readability loss occurs, in which case it is raised for technical review."
+      ],
+      "AccountableRoleKey": "game-engineer",
+      "BrowserVerification": "canvas",
+      "InteractionCriteria": [
+        0,
+        1,
+        2
+      ],
+      "DependencyProposalKeys": [
+        "roadmap-epic-2.story-1.task-2",
+        "roadmap-epic-2.story-1.task-3"
+      ],
+      "RequiredCapabilityKeys": [],
+      "RequiredSpecializationKeys": [],
+      "PreferredSpecializationKeys": [
+        "gameplay-programming",
+        "runtime-architecture",
+        "automated-testing",
+        "build-validation"
+      ]
+    }
+  ],
+  "Coverage": [
+    {
+      "SourceKey": "description",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-4"
+      ]
+    },
+    {
+      "SourceKey": "criterion-0",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-1"
+      ]
+    },
+    {
+      "SourceKey": "criterion-1",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-1"
+      ]
+    },
+    {
+      "SourceKey": "criterion-2",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-2"
+      ]
+    },
+    {
+      "SourceKey": "criterion-3",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-4"
+      ]
+    },
+    {
+      "SourceKey": "criterion-4",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-4"
+      ]
+    },
+    {
+      "SourceKey": "criterion-5",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-3"
+      ]
+    },
+    {
+      "SourceKey": "criterion-6",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-4"
+      ]
+    },
+    {
+      "SourceKey": "criterion-7",
+      "ProposalKeys": [
+        "roadmap-epic-2.story-1.task-4"
+      ]
+    }
+  ]
+}

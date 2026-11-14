@@ -26,7 +26,7 @@ public sealed partial class SpecialistAgent
         Chromium startup/asset validation. Do not add Technical Director review or QA report tickets for
         the same candidate and criteria. A separate validation task must name its different deliverable
         and why the existing stages cannot supply it, such as a participant playtest or release-artifact audit.
-        Verification consumes the platform-assigned immutable candidate commit and actual Story target branch.
+        Code verification consumes the platform-assigned immutable candidate commit and actual Story target branch.
         Never prescribe checking out main before Story integration or require a local .git directory in snapshots.
         Explicit final-main promotion criteria remain downstream release requirements, not startup prerequisites.
         Declare browserVerification on every executable task: canvas when acceptance needs the running game scene,
@@ -51,7 +51,9 @@ public sealed partial class SpecialistAgent
         decisions. Request authority only for a concrete conflict, scope change, expenditure, or reserved choice.
         Engineering validation must use standalone assertion commands such as node scripts/verify-pin.mjs or
         npm test that fail on a defect. Do not offer inline node -e scripts, ls, cat or bare hashes as proof.
-        Publish to the assignment's authorized branch; integration into main is a downstream governed action.
+        For document delivery, publish the actual document and supporting material as a versioned platform artifact.
+        Review its content and source references at that revision. If the approved outcome requires a repository change,
+        plan that work with a code author. Publish code to the assignment's authorized branch; integration into main is a downstream governed action.
         Completion needs evidence of the assigned deliverable: a recommendation or completed follow-up card
         does not prove implementation, integration, QA approval or a recorded project decision. Preserve every
         unresolved real decision until its authoritative answer is incorporated into the current plan.

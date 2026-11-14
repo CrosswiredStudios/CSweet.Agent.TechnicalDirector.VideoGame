@@ -12,6 +12,9 @@ internal static class ImplementationBrief
         tasks. Verify responsive behavior at appropriate Chromium viewports without claiming device
         certification. Preserve explicit accepted owner requirements for other browsers and request an
         authorized amendment when needed; never silently waive accepted scope.
+        Match evidence to the delivery channel. A document author supplies the actual versioned platform artifact
+        and any required appendix. Review that revision against approved sources. Git commits, candidate diffs
+        and repository commands apply to assigned source work.
         Own the implementation design in each engineering ticket's description. Split recursively:
         if a task can produce two independently deliverable, verifiable changes, make two tasks.
         A dependency between the changes does not justify combining them. Keep the tests needed to

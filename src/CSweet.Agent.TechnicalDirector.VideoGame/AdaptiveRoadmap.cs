@@ -125,6 +125,7 @@ public sealed partial class SpecialistAgent
         var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, roadmapMessages, "Epic roadmap",
             "Group these commitments into outcome Epics. Choose the first experiment or deliverable using the game's actual uncertainty. " +
             "The ownership map is planning metadata. Add scope-document work only for an approved deliverable or concrete production need; traceability alone does not justify a documentation milestone. " +
+            "For document outcomes use a reviewable platform document revision as evidence. Reserve branch and commit evidence for actual repository work. " +
             "Each Epic needs a title, outcome, testable acceptanceCriteria, sourceIndexes selecting its directly owned commitments and prerequisiteIndexes " +
             "referring to Epics in your proposed array. For each owned commitment include acceptance criteria showing how the owner will deliver or enforce it. " +
             "Assign shared constraints only to Epics with a concrete responsibility. Preserve the approved scope. " +
