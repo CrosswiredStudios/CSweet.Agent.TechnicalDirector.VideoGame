@@ -13,12 +13,13 @@
       "runtime-architecture",
       "engine-integration",
       "performance-budgets",
-      "technical-decomposition"
+      "technical-decomposition",
+      "sprint-estimate-review"
     ]
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "6.5.1",
+  "version": "6.7.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"

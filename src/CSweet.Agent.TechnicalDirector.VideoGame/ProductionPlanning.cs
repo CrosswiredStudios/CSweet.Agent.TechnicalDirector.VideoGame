@@ -12,6 +12,7 @@ public sealed partial class SpecialistAgent
     public override async Task<AgentCoordinationTurnResult> HandleCoordinationTurnAsync(
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        if (ReviewOwnerEstimate(request) is { } review) return review;
         var sourceTurn = request.Transcript.LastOrDefault(x => x.Artifact is not null);
         if (sourceTurn?.Artifact is { Type: FeasibilityRequestType } feasibility)
         {

@@ -38,12 +38,14 @@ public sealed partial class ProgressivePlanningTests
         var sources = Enumerable.Range(0, 407).Select(i => new GameOutcomeSource($"approved-source-{i}", Guid.Empty,
             Guid.Empty, "digest", "author", $"Accepted paragraph {i}")).ToArray();
         var request = new SpecialistAgent.ProgressivePlanningRequest("Outline", new string('d', 64), Adaptive: true);
+        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.ApprovedCommitments(sources.Select((s, i) =>
+            new SpecialistAgent.ApprovedCommitment(s.ApprovedText, [i])).ToArray()), Web));
         for (int i = 1; i <= 3; i++) client.Responses.Enqueue(Reply(i));
         var blocked = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], [], cycle, request, default, sources);
         Assert.Equal("Blocked", blocked.Disposition);
         Assert.Contains("Epic 0 (Canonical approved scope, constraints, and procedural asset baseline) sourceIndexes contains 407 outside the supplied range 0..406", blocked.Content);
-        Assert.Contains("Epic 9 (Acceptance evidence pack and full scope traceability) sourceIndexes contains 407", client.Prompts[2].Last().Text);
-        Assert.Contains(client.Prompts[2], m => m.Role == ChatRole.Assistant && m.Text == Reply(2));
+        Assert.Contains("Epic 9 (Acceptance evidence pack and full scope traceability) sourceIndexes contains 407", client.Prompts[3].Last().Text);
+        Assert.Contains(client.Prompts[3], m => m.Role == ChatRole.Assistant && m.Text == Reply(2));
         var ledger = client.Prompts[0].Single(m => m.Text!.StartsWith("Exact accepted source ledger"));
         Assert.Contains("\"sourceIndex\":406", ledger.Text);
         var schema = SpecialistAgent.PlanningResponseSchema(typeof(SpecialistAgent.RoadmapDraft), sources.Length);
@@ -62,7 +64,7 @@ public sealed partial class ProgressivePlanningTests
         var payload = ready.Artifact.Payload;
         Assert.Equal(draft.Epics.Count, payload.GetProperty("DeliveryItems").GetArrayLength());
         var coverage = payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage").EnumerateArray().ToArray();
-        Assert.Equal(sources.Select(s => s.Key), coverage.Select(s => s.GetProperty("sourceKey").GetString()));
+        Assert.Equal(sources.Select(s => s.Key), coverage.Select(s => s.GetProperty("citations")[0].GetString()));
         Assert.All(coverage, source => Assert.NotEmpty(source.GetProperty("proposalKeys").EnumerateArray()));
     }
 
@@ -80,12 +82,19 @@ public sealed partial class ProgressivePlanningTests
         var roadmap = new SpecialistAgent.RoadmapDraft([
             new("Playable loop", "Verify the core interaction", [text], [0], []),
             new("Scoring", "Award points for hits", ["Each brick scores once"], [1], [0])], [], [], []);
+        var inventory = new SpecialistAgent.ApprovedCommitments([
+            new("Prove the rebound", [1]), new("Score each brick once", [1, 2])]);
+        client.Responses.Enqueue(JsonSerializer.Serialize(inventory, Web));
         client.Responses.Enqueue(JsonSerializer.Serialize(roadmap, Web));
-        string[] docs = ["Prototype\n\nScoring"];
+        string[] docs = ["# History\n\nVerify rebound and scoring\n\nEach brick scores once"];
         var outline = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle,
             new("Outline", directions, Adaptive: true), default);
         Assert.True(outline.Artifact != null, outline.Content);
-        Assert.Equal(1, client.Calls);
+        Assert.Equal(2, client.Calls);
+        var semantic = outline.Artifact!.Payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage");
+        Assert.Equal(2, semantic.GetArrayLength());
+        Assert.Equal("Score each brick once", semantic[1].GetProperty("statement").GetString());
+        Assert.DoesNotContain("document-0:paragraph-0", semantic.GetRawText());
         var outlineEvidence = outline.Artifact!.Payload.GetProperty("progressivePlanning");
         var key = "roadmap-epic-1.story-1";
         client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.StorySlices([

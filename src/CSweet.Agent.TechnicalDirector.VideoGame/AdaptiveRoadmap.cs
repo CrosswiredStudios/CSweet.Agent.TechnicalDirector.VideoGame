@@ -80,20 +80,62 @@ public sealed partial class SpecialistAgent
         return result;
     }
 
+    internal sealed record ApprovedCommitment(string Statement, IReadOnlyList<int> SourceIndexes);
+    internal sealed record ApprovedCommitments(IReadOnlyList<ApprovedCommitment> Commitments);
+
+    internal static void ValidateCommitments(ApprovedCommitments value, int sourceCount)
+    {
+        if (value.Commitments is not { Count: > 0 })
+            throw new InvalidOperationException("Identify the approved deliverable outcomes and binding constraints.");
+        var statements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in value.Commitments)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Statement) || !statements.Add(entry.Statement.Trim()))
+                throw new InvalidOperationException("Each commitment needs a distinct substantive statement.");
+            if (entry.SourceIndexes is not { Count: > 0 } || entry.SourceIndexes.Any(i => i < 0 || i >= sourceCount))
+                throw new InvalidOperationException($"Cite the accepted source indexes in 0..{sourceCount - 1} supporting '{entry.Statement}'.");
+        }
+    }
+
     private async Task<ProgressiveScopeIndex> ReadRoadmapAsync(AgentRuntimeContext context,
         Func<IReadOnlyList<ChatMessage>, Type, CancellationToken, Task<ChatResponse>> generate,
-        IReadOnlyList<ChatMessage> messages, string key, IReadOnlyList<ScopeSource> sources, bool mayGenerate, CancellationToken token)
+        IReadOnlyList<ChatMessage> messages, IReadOnlyList<ChatMessage> projectMessages, string key,
+        IReadOnlyList<ScopeSource> sources, bool mayGenerate, Action<int> setRoadmapSourceCount, CancellationToken token)
     {
         var saved = await context.Platform.ReadOperatingStateAsync<ProgressiveScopeIndex>(key, token);
         if (saved is not null) return saved.Payload;
         if (!mayGenerate) throw new InvalidOperationException("The requested approved roadmap is missing.");
-        var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, messages, "Epic roadmap",
-            "Group the supplied accepted sources into outcome Epics. Give each a concise title, outcome, testable acceptanceCriteria, sourceIndexes from the numbered ledger and prerequisiteIndexes referring to positions in your Epic array (zero-based, acyclic, [] for independent work). " +
-            $"Use the displayed sourceIndex values, from 0 through {sources.Count - 1} inclusive. Assign each entry to the Epic or Epics whose outcome it affects. " +
-            "Treat headings and non-goals as context for the relevant work. They need no separate delivery ticket. Cover every source including constraints and non-goals. Choose the smallest first experiment or deliverable that resolves the most consequential uncertainty. " +
-            "Keep hypotheses distinct from authority questions. Specialist workload depends on this game's decisions, content and evidence. Return only Epics and the three findings arrays.",
-            value => BindRoadmap(value, sources), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
-        return (await SaveProgressiveStateAsync(key, BindRoadmap(draft, sources), context, token)).Payload;
+        var inventoryKey = key + ":commitments";
+        var inventory = (await context.Platform.ReadOperatingStateAsync<ApprovedCommitments>(inventoryKey, token))?.Payload;
+        if (inventory == null)
+        {
+            inventory = await ReadPlanningPageAsync<ApprovedCommitments>(generate, messages, "approved outcomes and constraints",
+                "Read the accepted project sources as evidence. Identify every distinct committed player or delivery outcome and binding constraint. " +
+                "Keep testable thresholds, quantities, exclusions and conditions. Consolidate repetitions. A paragraph may contain several commitments, " +
+                "and several passages may support one. Headings, rationale, examples, history and unapproved suggestions are context. " +
+                "Return commitments with a concise statement and the sourceIndexes supporting it. Distinguish a binding exclusion from a future suggestion.",
+                value => ValidateCommitments(value, sources.Count), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+            inventory = (await SaveProgressiveStateAsync(inventoryKey, inventory, context, token)).Payload;
+        }
+        ValidateCommitments(inventory, sources.Count);
+        var obligations = inventory.Commitments.Select((entry, index) => new ScopeSource($"commitment-{index}", entry.Statement)).ToArray();
+        setRoadmapSourceCount(obligations.Length);
+        var roadmapMessages = projectMessages.Append(new ChatMessage(ChatRole.User, "Approved commitments for this roadmap: " +
+            JsonSerializer.Serialize(obligations.Select((o, sourceIndex) => new { sourceIndex, o.Text }), PlanningJson))).ToArray();
+        var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, roadmapMessages, "Epic roadmap",
+            "Group these commitments into outcome Epics. Choose the first experiment or deliverable using the game's actual uncertainty. " +
+            "The ownership map is planning metadata. Add scope-document work only for an approved deliverable or concrete production need; traceability alone does not justify a documentation milestone. " +
+            "Each Epic needs a title, outcome, testable acceptanceCriteria, sourceIndexes selecting its directly owned commitments and prerequisiteIndexes " +
+            "referring to Epics in your proposed array. For each owned commitment include acceptance criteria showing how the owner will deliver or enforce it. " +
+            "Assign shared constraints only to Epics with a concrete responsibility. Preserve the approved scope. " +
+            $"Valid commitment indexes are 0..{obligations.Length - 1}. Return Epics and the three findings arrays.",
+            value => BindRoadmap(value, obligations), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+        var roadmap = BindRoadmap(draft, obligations);
+        var coverage = roadmap.Coverage.Select((owner, index) => owner with {
+            Statement = obligations[index].Text,
+            Citations = inventory.Commitments[index].SourceIndexes.Distinct().Select(i => sources[i].SourceKey).ToArray()
+        }).ToArray();
+        return (await SaveProgressiveStateAsync(key, roadmap with { Coverage = coverage }, context, token)).Payload;
     }
 
     private async Task<PlanningOutput> ExpandApproachingEpicsAsync(ProgressiveScopeIndex roadmap, ProgressivePlanningRequest request,

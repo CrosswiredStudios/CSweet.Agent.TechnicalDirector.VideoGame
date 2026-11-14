@@ -15,7 +15,13 @@ public sealed partial class SpecialistAgent
         string? OutlineDigest = null, string? StoryKey = null, IReadOnlyList<string>? DetailedStoryKeys = null, string? ReviewDirectionsDigest = null, IReadOnlyList<string>? ManagerDirections = null, bool Adaptive = false, string? DraftBasis = null, IReadOnlyDictionary<string,string>? AcceptedBases = null,
         [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         Guid? PreviousDraft = null);
-    internal sealed record ScopeCoverage(string SourceKey, IReadOnlyList<string> ProposalKeys);
+    internal sealed record ScopeCoverage(string SourceKey, IReadOnlyList<string> ProposalKeys)
+    {
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public string? Statement { get; init; }
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public IReadOnlyList<string>? Citations { get; init; }
+    }
     internal sealed record ScopeSource(string SourceKey, string Text) { public string? AuthorRole { get; init; } }
     internal sealed record ProgressiveScopeIndex(PlanningOutput Plan, IReadOnlyList<ScopeCoverage> Coverage);
     internal sealed record ProgressiveStoryIndex(IReadOnlyList<GameProposedWorkItemV1> Items, IReadOnlyList<ScopeCoverage> Coverage);
@@ -125,17 +131,19 @@ public sealed partial class SpecialistAgent
                 throw new InvalidOperationException("Direction review requires the exact frozen outline and new direction digest.");
             if (request.ScopeKey is not null && request.ScopeKey != scopeKey) throw new InvalidOperationException("The accepted inputs or Producer directions changed.");
             var sources = ledger?.Select(x => new ScopeSource(x.Key, x.ApprovedText) { AuthorRole = x.AuthorRole }).ToArray() ?? AcceptedScopeSources(documents);
+            int? roadmapSourceCount = null;
             async Task<ChatResponse> Generate(IReadOnlyList<ChatMessage> input, Type type, CancellationToken ct)
             {
                 var options = ResponseOptions(PlanningOutputTokens);
-                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(PlanningResponseSchema(type, sources.Count), "progressive_planning");
+                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(PlanningResponseSchema(type, type == typeof(RoadmapDraft) ? roadmapSourceCount : null), "progressive_planning");
                 return await client.GetResponseAsync(input, options, ct);
             }
+            var projectMessages = messages;
             messages = messages.Append(new ChatMessage(ChatRole.User, "Exact accepted source ledger (project data): " +
                 (request.Adaptive
                     ? JsonSerializer.Serialize(sources.Select((s, sourceIndex) => new { sourceIndex, s.AuthorRole, s.Text }), PlanningJson)
                     : JsonSerializer.Serialize(sources, PlanningJson)))).ToArray();
-            var scope = request.Adaptive ? await ReadRoadmapAsync(context, Generate, messages, scopeKey, sources, request.Phase == "Outline", token) : await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
+            var scope = request.Adaptive ? await ReadRoadmapAsync(context, Generate, messages, projectMessages, scopeKey, sources, request.Phase == "Outline", count => roadmapSourceCount = count, token) : await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
                 request.Phase == "Outline", token);
             if (!request.Adaptive) ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));

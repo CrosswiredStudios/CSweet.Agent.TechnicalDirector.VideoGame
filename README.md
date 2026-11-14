@@ -1,4 +1,6 @@
-# Technical Director 6.5.1
+# Technical Director 6.7.0
+
+The sprint-estimate-review specialization advertises board coordination support for reviewing Producer-owned estimates against the exact requested tickets. Gabriel supplies the estimates. Victor can verify coverage and provenance before sprint staffing.
 
 Tasks can also name the acceptance criteria that need behavior observed in the running build (`interactionCriteria`, video-game contracts 1.2.0); QA requires live interaction evidence for those only. Investigations whose deliverable is a record of observations are planned as research spikes.
 
