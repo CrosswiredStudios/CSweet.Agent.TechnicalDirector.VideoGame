@@ -110,7 +110,8 @@ public sealed partial class SpecialistAgent
         if (inventory == null)
         {
             inventory = await ReadPlanningPageAsync<ApprovedCommitments>(generate, messages, "approved outcomes and constraints",
-                "Read the accepted project sources as evidence. Identify every distinct committed player or delivery outcome and binding constraint. " +
+                "Read the complete accepted product sources as evidence, independently of the currently requested increment. Identify every distinct committed player or delivery outcome and binding constraint. " +
+                "Deferring detail is not omitting a later outcome from the product roadmap. A first-increment request does not narrow approved product scope. " +
                 "Keep testable thresholds, quantities, exclusions and conditions. Consolidate repetitions. A paragraph may contain several commitments, " +
                 "and several passages may support one. Headings, rationale, examples, history and unapproved suggestions are context. " +
                 "Return commitments with a concise statement and the sourceIndexes supporting it. Distinguish a binding exclusion from a future suggestion.",
@@ -123,7 +124,9 @@ public sealed partial class SpecialistAgent
         var roadmapMessages = projectMessages.Append(new ChatMessage(ChatRole.User, "Approved commitments for this roadmap: " +
             JsonSerializer.Serialize(obligations.Select((o, sourceIndex) => new { sourceIndex, o.Text }), PlanningJson))).ToArray();
         var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, roadmapMessages, "Epic roadmap",
-            "Group these commitments into outcome Epics. Choose the first experiment or deliverable using the game's actual uncertainty. " +
+            "Group the complete approved product commitments into outcome Epics, including later content, systems, presentation and acceptance outcomes when the source actually requires them. " +
+            "The roadmap spans the whole product; selecting a small first experiment must not shrink it to first-increment features. " +
+            "Keep later Epics at outcome level without prewriting their Stories, Tasks or estimates. Choose the first experiment or deliverable using the game's actual uncertainty. " +
             "The ownership map is planning metadata. Add scope-document work only for an approved deliverable or concrete production need; traceability alone does not justify a documentation milestone. " +
             "For document outcomes use a reviewable platform document revision as evidence. Reserve branch and commit evidence for actual repository work. " +
             "Each Epic needs a title, outcome, testable acceptanceCriteria, sourceIndexes selecting its directly owned commitments and prerequisiteIndexes " +

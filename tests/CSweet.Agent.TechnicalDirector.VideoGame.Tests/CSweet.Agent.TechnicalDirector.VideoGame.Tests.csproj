@@ -14,5 +14,6 @@
     <Using Include="Xunit" />
     <None Update="Fixtures/prism-break-pin-index.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures/prism-break-roadmap-*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/prism-break-first-increment-roadmap.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,23 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 public class AdaptiveRoadmapTests
 {
     [Fact]
+    public void Prism_first_increment_reply_cannot_cover_a_complete_approved_product_ledger()
+    {
+        // Actual 2026-11-15 delivered outline, minimized to one criterion per Epic.
+        // Stable proposal/source bindings are normalized back to the authored index contract.
+        var draft = System.Text.Json.JsonSerializer.Deserialize<SpecialistAgent.RoadmapDraft>(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "prism-break-first-increment-roadmap.json")),
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+        var increment = Enumerable.Range(0, 6).Select(i => new SpecialistAgent.ScopeSource($"commitment-{i}", "Accepted first-increment outcome")).ToArray();
+        Assert.Equal(5, SpecialistAgent.BindRoadmap(draft, increment).Plan.DeliveryItems.Count);
+        var completeProduct = increment.Append(new SpecialistAgent.ScopeSource("later-content", "Deliver ten designed levels and the approved power-ups.")).ToArray();
+        Assert.Contains("Missing sourceIndexes include 6", Assert.Throws<InvalidOperationException>(() =>
+            SpecialistAgent.BindRoadmap(draft, completeProduct)).Message);
+        // This is ledger validation, not a claim that code can judge semantic completeness.
+        // The full-source inventory prompt and Producer ownership review supply that judgment.
+    }
+
+    [Fact]
     public void Dependencies_follow_the_graph_regardless_of_presentation_order()
     {
         SpecialistAgent.ScopeSource[] sources = [new("s", "Accepted scope")];

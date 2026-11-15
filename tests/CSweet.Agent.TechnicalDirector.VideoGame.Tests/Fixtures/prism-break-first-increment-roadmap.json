@@ -1,0 +1,35 @@
+{
+  "epics": [
+    {
+      "title": "Phaser procedural baseline and Chromium static smoke",
+      "outcome": "One Phaser version is selected, documented, and pinned across engine and tooling, and a Chromium-only local static build with deterministic code-native visuals and procedural chiptune audio runs without blocking errors while the accepted quality and accessibility initialization can be observed.",
+      "acceptanceCriteria": ["The smoke run initializes the accepted accessibility baseline: screen shake defaults to 40% or off, prefers-reduced-motion is honored, adjustable ball speed is represented as an available control hook, and visual-mirror controls are represented as available settings hooks; these values are captured in the run record."],
+      "sourceIndexes": [0, 1], "prerequisiteIndexes": []
+    },
+    {
+      "title": "Core playable slice in Phaser",
+      "outcome": "A minimal core playable slice is produced in Phaser so that paddle, ball, block, basic collision/return, combo escalation visual, audio, and persistence hooks are observable within the first 10 seconds of active play.",
+      "acceptanceCriteria": ["Persistence hooks are observable as in-memory or local-storage state events during the run, and the run record reports the observed event stream rather than only static source review."],
+      "sourceIndexes": [2], "prerequisiteIndexes": [0]
+    },
+    {
+      "title": "Accessibility defaults and adjustable browser controls",
+      "outcome": "Accessibility defaults and adjustable controls are represented in UI and verified in a Chromium browser run, including screen-shake reduction, reduced-motion handling, ball speed adjustment, and user-controllable visual mirrors for audio.",
+      "acceptanceCriteria": ["No additional browser matrix, mobile certification, or real-device certification is introduced beyond the accepted Chromium-only verification."],
+      "sourceIndexes": [3], "prerequisiteIndexes": [0, 1]
+    },
+    {
+      "title": "Procedural original chiptune layer and reactive stinger hooks",
+      "outcome": "Procedural original chiptune generation is verified as an engine-native approach, producing a loopable track layer structure with reactive stinger hooks, hash-bound provenance, declared project-use rights, and no external audio dependency required for this increment.",
+      "acceptanceCriteria": ["The implementation records hash-bound provenance and declared project-use rights for the original procedural audio output, using source/configuration/commit hashes rather than externally authored media provenance."],
+      "sourceIndexes": [4], "prerequisiteIndexes": [0]
+    },
+    {
+      "title": "Independent Chromium QA validation of the first increment",
+      "outcome": "The increment is validated independently by QA using browser startup, interaction observation, and accessibility walkthrough in Chromium, with Technical Director planning and review only.",
+      "acceptanceCriteria": ["QA runs the integrated Chromium candidate and records pass or fail evidence for startup, core gameplay observation, accessibility walkthrough, and procedural audio behavior using the shared browser scenario harness where required."],
+      "sourceIndexes": [5], "prerequisiteIndexes": [0, 1, 2, 3]
+    }
+  ],
+  "feasibilityFindings": [], "technicalConstraints": [], "openFeasibilityDecisions": []
+}
