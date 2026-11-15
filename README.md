@@ -1,6 +1,6 @@
-# Technical Director 6.9.0
+# Technical Director 6.10.0
 
-The Epic roadmap covers the complete approved product independently of the first increment. Later outcomes stay at Epic level until approaching execution, with no mandatory up-front Story/Task expansion. Existing accepted outlines remain reusable while the Producer commissions missing responsibilities. See [release notes](releases/6.9.0.md).
+The Epic roadmap covers the complete approved product independently of the first increment. Later outcomes stay at Epic level until approaching execution, with no mandatory up-front Story/Task expansion. Existing accepted outlines remain reusable while the Producer commissions missing responsibilities. See [release notes](releases/6.10.0.md).
 
 The sprint-estimate-review specialization advertises board coordination support for reviewing Producer-owned estimates against the exact requested tickets. Gabriel supplies the estimates. Victor can verify coverage and provenance before sprint staffing.
 
@@ -15,7 +15,14 @@ CEO communication and material business decisions belong to the Video Game Direc
 
 Owns engine feasibility, runtime architecture, performance budgets, technical standards, and technical approvals.
 
-`GenerateProgressivePlanningAsync` negotiates outline-first planning with the Producer. It publishes the complete approved scope as increment Epics with one bounded Story each, maps every accepted document paragraph to retained Story scope, then refines only the requested dependency-ready Story into at most twelve execution/QA tasks. Original Story criteria survive verbatim. Future scope remains visible without implementation briefs. The frozen outline, task index and three-task brief pages have separate immutable checkpoints; replay verifies the exact accepted inputs and reconstructs only validated work. Legacy callers retain the complete-plan path below.
+`GenerateProgressivePlanningAsync` negotiates outline-first planning with the Producer. Approved
+outcomes retain meaningful owners; constraints and decisions can be owned separately without
+copying each paragraph into Epic criteria. Approaching Stories receive execution detail, and
+provisional look-ahead can state assumptions about current work. Original criteria and exact source
+evidence remain binding. Immutable checkpoints recover validated work after interruption. The
+public `work.planning.refinement.v1` coordination request additionally supports missing approved
+future outcomes using caller-supplied work kinds and named role choices. It returns additive
+judgment for the current owner to assess and publish; it cannot grant scope or staffing changes.
 
 `ProgressivePlanningPolicy` and `OutlinePageInstructions` supply concise phase-specific guidance and
 contract examples. `PlanningResponseSchema` enumerates allowed roles, work types, skills and capabilities;

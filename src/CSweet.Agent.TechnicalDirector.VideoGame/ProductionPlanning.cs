@@ -12,6 +12,10 @@ public sealed partial class SpecialistAgent
     public override async Task<AgentCoordinationTurnResult> HandleCoordinationTurnAsync(
         AgentCoordinationTurnRequest request, AgentRuntimeContext context, CancellationToken cancellationToken)
     {
+        if (ScopedWorkRefinement.IsReply(request)) return await ScopedWorkRefinement.ReceiveAsync(request, context, cancellationToken);
+        if (request.Transcript.Any(t => t.SpeakerOrganizationUserId == request.Counterpart.OrganizationUserId && t.Artifact?.Type == ScopedWorkRefinement.RequestType))
+            return await ScopedWorkRefinement.AnswerAsync(request, context,
+                new AgentLlmSelection(Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure the planning model provider."), Settings.GetString("llmModel")), cancellationToken);
         if (ReviewOwnerEstimate(request) is { } review) return review;
         var sourceTurn = request.Transcript.LastOrDefault(x => x.Artifact is not null);
         if (sourceTurn?.Artifact is { Type: FeasibilityRequestType } feasibility)
