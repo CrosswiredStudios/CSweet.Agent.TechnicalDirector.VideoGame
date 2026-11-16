@@ -1,6 +1,6 @@
-# Technical Director 6.11.0
+# Technical Director 6.12.0
 
-The Epic roadmap covers the complete approved product independently of the first increment. Later outcomes stay at Epic level until approaching execution, with no mandatory up-front Story/Task expansion. Existing accepted outlines remain reusable while the Producer commissions missing responsibilities. See [release notes](releases/6.11.0.md).
+The Epic roadmap covers the complete approved product independently of the first increment. Later outcomes stay at Epic level until approaching execution, with no mandatory up-front Story/Task expansion. Existing accepted outlines remain reusable while the Producer commissions missing responsibilities. See [release notes](releases/6.12.0.md).
 
 The sprint-estimate-review specialization advertises board coordination support for reviewing Producer-owned estimates against the exact requested tickets. Gabriel supplies the estimates. Victor can verify coverage and provenance before sprint staffing.
 
