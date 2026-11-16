@@ -19,7 +19,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "6.12.0",
+  "version": "6.13.0",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -1115,6 +1115,30 @@
       "scope": "organization",
       "purpose": "Request, review or observe durable manager-approved project resource fulfillment.",
       "modelVisible": false
+    },
+    {
+      "name": "web.research.search.v1",
+      "purpose": "Discover primary public documentation for evidence-driven planning and independent review.",
+      "scope": "organization",
+      "modelVisible": false
+    },
+    {
+      "name": "web.research.read.v1",
+      "purpose": "Read bounded primary public documentation through the reviewed broker for evidence-driven work.",
+      "scope": "organization",
+      "modelVisible": false
+    },
+    {
+      "name": "web.fetch.v1",
+      "purpose": "Permit GET/HEAD transport used by the brokered public research reader.",
+      "scope": "organization",
+      "modelVisible": false
+    },
+    {
+      "name": "platform.artifact.revise.v1",
+      "purpose": "Revise the current work-owned artifact while preserving its delivery and review history.",
+      "scope": "organization",
+      "modelVisible": false
     }
   ],
   "events": {
@@ -1175,7 +1199,8 @@
   ],
   "credentials": [],
   "webAccess": {
-    "mode": "None",
+    "mode": "AllPublic",
+    "purpose": "Read primary public documentation for assigned planning and independent evidence review. Research is brokered and read-only; private addresses and unapproved credentials remain prohibited.",
     "rules": []
   },
   "ui": [],

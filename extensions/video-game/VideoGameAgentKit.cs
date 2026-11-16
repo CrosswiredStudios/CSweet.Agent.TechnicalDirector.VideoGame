@@ -408,7 +408,7 @@ public abstract class VideoGameSpecialistAgentBase : CSweetAgentBase
                 AttemptId = assignment.AttemptId,
                 AssignmentRevision = assignment.AssignmentRevision,
                 RoleKey = RoleKey,
-                Status = current?.Status == "Completed" ? current.Status : "InProgress",
+                Status = "InProgress",
                 ExactInputDigests = package.Members.ToDictionary(x => x.AcceptedRevisionId, x => x.Sha256),
                 Delivery = current?.Delivery,
                 Blocker = null,
@@ -422,49 +422,38 @@ public abstract class VideoGameSpecialistAgentBase : CSweetAgentBase
             $"{RoleKey} accepted stage {assignment.StageExecutionId:D}, attempt {assignment.AttemptId:D}.", cancellationToken);
         try
         {
-            var grounding = new List<object>();
-            foreach (var input in package.Members)
-            {
-                var document = await context.Platform.Artifacts.GetAsync(input.ArtifactId, cancellationToken);
-                var inputRevision = document.Revisions.SingleOrDefault(x => x.Id == input.AcceptedRevisionId)
-                    ?? throw new InvalidOperationException($"Exact artifact revision {input.AcceptedRevisionId:D} is unavailable.");
-                if (!string.Equals(inputRevision.ContentSha256, input.Sha256, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException($"Artifact revision {input.AcceptedRevisionId:D} no longer matches its assigned hash.");
-                grounding.Add(new { input.TypeKey, input.ArtifactId, RevisionId = input.AcceptedRevisionId, input.Sha256, inputRevision.Content });
-            }
+            var sources = await DocumentEvidence.ReadAsync(canonicalInput.Planning, context, cancellationToken);
+            var register = sources.SelectMany(source => CSweet.Agent.SDK.VideoGame.Contracts.GameOutcomeLedger.Read(
+                workstreamId, canonicalInput.TeamId!.Value, source.ArtifactId, source.RevisionId, source.Sha256, source.Type, source.Content))
+                .Select((source, index) => new { index, source.Key, source.DocumentId, source.RevisionId, source.RevisionDigest,
+                    source.AuthorRole, source.ApprovedText }).ToArray();
+            var sourceRegister = JsonSerializer.SerializeToElement(register);
             var provider = Settings.GetGuid("llmProviderId")
                 ?? throw new InvalidOperationException("A brokered LLM provider must be configured.");
-            var client = context.CreateChatClient(new AgentLlmSelection(provider, Settings.GetString("llmModel"),
-                new AgentLlmInvocationContext(null, null, $"video-game-specialist:{RoleKey}")));
-            List<ChatMessage> messages = [
-                new ChatMessage(ChatRole.System, SpecialistDocumentPrompt.Create(RolePrompt, RoleKey, RequiredSections)),
-                new ChatMessage(ChatRole.User, $"Authoritative stage instructions:\n{assignment.Instructions}\n\nRequirements:\n{JsonSerializer.Serialize(canonicalInput.Planning.Requirements)}\n\nAcceptance criteria:\n{JsonSerializer.Serialize(canonicalInput.Planning.AcceptanceCriteria)}\n\nExact approved package {package.PackageId:D} v{package.Version} ({package.Sha256}):\n{JsonSerializer.Serialize(grounding)}\n\nPrior outcomes:\n{JsonSerializer.Serialize(assignment.PriorOutcomes)}\n\nExisting evidence:\n{JsonSerializer.Serialize(assignment.Evidence)}")
-            ];
-            var response = await context.Platform.Calendar.GetResponseAsync(client, messages, ResponseOptions(), cancellationToken);
-            var markdown = response.Text ?? string.Empty;
-            if (SubstantiveOutputValidator.FindIssue(markdown, RequiredSections.ToArray()) is { } draftIssue)
+            using var client = context.CreateChatClient(new AgentLlmSelection(provider, Settings.GetString("llmModel")));
+            var retained = prior?.Payload.Delivery?.ArtifactId;
+            if (retained is null)
             {
-                // One bounded self-correction: the author fixes its own draft instead of blocking the sprint
-                // on a problem it can resolve. A second failure still blocks with the exact reason.
-                messages.Add(new ChatMessage(ChatRole.Assistant, markdown));
-                messages.Add(new ChatMessage(ChatRole.User,
-                    $"The draft was rejected: {draftIssue} Return the complete corrected document only. Replace every " +
-                    $"unresolved marker with concrete content and keep all required sections ({string.Join(", ", RequiredSections)})."));
-                response = await context.Platform.Calendar.GetResponseAsync(client, messages, ResponseOptions(), cancellationToken);
-                markdown = response.Text ?? string.Empty;
+                var outcome = assignment.PriorOutcomes.LastOrDefault(o => WorkArtifactDelivery.TryRead(o.Output, out _));
+                if (outcome is not null && WorkArtifactDelivery.TryRead(outcome.Output, out var previous)) retained = previous.ArtifactId;
             }
-            SubstantiveOutputValidator.RequireSubstantiveMarkdown(markdown, RequiredSections.ToArray());
+            string? retainedContent = null;
+            if (retained is Guid retainedId)
+            {
+                var previous = await context.Platform.Artifacts.GetAsync(retainedId, cancellationToken);
+                retainedContent = previous.Revisions.Single(r => r.Id == previous.LatestRevisionId).Content
+                    .Split("\n\n## Source citation register", StringSplitOptions.None)[0];
+            }
+            var draft = await DocumentWork.AuthorAsync(assignment, canonicalInput.Planning, sources, context, client,
+                SpecialistDocumentPrompt.Create(RolePrompt, RoleKey, RequiredSections), ResponseOptions(), cancellationToken,
+                sourceRegister, retainedContent);
+            if (draft.Blocker is not null) return DocumentWork.Blocked(assignment, draft.Blocker);
+            SubstantiveOutputValidator.RequireSubstantiveMarkdown(draft.Content, RequiredSections.ToArray());
             var itemTypeKey = assignment.Item.TryGetProperty("typeKey", out var typeKeyElement)
-                ? typeKeyElement.GetString() ?? assignment.StageKey
-                : assignment.StageKey;
-            var artifact = await context.Platform.Artifacts.CreateAsync(new CreateArtifactDocument(
-                $"{RoleKey}: {itemTypeKey}", markdown, ArtifactTypeKey,
-                $"artifact:{assignment.StageExecutionId:N}:{assignment.AttemptId:N}",
-                OriginWorkItemId: assignment.TaskItemId)
-            { WorkstreamId = workstreamId, TeamId = canonicalInput.TeamId }, cancellationToken);
-            var revision = artifact.Revisions.Single(x => x.Id == artifact.LatestRevisionId);
-            await context.Platform.Artifacts.SubmitAsync(new SubmitArtifactRevision(artifact.Id, revision.Id,
-                $"submit:{assignment.StageExecutionId:N}:{revision.Id:N}"), cancellationToken);
+                ? typeKeyElement.GetString() ?? assignment.StageKey : assignment.StageKey;
+            var (artifact, revision) = await DocumentWork.PublishAsync(assignment, $"{RoleKey}: {itemTypeKey}", ArtifactTypeKey,
+                draft, workstreamId, canonicalInput.TeamId, context, cancellationToken, retained,
+                JsonSerializer.SerializeToElement(register.Select(s => new { s.index, s.Key, s.AuthorRole })));
             var evidence = new EvidenceReference("ArtifactRevision", artifact.Id, revision.Id, revision.ContentSha256,
                 ArtifactTypeKey, "Submitted");
             var delivery = new SpecialistDelivery(

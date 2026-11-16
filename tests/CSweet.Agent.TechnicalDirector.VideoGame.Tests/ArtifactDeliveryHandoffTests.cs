@@ -23,7 +23,9 @@ public sealed class ArtifactDeliveryHandoffTests
         var artifactId = Guid.NewGuid(); var revisionId = Guid.NewGuid();
         var content = "## Architecture\nPhaser runtime API evidence bound to this exact revision.";
         var sha = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
-        var members = new[] { new ArtifactPackageMemberDigest(Guid.NewGuid(), Guid.NewGuid(), "brief", new string('a', 64)) };
+        var sourceText = "Approved source: evaluate the supported runtime API from authoritative documentation.";
+        var sourceSha = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sourceText)));
+        var members = new[] { new ArtifactPackageMemberDigest(Guid.NewGuid(), Guid.NewGuid(), "brief", sourceSha) };
         var packageId = Guid.NewGuid();
         var planning = new WorkItemPlanningSpecification(["Validate engine API"], ["Identify supported runtime API"], [])
         {
@@ -87,7 +89,12 @@ public sealed class ArtifactDeliveryHandoffTests
             .RegisterCapability<WorkItemReference, WorkItem>(WorkItemCapabilities.Read, (_, _) => Task.FromResult(item))
             .RegisterCapability<JsonElement, ArtifactDocument>(PlatformCapabilities.ArtifactRead, (request, _) =>
             {
-                reads++; Assert.Equal(artifactId, request.GetProperty("artifactId").GetGuid());
+                reads++;
+                if (request.GetProperty("artifactId").GetGuid() == members[0].ArtifactId)
+                    return Task.FromResult(new ArtifactDocument(members[0].ArtifactId, "Approved source", "brief", "Accepted",
+                        members[0].AcceptedRevisionId, members[0].AcceptedRevisionId, null, null, null,
+                        [new(members[0].AcceptedRevisionId, 1, null, sourceText, sourceSha, "Accepted", now, now, now)]));
+                Assert.Equal(artifactId, request.GetProperty("artifactId").GetGuid());
                 return Task.FromResult(new ArtifactDocument(artifactId, "Validation", "video-game.technical-design.v1", "Submitted", revisionId, revisionId, null,
                     null, assignment.TaskItemId, [new(revisionId, 1, null, scenario == "wrong-content" ? content + " tampered" : content, sha, "Submitted", now, now, null)]));
             })
@@ -97,6 +104,7 @@ public sealed class ArtifactDeliveryHandoffTests
                 var message = request.GetProperty("messages").EnumerateArray().Last();
                 var prompt = JsonSerializer.Deserialize<JsonElement>(message.GetProperty("text").GetString()!);
                 Assert.Equal(content, prompt.GetProperty("content").GetString());
+                Assert.Equal(sourceText, prompt.GetProperty("approvedSources")[0].GetProperty("content").GetString());
                 var report = new WorkArtifactQualityResult(artifactId, revisionId, sha, true, "Inspected exact API evidence",
                     [new(planning.AcceptanceCriteria.Single(), true, "Exact document identifies the runtime API")], []);
                 return Task.FromResult(JsonSerializer.SerializeToElement(new { text = JsonSerializer.Serialize(report, Json), role = "assistant" }));
@@ -115,7 +123,7 @@ public sealed class ArtifactDeliveryHandoffTests
         var reviewedOutcome = reviewed.Value!.Value.Deserialize<WorkExecutionOutcomeV1>(Json)!;
         Assert.Equal("passed", reviewedOutcome.OutcomeCode);
         // SDK reauthorizes the exact revision after the independent verdict.
-        Assert.Equal(2, reads); Assert.Equal(1, reviews);
+        Assert.Equal(3, reads); Assert.Equal(1, reviews);
         var result = reviewedOutcome.Output.Deserialize<WorkArtifactQualityResult>(Json)!;
         Assert.Equal(artifactId, result.ArtifactId); Assert.Equal(revisionId, result.RevisionId); Assert.Equal(sha, result.Sha256);
     }
