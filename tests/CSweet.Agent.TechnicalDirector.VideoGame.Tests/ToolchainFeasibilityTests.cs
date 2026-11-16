@@ -39,6 +39,7 @@ public sealed class ToolchainFeasibilityTests
     [Theory]
     [InlineData("feasible")]
     [InlineData("blocking-risk")]
+    [InlineData("retained-shardfall-risk")]
     [InlineData("image-changed")]
     [InlineData("different-pitch")]
     public async Task Review_binds_the_exact_vision_recipe_targets_and_current_capacity(string scenario)
@@ -53,7 +54,8 @@ public sealed class ToolchainFeasibilityTests
         var request = Request(payload);
         var now = DateTimeOffset.UtcNow;
         var definition = new ToolchainAdapterDefinition((Guid)offered["Id"]!, "node-typescript.v1", 1, "Node", "pkg", "1",
-            (string)offered["DefinitionDigest"]!, [new("phaser.web-2d.v1", ["build"], ["web"], JsonSerializer.SerializeToElement(new {}), [], [])],
+            (string)offered["DefinitionDigest"]!, [new("phaser.web-2d.v1", ["build"], ["web"], JsonSerializer.SerializeToElement(new {}),
+                ["office.windows-x64.node-24.v1", "office.linux-x64.node-24.v1"], [])],
             JsonSerializer.SerializeToElement(new { node = "24" }), JsonSerializer.SerializeToElement(new {}), [], [], now);
         var adapter = new EligibleToolchainAdapter(definition, new(definition.Id, (Guid)offered["ProviderInstallationId"]!,
             Guid.NewGuid(), (string)offered["EnvironmentProfileKey"]!, scenario == "image-changed" ? "different" : (string)offered["EnvironmentImageDigest"]!,
@@ -78,6 +80,12 @@ public sealed class ToolchainFeasibilityTests
                 calls++;
                 Assert.Contains(pitch, data);
                 Assert.Contains("node-24", data);
+                Assert.Contains("supportedBuildEnvironmentAlternatives", data);
+                Assert.Contains("supported alternatives, not a requirement to provision all operating systems", data);
+                Assert.DoesNotContain("RequiredEnvironmentProfileKeys", data);
+                if (scenario == "retained-shardfall-risk")
+                    return Task.FromResult(JsonSerializer.Deserialize<SpecialistAgent.TechnicalFindings>(File.ReadAllText(
+                        Path.Combine(AppContext.BaseDirectory, "Fixtures", "shardfall-windows-feasibility.json")), JsonSerializerOptions.Web)!);
                 return Task.FromResult(new SpecialistAgent.TechnicalFindings(["The recipe supports the browser target."],
                     scenario == "blocking-risk" ? ["Required dependency is incompatible."] : []));
             }, default);
