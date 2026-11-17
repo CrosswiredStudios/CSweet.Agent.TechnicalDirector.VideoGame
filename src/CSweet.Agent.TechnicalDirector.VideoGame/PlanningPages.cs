@@ -196,12 +196,17 @@ public sealed partial class SpecialistAgent
     {
         string? rejectedDraft = null;
         string? issue = null;
+        var earlier = new List<string>();
+        string? lastProblem = null;
         for (var attempt = 0; attempt < 3; attempt++)
         {
             token.ThrowIfCancellationRequested();
             var messages = grounded.Append(new ChatMessage(ChatRole.System, instruction)).ToList();
             if (rejectedDraft is not null) messages.Add(new(ChatRole.Assistant, rejectedDraft));
+            // Keep earlier corrections in view. A reply that fixes the latest problem by undoing the
+            // previous fix would otherwise spend every attempt going back and forth.
             if (issue is not null) messages.Add(new(ChatRole.User, "Correct only this page: " + issue +
+                (earlier.Count > 0 ? ". Corrections from earlier attempts that must still hold: " + string.Join(" | ", earlier) : "") +
                 ". Return one complete JSON object. Preserve all requested tasks and accepted scope."));
             var response = await generate(messages, typeof(T), token);
             try
@@ -219,6 +224,8 @@ public sealed partial class SpecialistAgent
                 if (includeRejectedDraft)
                     rejectedDraft = response.Text.Length <= maximumCharacters && response.FinishReason != ChatFinishReason.Length
                         ? response.Text : null;
+                if (issue is not null && !earlier.Contains(lastProblem!) && lastProblem != error.Message) earlier.Add(lastProblem!);
+                lastProblem = error.Message.Length <= 400 ? error.Message : error.Message[..400];
                 issue = $"{phase} (finish={response.FinishReason?.ToString() ?? "unknown"}, characters={response.Text.Length}): {error.Message}";
             }
         }

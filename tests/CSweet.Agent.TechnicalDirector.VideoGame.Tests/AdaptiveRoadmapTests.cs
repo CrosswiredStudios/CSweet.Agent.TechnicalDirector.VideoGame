@@ -30,7 +30,7 @@ public class AdaptiveRoadmapTests
         // The recorded Prism Break shape: a constraint-only Epic that everything else waits for.
         var error = Assert.Throws<InvalidOperationException>(() =>
             SpecialistAgent.BindRoadmap(new([governance, loop], [], [], []), sources, constraints));
-        Assert.Contains("owns only constraints or exclusions", error.Message);
+        Assert.Contains("own only constraints or exclusions", error.Message);
         var attached = loop with { SourceIndexes = [0, 1], PrerequisiteIndexes = [],
             AcceptanceCriteria = ["Ball rebounds", "The build offers no multiplayer or purchase flow"] };
         var road = SpecialistAgent.BindRoadmap(new([attached], [], [], []), sources, constraints);
@@ -41,6 +41,32 @@ public class AdaptiveRoadmapTests
             new("No multiplayer or monetization", [0]) { Kind = "Constraint" }, new("Retained entry", [0])]), 1);
         Assert.Contains("Outcome or Constraint", Assert.Throws<InvalidOperationException>(() =>
             SpecialistAgent.ValidateCommitments(new([new("Paddle rebounds the ball", [0]) { Kind = "Governance" }]), 1)).Message);
+    }
+
+    [Fact]
+    public void Uncited_commitments_are_reported_together_and_can_be_omitted_without_failing_the_inventory()
+    {
+        // QFN Games Brickstorm, November 17: 42 commitments, four with no source index because they restated
+        // manager direction about asset fallback. One was named per attempt and the page failed after three.
+        var inventory = new SpecialistAgent.ApprovedCommitments([
+            new("Paddle rebounds the ball", [0]) { Kind = "Outcome" },
+            new("Procedural fallback is allowed", []) { Kind = "Constraint" },
+            new("Every asset must have declared project-use rights", []) { Kind = "Constraint" },
+            new("No multiplayer", [9]) { Kind = "Constraint" }]);
+        var message = Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ValidateCommitments(inventory, 2)).Message;
+        Assert.Contains("3 commitment(s)", message);
+        Assert.Contains("Procedural fallback is allowed", message);
+        Assert.Contains("Every asset must have declared project-use rights", message);
+        Assert.Contains("No multiplayer", message);
+        Assert.Contains("remove it", message);
+
+        var kept = SpecialistAgent.WithoutUncited(inventory, 2, out var omitted);
+        Assert.Equal("Paddle rebounds the ball", Assert.Single(kept.Commitments).Statement);
+        Assert.Equal(3, omitted.Count);
+        SpecialistAgent.ValidateCommitments(kept, 2);
+        // Nothing citable at all is still a failure, never an empty roadmap.
+        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ValidateCommitments(
+            SpecialistAgent.WithoutUncited(new([new("Procedural fallback is allowed", [])]), 2, out _), 2));
     }
 
     [Fact]

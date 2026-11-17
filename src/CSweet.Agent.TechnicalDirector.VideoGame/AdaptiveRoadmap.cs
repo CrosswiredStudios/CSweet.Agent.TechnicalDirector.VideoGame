@@ -29,6 +29,7 @@ public sealed partial class SpecialistAgent
         string Key(int index) => $"roadmap-epic-{index + 1}";
         var items = new List<GameProposedWorkItemV1>();
         var owners = sources.Select(_ => new List<string>()).ToArray();
+        var constraintOnly = new List<string>();
         foreach (var epic in draft.Epics)
         {
             int index = items.Count;
@@ -40,9 +41,7 @@ public sealed partial class SpecialistAgent
             if (invalidSources.Length > 0)
                 throw new InvalidOperationException($"{label} sourceIndexes contains {string.Join(", ", invalidSources)} outside the supplied range 0..{sources.Count - 1}.");
             if (enforceOutcomes && epic.SourceIndexes.All(constraintSources!.Contains))
-                throw new InvalidOperationException($"{label} owns only constraints or exclusions ({string.Join(", ", epic.SourceIndexes.Distinct().Take(12))}). " +
-                    "A constraint restricts work; it is not work. Remove this Epic and attach each of those sourceIndexes, with a criterion that can be checked, " +
-                    "to the outcome Epics they restrict. Every Epic must deliver at least one committed outcome.");
+                constraintOnly.Add($"{label} [{string.Join(", ", epic.SourceIndexes.Distinct().Take(12))}]");
             if (epic.PrerequisiteIndexes is null)
                 throw new InvalidOperationException($"{label} needs prerequisiteIndexes. Use [] for independent work.");
             foreach (var prerequisite in epic.PrerequisiteIndexes)
@@ -55,6 +54,11 @@ public sealed partial class SpecialistAgent
             items.Add(item);
             foreach (var i in epic.SourceIndexes.Distinct()) owners[i].Add(item.ProposalKey);
         }
+        // Name every such Epic in one correction, so one reply can fix them all.
+        if (constraintOnly.Count > 0)
+            throw new InvalidOperationException($"{constraintOnly.Count} Epic(s) own only constraints or exclusions: {string.Join("; ", constraintOnly.Take(12))}. " +
+                "A constraint restricts work; it is not work. Remove each of these Epics and attach its sourceIndexes, with a criterion that can be checked, " +
+                "to the outcome Epics they restrict. Every Epic must deliver at least one committed outcome.");
         var issuesWithDependencies = DependencyCycleIssues(items.ToDictionary(item => item.ProposalKey));
         if (issuesWithDependencies.Count > 0) throw new InvalidOperationException(string.Join(". ", issuesWithDependencies));
         var missing = Enumerable.Range(0, owners.Length).Where(i => owners[i].Count == 0).ToArray();
@@ -106,11 +110,30 @@ public sealed partial class SpecialistAgent
         {
             if (entry == null || string.IsNullOrWhiteSpace(entry.Statement) || !statements.Add(entry.Statement.Trim()))
                 throw new InvalidOperationException("Each commitment needs a distinct substantive statement.");
-            if (entry.SourceIndexes is not { Count: > 0 } || entry.SourceIndexes.Any(i => i < 0 || i >= sourceCount))
-                throw new InvalidOperationException($"Cite the accepted source indexes in 0..{sourceCount - 1} supporting '{entry.Statement}'.");
             if (entry.Kind is not (null or "Outcome" or "Constraint"))
                 throw new InvalidOperationException($"Use kind Outcome or Constraint for '{entry.Statement}'.");
         }
+        // Report every uncited entry together. Naming one per attempt let a reply with four of them
+        // run out of attempts while it was still converging.
+        var uncited = value.Commitments.Where(entry => !IsCited(entry, sourceCount)).Select(entry => entry.Statement.Trim()).ToArray();
+        if (uncited.Length > 0)
+            throw new InvalidOperationException($"{uncited.Length} commitment(s) do not cite a valid accepted source index in 0..{sourceCount - 1}. " +
+                "A commitment must come from the numbered accepted sources. For each one, give its sourceIndexes, or remove it if it comes from " +
+                "manager direction, resource notes or other context instead of an accepted source: " +
+                string.Join(" | ", uncited.Take(12).Select(statement => statement.Length <= 120 ? statement : statement[..120])));
+    }
+
+    private static bool IsCited(ApprovedCommitment entry, int sourceCount) =>
+        entry.SourceIndexes is { Count: > 0 } && entry.SourceIndexes.All(i => i >= 0 && i < sourceCount);
+
+    // An approved commitment is by definition supported by an accepted source. A statement the model cannot
+    // tie to one, after being asked, is context and is left out; the Producer's ownership review reads the
+    // original sources for omissions independently.
+    internal static ApprovedCommitments WithoutUncited(ApprovedCommitments value, int sourceCount, out IReadOnlyList<string> omitted)
+    {
+        omitted = (value.Commitments ?? []).Where(entry => entry is not null && !IsCited(entry, sourceCount))
+            .Select(entry => entry.Statement?.Trim() ?? "").ToArray();
+        return omitted.Count == 0 ? value : new((value.Commitments ?? []).Where(entry => entry is not null && IsCited(entry, sourceCount)).ToArray());
     }
 
     private async Task<ProgressiveScopeIndex> ReadRoadmapAsync(AgentRuntimeContext context,
@@ -125,6 +148,7 @@ public sealed partial class SpecialistAgent
         var inventory = (await context.Platform.ReadOperatingStateAsync<ApprovedCommitments>(inventoryKey, token))?.Payload;
         if (inventory == null)
         {
+            var inventoryAttempts = 0;
             inventory = await ReadPlanningPageAsync<ApprovedCommitments>(generate, messages, "approved outcomes and constraints",
                 "Read the complete accepted product sources as evidence, independently of the currently requested increment. Identify every distinct committed player or delivery outcome and binding constraint. " +
                 "Deferring detail is not omitting a later outcome from the product roadmap. A first-increment request does not narrow approved product scope. " +
@@ -132,8 +156,15 @@ public sealed partial class SpecialistAgent
                 "and several passages may support one. Headings, rationale, examples, history and unapproved suggestions are context. " +
                 "Return commitments with a concise statement, the sourceIndexes supporting it and a kind. Distinguish a binding exclusion from a future suggestion. " +
                 "Kind is Outcome for something the team must build, produce or deliver, including a document the source explicitly requires as a deliverable. " +
-                "Kind is Constraint for a rule, limit, exclusion, non-goal, authority boundary or evidence requirement that restricts how outcomes are delivered.",
-                value => ValidateCommitments(value, sources.Count), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+                "Kind is Constraint for a rule, limit, exclusion, non-goal, authority boundary or evidence requirement that restricts how outcomes are delivered. " +
+                "Every commitment must cite at least one numbered accepted source. Manager directions, resource or asset notes and other conversation context are not commitments; do not list them.",
+                // The first two attempts ask the model to cite or remove uncited entries. The last attempt
+                // accepts the cited ones, so a few uncitable statements cannot fail the whole roadmap.
+                value => ValidateCommitments(++inventoryAttempts < 3 ? value : WithoutUncited(value, sources.Count, out _), sources.Count),
+                MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+            inventory = WithoutUncited(inventory, sources.Count, out var omitted);
+            if (omitted.Count > 0)
+                await context.ReportProgressAsync(new { roadmapInventory = "statements without an accepted source were omitted", omitted }, token);
             inventory = (await SaveProgressiveStateAsync(inventoryKey, inventory, context, token)).Payload;
         }
         ValidateCommitments(inventory, sources.Count);

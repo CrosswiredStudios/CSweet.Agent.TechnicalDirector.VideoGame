@@ -1,4 +1,6 @@
-# Technical Director 6.13.1
+# Technical Director 6.13.2
+
+A roadmap is no longer lost because a few listed commitments cannot be tied to an accepted source. See the [6.13.2 release notes](releases/6.13.2.md).
 
 Approved constraints, exclusions and non-goals are attached to the outcome Epics they restrict. An Epic that would own only constraints is returned for correction, so the first increment is work the team can build or test. See the [6.13.1 release notes](releases/6.13.1.md).
 
