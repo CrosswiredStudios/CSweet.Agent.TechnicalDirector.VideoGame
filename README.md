@@ -1,4 +1,6 @@
-# Technical Director 6.13.2
+# Technical Director 6.13.3
+
+A rejected Story task list is told exactly which rule it broke, and a failed planning attempt no longer tells readers to escalate to the CEO. See the [6.13.3 release notes](releases/6.13.3.md).
 
 A roadmap is no longer lost because a few listed commitments cannot be tied to an accepted source. See the [6.13.2 release notes](releases/6.13.2.md).
 

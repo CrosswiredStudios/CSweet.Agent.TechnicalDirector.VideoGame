@@ -81,8 +81,21 @@ public sealed partial class SpecialistAgent
     internal static void ValidateStoryRefinement(ProgressiveStoryIndex index, GameProposedWorkItemV1 story,
         PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves, int maximumTasks = 12, bool requireVerification = false, bool partialIncrement = false)
     {
-        if (index.Items is not { Count: > 0 } || index.Items.Count > maximumTasks || index.Items.Any(x => x is null || IsPlanningContainer(x) || x.ParentProposalKey != story.ProposalKey))
-            throw new InvalidOperationException($"Refine exactly the requested Story into 1 to {maximumTasks} executable tasks. Keep other scope for later increments.");
+        // Each rule names what to change. A single combined sentence was rejected three times in a row
+        // without the model learning that its task type, not its task count, was the problem.
+        if (index.Items is not { Count: > 0 } || index.Items.Any(x => x is null))
+            throw new InvalidOperationException($"Return items: 1 to {maximumTasks} executable tasks for Story {story.ProposalKey}.");
+        if (index.Items.Count > maximumTasks)
+            throw new InvalidOperationException($"Story {story.ProposalKey} has {index.Items.Count} tasks; return at most {maximumTasks}. Keep other scope for later increments.");
+        var containers = index.Items.Where(IsPlanningContainer).Select(x => $"{x.ProposalKey} ({x.WorkItemTypeKey})").ToArray();
+        if (containers.Length > 0)
+            throw new InvalidOperationException("These items use a container type and cannot be executed: " + string.Join(", ", containers.Take(12)) +
+                $". {VideoGameWorkItemTypeKeys.Milestone}, {VideoGameWorkItemTypeKeys.Feature} and {VideoGameWorkItemTypeKeys.Content} are Epics and Stories. " +
+                "Give every item an executable task type, for example a task or a research spike, and keep the Story itself out of items.");
+        var misplaced = index.Items.Where(x => x.ParentProposalKey != story.ProposalKey).Select(x => $"{x.ProposalKey} (parent {x.ParentProposalKey ?? "none"})").ToArray();
+        if (misplaced.Length > 0)
+            throw new InvalidOperationException($"Every item's parentProposalKey must be exactly {story.ProposalKey}. Fix or remove: " + string.Join(", ", misplaced.Take(12)) +
+                ". Keep other scope for later increments.");
         var known = outline.DeliveryItems.Concat(priorLeaves).Select(x => x.ProposalKey).ToHashSet();
         if (index.Items.Any(x => known.Contains(x.ProposalKey))) throw new InvalidOperationException("A refined task cannot replace an existing scope identity.");
         var executableKeys = priorLeaves.Concat(index.Items).Select(x => x.ProposalKey).ToHashSet();
@@ -259,8 +272,10 @@ public sealed partial class SpecialistAgent
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException)
         {
-            return AgentCoordinationTurnResult.Blocked(PlanningGeneratorFailure + " C-Sweet technical issue: progressive planning could not generate or validate its output. " +
-                "Approved scope and validated pages are retained. Escalate through the reporting manager to the CEO for a C-Sweet code correction; no creative decision is requested. Diagnostic: " + error.Message);
+            // The requester retries a failed generation. Telling every reader to escalate to the CEO made the
+            // Producer's planning review escalate instead of asking again.
+            return AgentCoordinationTurnResult.Blocked(PlanningGeneratorFailure + " This planning attempt did not produce a valid page. " +
+                "Approved scope and validated pages are retained, and the request can be made again. No creative decision is requested. Diagnostic: " + error.Message);
         }
     }
 

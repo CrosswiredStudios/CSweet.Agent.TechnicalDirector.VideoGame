@@ -127,6 +127,22 @@ public sealed partial class ProgressivePlanningTests
     }
 
     [Fact]
+    public void A_rejected_task_list_names_the_rule_it_broke_and_the_offending_items()
+    {
+        // Qwen Games Prism Break, November 17: a Story returned as one item of type video-game.feature.v1 was
+        // rejected three times with the same sentence about task count.
+        var scope = Scope(); var story = scope.Plan.DeliveryItems[1]; var detail = Detail(scope);
+        string Rejected(SpecialistAgent.ProgressiveStoryIndex index, int maximum = 12) =>
+            Assert.Throws<InvalidOperationException>(() => SpecialistAgent.ValidateStoryRefinement(index, story, scope.Plan, [], maximum)).Message;
+        var asStory = Rejected(detail with { Items = [detail.Items[0] with { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Feature }] });
+        Assert.Contains("container type", asStory); Assert.Contains(detail.Items[0].ProposalKey, asStory); Assert.Contains(VideoGameWorkItemTypeKeys.Feature, asStory);
+        var misplaced = Rejected(detail with { Items = detail.Items.Select(x => x with { ParentProposalKey = "later-story" }).ToArray() });
+        Assert.Contains("parentProposalKey must be exactly " + story.ProposalKey, misplaced); Assert.Contains("later-story", misplaced);
+        Assert.Contains("at most 1", Rejected(detail with { Items = [.. detail.Items, detail.Items[0] with { ProposalKey = "extra" }] }, 1));
+        Assert.Contains("Return items", Rejected(detail with { Items = [] }));
+    }
+
+    [Fact]
     public void Refinement_is_bounded_to_one_story_and_preserves_criteria_and_dependency_closure()
     {
         var scope = Scope(); var story = scope.Plan.DeliveryItems[1]; var detail = Detail(scope);
