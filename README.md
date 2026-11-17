@@ -1,4 +1,6 @@
-# Technical Director 6.13.0
+# Technical Director 6.13.1
+
+Approved constraints, exclusions and non-goals are attached to the outcome Epics they restrict. An Epic that would own only constraints is returned for correction, so the first increment is work the team can build or test. See the [6.13.1 release notes](releases/6.13.1.md).
 
 The Epic roadmap covers the complete approved product independently of the first increment. Later outcomes stay at Epic level until approaching execution, with no mandatory up-front Story/Task expansion. Existing accepted outlines remain reusable while the Producer commissions missing responsibilities. See [release notes](releases/6.13.0.md).
 

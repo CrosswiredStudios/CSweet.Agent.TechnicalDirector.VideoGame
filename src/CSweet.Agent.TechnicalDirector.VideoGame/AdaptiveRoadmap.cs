@@ -16,8 +16,13 @@ public sealed partial class SpecialistAgent
         IReadOnlyList<int> EpicCriterionIndexes, IReadOnlyList<int> PrerequisiteIndexes);
     internal sealed record StorySlices(IReadOnlyList<StorySlice> Stories);
 
-    internal static ProgressiveScopeIndex BindRoadmap(RoadmapDraft draft, IReadOnlyList<ScopeSource> sources)
+    // constraintSources are binding constraints and exclusions. They restrict work and are checked on the work
+    // they restrict; they are never the reason an Epic exists. Without this rule the only place to put approved
+    // non-goals is a governance Epic, which then becomes the roadmap's sole dependency-free first increment.
+    internal static ProgressiveScopeIndex BindRoadmap(RoadmapDraft draft, IReadOnlyList<ScopeSource> sources,
+        IReadOnlySet<int>? constraintSources = null)
     {
+        var enforceOutcomes = constraintSources is { Count: > 0 } && constraintSources.Count < sources.Count;
         if (draft.Epics is not { Count: > 0 } || draft.FeasibilityFindings is null ||
             draft.TechnicalConstraints is null || draft.OpenFeasibilityDecisions is null)
             throw new InvalidOperationException("Provide an Epic roadmap and the three findings arrays.");
@@ -34,6 +39,10 @@ public sealed partial class SpecialistAgent
             var invalidSources = epic.SourceIndexes.Where(i => i < 0 || i >= sources.Count).Distinct().Take(12).ToArray();
             if (invalidSources.Length > 0)
                 throw new InvalidOperationException($"{label} sourceIndexes contains {string.Join(", ", invalidSources)} outside the supplied range 0..{sources.Count - 1}.");
+            if (enforceOutcomes && epic.SourceIndexes.All(constraintSources!.Contains))
+                throw new InvalidOperationException($"{label} owns only constraints or exclusions ({string.Join(", ", epic.SourceIndexes.Distinct().Take(12))}). " +
+                    "A constraint restricts work; it is not work. Remove this Epic and attach each of those sourceIndexes, with a criterion that can be checked, " +
+                    "to the outcome Epics they restrict. Every Epic must deliver at least one committed outcome.");
             if (epic.PrerequisiteIndexes is null)
                 throw new InvalidOperationException($"{label} needs prerequisiteIndexes. Use [] for independent work.");
             foreach (var prerequisite in epic.PrerequisiteIndexes)
@@ -80,7 +89,12 @@ public sealed partial class SpecialistAgent
         return result;
     }
 
-    internal sealed record ApprovedCommitment(string Statement, IReadOnlyList<int> SourceIndexes);
+    internal sealed record ApprovedCommitment(string Statement, IReadOnlyList<int> SourceIndexes)
+    {
+        // "Outcome" or "Constraint". Inventories retained from earlier releases have no kind and are treated as outcomes.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public string? Kind { get; init; }
+    }
     internal sealed record ApprovedCommitments(IReadOnlyList<ApprovedCommitment> Commitments);
 
     internal static void ValidateCommitments(ApprovedCommitments value, int sourceCount)
@@ -94,6 +108,8 @@ public sealed partial class SpecialistAgent
                 throw new InvalidOperationException("Each commitment needs a distinct substantive statement.");
             if (entry.SourceIndexes is not { Count: > 0 } || entry.SourceIndexes.Any(i => i < 0 || i >= sourceCount))
                 throw new InvalidOperationException($"Cite the accepted source indexes in 0..{sourceCount - 1} supporting '{entry.Statement}'.");
+            if (entry.Kind is not (null or "Outcome" or "Constraint"))
+                throw new InvalidOperationException($"Use kind Outcome or Constraint for '{entry.Statement}'.");
         }
     }
 
@@ -114,7 +130,9 @@ public sealed partial class SpecialistAgent
                 "Deferring detail is not omitting a later outcome from the product roadmap. A first-increment request does not narrow approved product scope. " +
                 "Keep testable thresholds, quantities, exclusions and conditions. Consolidate repetitions. A paragraph may contain several commitments, " +
                 "and several passages may support one. Headings, rationale, examples, history and unapproved suggestions are context. " +
-                "Return commitments with a concise statement and the sourceIndexes supporting it. Distinguish a binding exclusion from a future suggestion.",
+                "Return commitments with a concise statement, the sourceIndexes supporting it and a kind. Distinguish a binding exclusion from a future suggestion. " +
+                "Kind is Outcome for something the team must build, produce or deliver, including a document the source explicitly requires as a deliverable. " +
+                "Kind is Constraint for a rule, limit, exclusion, non-goal, authority boundary or evidence requirement that restricts how outcomes are delivered.",
                 value => ValidateCommitments(value, sources.Count), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
             inventory = (await SaveProgressiveStateAsync(inventoryKey, inventory, context, token)).Payload;
         }
@@ -122,7 +140,10 @@ public sealed partial class SpecialistAgent
         var obligations = inventory.Commitments.Select((entry, index) => new ScopeSource($"commitment-{index}", entry.Statement)).ToArray();
         setRoadmapSourceCount(obligations.Length);
         var roadmapMessages = projectMessages.Append(new ChatMessage(ChatRole.User, "Approved commitments for this roadmap: " +
-            JsonSerializer.Serialize(obligations.Select((o, sourceIndex) => new { sourceIndex, o.Text }), PlanningJson))).ToArray();
+            JsonSerializer.Serialize(obligations.Select((o, sourceIndex) => new { sourceIndex, o.Text,
+                kind = inventory.Commitments[sourceIndex].Kind ?? "Outcome" }), PlanningJson))).ToArray();
+        var constraintSources = inventory.Commitments.Select((entry, index) => (entry, index))
+            .Where(x => x.entry.Kind == "Constraint").Select(x => x.index).ToHashSet();
         var draft = await ReadPlanningPageAsync<RoadmapDraft>(generate, roadmapMessages, "Epic roadmap",
             "Group the complete approved product commitments into outcome Epics, including later content, systems, presentation and acceptance outcomes when the source actually requires them. " +
             "The roadmap spans the whole product; selecting a small first experiment must not shrink it to first-increment features. " +
@@ -132,9 +153,12 @@ public sealed partial class SpecialistAgent
             "Each Epic needs a title, outcome, testable acceptanceCriteria, sourceIndexes selecting its directly owned commitments and prerequisiteIndexes " +
             "referring to Epics in your proposed array. For each owned commitment include acceptance criteria showing how the owner will deliver or enforce it. " +
             "Assign shared constraints only to Epics with a concrete responsibility. Preserve the approved scope. " +
+            "A constraint, exclusion or non-goal restricts work; it is not work. Attach it to the outcome Epics it restricts with a criterion that can be checked on their deliverable. " +
+            "Every Epic must own at least one commitment marked Outcome. Do not create an Epic to hold, baseline, trace or govern constraints. " +
+            "An Epic is a prerequisite only when the later Epic cannot be built or tested without its result; agreement on scope, authority or exclusions is never a prerequisite. " +
             $"Valid commitment indexes are 0..{obligations.Length - 1}. Return Epics and the three findings arrays.",
-            value => BindRoadmap(value, obligations), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
-        var roadmap = BindRoadmap(draft, obligations);
+            value => BindRoadmap(value, obligations, constraintSources), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+        var roadmap = BindRoadmap(draft, obligations, constraintSources);
         var coverage = roadmap.Coverage.Select((owner, index) => owner with {
             Statement = obligations[index].Text,
             Citations = inventory.Commitments[index].SourceIndexes.Distinct().Select(i => sources[i].SourceKey).ToArray()

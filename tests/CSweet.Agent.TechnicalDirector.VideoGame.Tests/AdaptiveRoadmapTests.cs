@@ -21,6 +21,29 @@ public class AdaptiveRoadmapTests
     }
 
     [Fact]
+    public void Constraints_attach_to_outcome_epics_and_cannot_form_a_governance_epic()
+    {
+        SpecialistAgent.ScopeSource[] sources = [new("commitment-0", "Paddle rebounds the ball"), new("commitment-1", "No multiplayer or monetization")];
+        var constraints = new HashSet<int> { 1 };
+        var governance = new SpecialistAgent.RoadmapEpic("Scope guardrails", "Baseline the exclusions", ["Exclusions are recorded"], [1], []);
+        var loop = new SpecialistAgent.RoadmapEpic("Playable loop", "Prove ball interaction", ["Ball rebounds"], [0], [0]);
+        // The recorded Prism Break shape: a constraint-only Epic that everything else waits for.
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            SpecialistAgent.BindRoadmap(new([governance, loop], [], [], []), sources, constraints));
+        Assert.Contains("owns only constraints or exclusions", error.Message);
+        var attached = loop with { SourceIndexes = [0, 1], PrerequisiteIndexes = [],
+            AcceptanceCriteria = ["Ball rebounds", "The build offers no multiplayer or purchase flow"] };
+        var road = SpecialistAgent.BindRoadmap(new([attached], [], [], []), sources, constraints);
+        Assert.Empty(Assert.Single(road.Plan.DeliveryItems).DependencyProposalKeys);
+        // Inventories retained from earlier releases carry no kinds and keep their behaviour.
+        Assert.Equal(2, SpecialistAgent.BindRoadmap(new([governance, loop], [], [], []), sources).Plan.DeliveryItems.Count);
+        SpecialistAgent.ValidateCommitments(new([new("Paddle rebounds the ball", [0]) { Kind = "Outcome" },
+            new("No multiplayer or monetization", [0]) { Kind = "Constraint" }, new("Retained entry", [0])]), 1);
+        Assert.Contains("Outcome or Constraint", Assert.Throws<InvalidOperationException>(() =>
+            SpecialistAgent.ValidateCommitments(new([new("Paddle rebounds the ball", [0]) { Kind = "Governance" }]), 1)).Message);
+    }
+
+    [Fact]
     public void Dependencies_follow_the_graph_regardless_of_presentation_order()
     {
         SpecialistAgent.ScopeSource[] sources = [new("s", "Accepted scope")];
