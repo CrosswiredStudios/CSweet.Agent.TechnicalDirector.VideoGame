@@ -1,4 +1,4 @@
-# Technical Director 6.15.0
+# Technical Director 6.15.1
 
 Victor reuses an engineering task that explicitly commits an exact Phaser dependency pin and specifies the lockfile in its acceptance criteria. [Release notes](releases/6.14.2.md)
 

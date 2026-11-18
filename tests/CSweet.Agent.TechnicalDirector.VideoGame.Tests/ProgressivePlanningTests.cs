@@ -8,6 +8,14 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 public sealed partial class ProgressivePlanningTests
 {
     [Fact]
+    public void Sprint_planning_preserves_technical_authority_over_engine_recommendations()
+    {
+        Assert.Contains("The Technical Director owns engine choices within the approved game scope", SpecialistAgent.PlanningAuthorityPolicy);
+        Assert.Contains("Coordinate the resulting ticket changes with the Producer", SpecialistAgent.PlanningAuthorityPolicy);
+        Assert.DoesNotContain("A proposed engine replacement,", SpecialistAgent.PlanningAuthorityPolicy);
+    }
+
+    [Fact]
     public void First_increment_binds_executable_tasks_to_the_frozen_Story_and_criteria()
     {
         var story = Scope().Plan.DeliveryItems[1] with { AcceptanceCriteria = ["The scene responds to input.", "Record the observed response."] };

@@ -11,9 +11,9 @@ public sealed partial class SpecialistAgent
         In Sprint 1 include an engineer-owned, runnable first slice. Scope project setup, a clean restore and any lockfile required by the selected package manager into that slice once. Check existing project evidence first.
         Before raising a blocker, identify the missing fact, its accountable role, the affected tasks,
         and the observable evidence that will close it. An implementation uncertainty within accepted scope
-        belongs in an engineer-owned task. Example: choosing an exact dependency version within approved engine
-        constraints, generating its lockfile, restoring dependencies and checking the installed version are
-        engineering deliverables. The Director supplies constraints and review criteria; the engineer executes
+        belongs in an engineer-owned task. Example: choosing an exact dependency version within the Technical Director's stack,
+        generating a lockfile when the toolchain uses one, restoring dependencies and checking the installed version are
+        engineering deliverables. The Technical Director supplies stack constraints and review criteria; the engineer executes
         and commits; QA independently checks the integrated candidate. Dependent tasks wait for that result.
         Preparation, estimates and readiness for a safe prerequisite can proceed while dependent work waits.
         One coherent dependency selection/pin/lockfile deliverable needs one engineering ticket, not a second
@@ -41,9 +41,10 @@ public sealed partial class SpecialistAgent
         list empty only when no criterion depends on observed behavior; QA then judges from the build, tests, source and
         browser startup. Interaction criteria need browserVerification canvas or page. A pure research note that
         observes no build of this project remains video-game.research-spike.v1 without interaction criteria.
-        A proposed engine replacement, incompatible accepted requirements, changed budget or changed creative
-        scope requires explicit management authority. State the conflicting requirement and the precise choice
-        needed in openFeasibilityDecisions. Never turn routine package selection into an owner approval.
+        The Technical Director owns engine choices within the approved game scope, including revising an earlier
+        recommendation. Coordinate the resulting ticket changes with the Producer. When a technical change
+        would break an explicit business requirement or change the approved budget or creative scope, state
+        that specific conflict and the decision its owner must make in openFeasibilityDecisions.
         Treat already accepted package/brief status supplied by the platform as current; old document wording
         about pending approval is historical. Missing budgets or dates do not block authorized planning.
         Delegated design parameters, future evidence collection, and optional non-MVP work are not management
