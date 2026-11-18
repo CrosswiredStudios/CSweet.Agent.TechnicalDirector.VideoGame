@@ -38,6 +38,8 @@ public sealed class ToolchainFeasibilityTests
 
     [Theory]
     [InlineData("feasible")]
+    [InlineData("choose-alternative")]
+    [InlineData("invalid-choice")]
     [InlineData("blocking-risk")]
     [InlineData("retained-shardfall-risk")]
     [InlineData("image-changed")]
@@ -45,6 +47,12 @@ public sealed class ToolchainFeasibilityTests
     public async Task Review_binds_the_exact_vision_recipe_targets_and_current_capacity(string scenario)
     {
         var payload = JsonNode.Parse(RequestJson)!.AsObject();
+        var choose = scenario is "choose-alternative" or "invalid-choice";
+        if (choose)
+        {
+            payload.Remove("requiredRecipeKey");
+            payload["offeredRecipeKeys"] = new JsonArray("phaser.web-2d.v1", "zeta.runtime");
+        }
         var offered = payload["eligibleDefinitions"]![0]!;
         const string pitch = "Build a 2D Phaser game for desktop Chromium. Target 60 fps.";
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(pitch)));
@@ -57,6 +65,7 @@ public sealed class ToolchainFeasibilityTests
             (string)offered["DefinitionDigest"]!, [new("phaser.web-2d.v1", ["build"], ["web"], JsonSerializer.SerializeToElement(new {}),
                 ["office.windows-x64.node-24.v1", "office.linux-x64.node-24.v1"], [])],
             JsonSerializer.SerializeToElement(new { node = "24" }), JsonSerializer.SerializeToElement(new {}), [], [], now);
+        if (choose) definition = definition with { Recipes = [.. definition.Recipes, definition.Recipes[0] with { Key = "zeta.runtime" }] };
         var adapter = new EligibleToolchainAdapter(definition, new(definition.Id, (Guid)offered["ProviderInstallationId"]!,
             Guid.NewGuid(), (string)offered["EnvironmentProfileKey"]!, scenario == "image-changed" ? "different" : (string)offered["EnvironmentImageDigest"]!,
             now, now.AddDays(1), true));
@@ -68,7 +77,7 @@ public sealed class ToolchainFeasibilityTests
                 { WorkstreamId = request.WorkContext!.WorkstreamId });
         }).RegisterCapability<ReadToolchainCatalogV2Request, IReadOnlyList<EligibleToolchainAdapter>>(PlatformCapabilities.ToolchainCatalogRead, (read, _) =>
         {
-            Assert.Equal("phaser.web-2d.v1", read.RecipeKey);
+            Assert.Equal(choose ? null : "phaser.web-2d.v1", read.RecipeKey);
             Assert.Equal(["web"], read.TargetKeys);
             Assert.Contains("test", read.RequiredOperations!);
             return Task.FromResult<IReadOnlyList<EligibleToolchainAdapter>>([adapter]);
@@ -87,8 +96,14 @@ public sealed class ToolchainFeasibilityTests
                     return Task.FromResult(JsonSerializer.Deserialize<SpecialistAgent.TechnicalFindings>(File.ReadAllText(
                         Path.Combine(AppContext.BaseDirectory, "Fixtures", "shardfall-windows-feasibility.json")), JsonSerializerOptions.Web)!);
                 return Task.FromResult(new SpecialistAgent.TechnicalFindings(["The recipe supports the browser target."],
-                    scenario == "blocking-risk" ? ["Required dependency is incompatible."] : []));
+                    scenario == "blocking-risk" ? ["Required dependency is incompatible."] : [], choose ? scenario == "invalid-choice" ? 9 : 1 : null));
             }, default);
+        if (scenario == "invalid-choice")
+        {
+            Assert.Equal("Blocked", result.Disposition);
+            Assert.Null(result.Artifact);
+            return;
+        }
         if (scenario is "different-pitch" or "image-changed")
         {
             Assert.Equal("Blocked", result.Disposition);
@@ -97,14 +112,14 @@ public sealed class ToolchainFeasibilityTests
             return;
         }
         Assert.Equal(1, calls);
-        Assert.Equal(scenario == "feasible" ? "Completed" : "Blocked", result.Disposition);
+        Assert.Equal(scenario is "feasible" or "choose-alternative" ? "Completed" : "Blocked", result.Disposition);
         Assert.Equal("video-game.toolchain-feasibility.v1", result.Artifact!.Type);
         // Marcus consumes the shared DTO with the default (case-sensitive) serializer.
         var evidence = result.Artifact.Payload.Deserialize<ToolchainFeasibilityEvidenceV1>()!;
         Assert.Equal(hash, evidence.AcceptedVisionDigest);
-        Assert.Equal("phaser.web-2d.v1", evidence.RecipeKey);
+        Assert.Equal(choose ? "zeta.runtime" : "phaser.web-2d.v1", evidence.RecipeKey);
         Assert.Equal(["web"], evidence.TargetKeys);
         Assert.Equal([source.DocumentId], evidence.EvidenceResourceIds);
-        Assert.Equal(scenario == "feasible", evidence.Feasible);
+        Assert.Equal(scenario is "feasible" or "choose-alternative", evidence.Feasible);
     }
 }

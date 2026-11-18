@@ -15,6 +15,16 @@ public sealed partial class ProgressivePlanningTests
             VideoGameRoleKeys.Engineer, [], [], [0], ["The scene opens."], "canvas", [0], [], []);
         var report = scene with { Title = "Record the observation", StoryCriterionIndexes = [1], EarlierTaskIndexes = [0] };
         var result = SpecialistAgent.BindStoryTasks(new([scene, report]), story, []);
+        foreach (var lockfile in new string?[] { "example.lock", null })
+        {
+            var stack = new SpecialistAgent.ProjectStack("Independent engine", "Example language", [], "Fits the game", "Launch the demo.", lockfile);
+            var bound = SpecialistAgent.BindStoryTasks(new([scene, report], 0), story, [], stack);
+            Assert.Equal(2, bound.Items.Count);
+            Assert.Equal(stack.SetupCriterion, bound.Items[0].AcceptanceCriteria.Last());
+            Assert.Equal(lockfile is not null, stack.SetupCriterion.Contains("example.lock"));
+            Assert.Equal(result.Items[1].AcceptanceCriteria, bound.Items[1].AcceptanceCriteria);
+            Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(new([scene, report], 9), story, [], stack));
+        }
         Assert.All(result.Items, t => Assert.Equal(story.ProposalKey, t.ParentProposalKey));
         Assert.Equal(story.AcceptanceCriteria[0], result.Items[0].AcceptanceCriteria[0]);
         Assert.Equal([result.Items[0].ProposalKey], result.Items[1].DependencyProposalKeys);
@@ -87,12 +97,15 @@ public sealed partial class ProgressivePlanningTests
         Assert.All(coverage, source => Assert.NotEmpty(source.GetProperty("proposalKeys").EnumerateArray()));
     }
 
-    [Fact]
-    public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation()
+    [Theory]
+    [InlineData("Compact canvas", "package-lock.json")]
+    [InlineData("Native engine", null)]
+    public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation(string engine, string? lockfile)
     {
         var runtime = StateRuntime(new Dictionary<string, AgentOperatingStateResponse>());
         var client = new Client();
         var agent = new SpecialistAgent();
+        var stack = new SpecialistAgent.ProjectStack(engine, "Project language", ["Physics library"], "Fits the approved mechanics.", "Launch the first scene.", lockfile);
         var directions = new string('d', 64);
         var cycle = new GameProductionPlanningCycleV1(Guid.NewGuid(), Guid.NewGuid(), 1, Guid.NewGuid(), new string('a',64),
             Guid.NewGuid(), 1, new string('b',64), "concept", "vision", new string('c',64));
@@ -120,16 +133,21 @@ public sealed partial class ProgressivePlanningTests
             new("Rebound", "Prove the core loop", [], [0], [])]), Web));
         var drafts = new SpecialistAgent.StoryTaskDrafts(detail.Items.Select((t, i) => new SpecialistAgent.StoryTaskDraft(
             t.Title, t.Description, t.WorkItemTypeKey, t.AccountableRoleKey, t.RequiredSpecializationKeys, t.PreferredSpecializationKeys,
-            i == 0 ? [0] : [], i == 0 ? [] : t.AcceptanceCriteria, t.BrowserVerification!, [], i == 0 ? [] : [0], [])).ToArray());
+            i == 0 ? [0] : [], i == 0 ? [] : t.AcceptanceCriteria, t.BrowserVerification!, [], i == 0 ? [] : [0], [])).ToArray(), 0);
         client.Responses.Enqueue(JsonSerializer.Serialize(drafts, Web));
         client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(detail.Items.Select((t, i) =>
             new SpecialistAgent.PlanningDescription($"{key}.task-{i + 1}", t.Description)).ToArray()), Web));
         var request = new SpecialistAgent.ProgressivePlanningRequest("Story", directions, outlineEvidence.GetProperty("scopeKey").GetString(),
             outlineEvidence.GetProperty("outlineDigest").GetString(), key, [], Adaptive: true, DraftBasis: new string('f',64));
-        var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default);
+        var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default, stack: stack);
         Assert.True(ready.Artifact != null, ready.Content);
+        var proposal = ready.Artifact!.Payload.Deserialize<GameTechnicalDeliveryProposalV1>()!;
+        Assert.Contains(stack.DecisionSummary, proposal.TechnicalConstraints);
+        var setup = Assert.Single(proposal.DeliveryItems, item => item.AcceptanceCriteria.Contains(stack.SetupCriterion));
+        Assert.Equal(VideoGameRoleKeys.Engineer, setup.AccountableRoleKey);
+        Assert.Equal(lockfile is not null, stack.SetupCriterion.Contains("package-lock.json"));
         var count = client.Calls;
-        var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default);
+        var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default, stack: stack);
         Assert.Equal(ready.Artifact!.Payload.GetRawText(), replay.Artifact!.Payload.GetRawText());
         Assert.Equal(count, client.Calls);
     }

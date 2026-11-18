@@ -284,6 +284,7 @@ public sealed partial class SpecialistAgent
                 detailed.Add(story.ProposalKey);
             }
             var output = scope.Plan with { DeliveryItems = [.. scope.Plan.DeliveryItems, .. leaves] };
+            if (stack is not null) output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [], stack.DecisionSummary] };
             if (request.Adaptive) output = output with { DeliveryItems = output.DeliveryItems.Select(item => IsPlanningContainer(item) ? item : BindCriteria(cycle.ApprovedPackageDigest, stories[item.ParentProposalKey!], item)).ToArray() };
             var result = CompletePlanningProposal(cycle, output, partialIncrement: request.Adaptive);
             var payload = JsonNode.Parse(result.Artifact!.Payload.GetRawText())!.AsObject();

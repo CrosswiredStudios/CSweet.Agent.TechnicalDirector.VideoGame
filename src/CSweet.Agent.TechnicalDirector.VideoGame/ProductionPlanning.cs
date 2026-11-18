@@ -72,8 +72,15 @@ public sealed partial class SpecialistAgent
             members.Add(new(document.Id, revision.Id, member.RequiredDocumentType, revision.ContentSha256));
             grounding.Add(revision.Content);
             if (document.DocumentType == VideoGameArtifactTypeKeys.Vision) pitch = (revision.Id, revision.Content);
-            if (adaptive) ledger.AddRange(GameOutcomeLedger.Read(cycle.WorkstreamId, cycle.TeamId, document.Id, revision.Id,
-                revision.ContentSha256, member.RequiredDocumentType, revision.Content));
+            if (adaptive || member.RequiredDocumentType == "video-game.production-sources.v1")
+            {
+                var sources = GameOutcomeLedger.Read(cycle.WorkstreamId, cycle.TeamId, document.Id, revision.Id,
+                    revision.ContentSha256, member.RequiredDocumentType, revision.Content);
+                if (adaptive) ledger.AddRange(sources);
+                var acceptedPitch = sources.Where(x => x.AuthorRole == VideoGameRoleKeys.GameDirector).ToArray();
+                if (acceptedPitch.Length > 0)
+                    pitch = (acceptedPitch[0].RevisionId, string.Join("\n\n", acceptedPitch.Select(x => x.ApprovedText)));
+            }
         }
         if (ArtifactPackageDigestCalculator.Calculate(package.Id, package.Version, members) != cycle.ApprovedPackageDigest)
             return AgentCoordinationTurnResult.Blocked("The planning package digest changed.");
@@ -208,6 +215,7 @@ public sealed partial class SpecialistAgent
         if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],
             $"Repository setup: {repository.Status}; repository={repository.RepositoryId}; approval={repository.ApprovalId}; {repository.Remediation}"] };
+        if (stack is not null) output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [], stack.DecisionSummary] };
         return CompletePlanningProposal(cycle, output);
     }
 
