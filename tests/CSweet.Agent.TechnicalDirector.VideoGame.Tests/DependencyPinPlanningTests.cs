@@ -70,15 +70,20 @@ public sealed class DependencyPinPlanningTests
         Assert.Empty(SpecialistAgent.PlanValidationIssues(output.DeliveryItems));
     }
 
-    [Fact]
-    public void Existing_pin_owner_is_reused_without_a_duplicate_ticket_or_changed_criteria()
+    [Theory]
+    [InlineData("Select and commit exact Phaser 2D dependency and lockfile",
+        "A committed entry selects one exact Phaser 2D version.", "A lockfile records the same exact version.")]
+    [InlineData("Commit exact Phaser 3 dependency pin for Chromium validation",
+        "The exact Phaser package/version candidate used for validation is selected, pinned, lockfile-restored, and recorded so later playable, presentation, audio, and deployment work consumes one resolved dependency candidate rather than an assumed feasibility assumption.",
+        "The chosen exact Phaser 3 package/version is selected within the accepted Chromium desktop-web constraint without a management approval.")]
+    public void Existing_pin_owner_is_reused_without_a_duplicate_ticket_or_changed_criteria(string title, string selection, string verification)
     {
         var original = PhaserExample();
         var engineer = original.DeliveryItems.First(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task);
         var pin = engineer with { ProposalKey = "select-commit-phaser-2d-dependency-lockfile",
-            Title = "Select and commit exact Phaser 2D dependency and lockfile", DependencyProposalKeys = [],
-            AcceptanceCriteria = ["A committed entry selects one exact Phaser 2D version.", "A lockfile records the same exact version."] };
+            Title = title, DependencyProposalKeys = [], AcceptanceCriteria = [selection, verification] };
         var consumer = engineer with { ProposalKey = "minimal-scene", Title = "Load a minimal Phaser scene", DependencyProposalKeys = [pin.ProposalKey] };
+        Assert.False(SpecialistAgent.IsPhaserPinDeliverable(pin with { Title = "Verify the Phaser dependency pin in the running scene" }));
         var independent = engineer with { ProposalKey = "asset-rights", Title = "Record asset rights", DependencyProposalKeys = [] };
         var input = original with { TechnicalConstraints = ["Engine: Phaser"],
             DeliveryItems = [.. original.DeliveryItems.Where(x => x.ProposalKey != engineer.ProposalKey), pin, consumer, independent] };

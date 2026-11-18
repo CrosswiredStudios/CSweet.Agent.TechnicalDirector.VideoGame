@@ -27,8 +27,9 @@ public sealed partial class SpecialistAgent
     internal static bool IsPhaserPinDeliverable(GameProposedWorkItemV1 item) =>
         item.ProposalKey == "dependency-pin-phaser" ||
         item.Title.Contains("Phaser", StringComparison.OrdinalIgnoreCase) &&
-        Regex.IsMatch(item.Title, @"\block(?:file)?\b", RegexOptions.IgnoreCase) &&
-        Regex.IsMatch(item.Title, @"\b(?:select|pin|commit|lock)\b", RegexOptions.IgnoreCase) &&
+        (Regex.IsMatch(item.Title, @"\block(?:file)?\b", RegexOptions.IgnoreCase) &&
+         Regex.IsMatch(item.Title, @"\b(?:select|pin|commit|lock)\b", RegexOptions.IgnoreCase) ||
+         Regex.IsMatch(item.Title, @"^\s*(?:select|pin|commit|lock)\b.*\bdependency\s+pin\b", RegexOptions.IgnoreCase)) &&
         item.AcceptanceCriteria.Any(x => x.Contains("exact", StringComparison.OrdinalIgnoreCase) &&
             x.Contains("version", StringComparison.OrdinalIgnoreCase)) &&
         item.AcceptanceCriteria.Any(x => x.Contains("lockfile", StringComparison.OrdinalIgnoreCase));

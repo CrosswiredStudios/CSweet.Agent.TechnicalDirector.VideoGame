@@ -1,3 +1,7 @@
+# Technical Director 6.14.2
+
+Victor reuses an engineering task that explicitly commits an exact Phaser dependency pin and specifies the lockfile in its acceptance criteria. [Release notes](releases/6.14.2.md)
+
 # Technical Director 6.14.1
 
 A Phaser dependency-pin task now gets its own verification requirements. See the [6.14.1 release notes](releases/6.14.1.md).
