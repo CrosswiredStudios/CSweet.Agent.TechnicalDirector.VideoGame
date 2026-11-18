@@ -1,6 +1,6 @@
-# Technical Director 6.13.3
+# Technical Director 6.14.0
 
-A rejected Story task list is told exactly which rule it broke, and a failed planning attempt no longer tells readers to escalate to the CEO. See the [6.13.3 release notes](releases/6.13.3.md).
+The Technical Director refines the selected Story using its approved passages. Code attaches the accepted criteria, parent, execution capability and dependency identities to the authored tasks. See the [6.14.0 release notes](releases/6.14.0.md).
 
 A roadmap is no longer lost because a few listed commitments cannot be tied to an accepted source. See the [6.13.2 release notes](releases/6.13.2.md).
 

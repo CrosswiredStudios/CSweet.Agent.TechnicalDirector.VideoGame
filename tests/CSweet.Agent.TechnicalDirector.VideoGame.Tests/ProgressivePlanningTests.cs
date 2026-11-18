@@ -7,6 +7,25 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 
 public sealed partial class ProgressivePlanningTests
 {
+    [Fact]
+    public void First_increment_binds_executable_tasks_to_the_frozen_Story_and_criteria()
+    {
+        var story = Scope().Plan.DeliveryItems[1] with { AcceptanceCriteria = ["The scene responds to input.", "Record the observed response."] };
+        var scene = new SpecialistAgent.StoryTaskDraft("Build the scene", "Deliver a running scene.", VideoGameWorkItemTypeKeys.Task,
+            VideoGameRoleKeys.Engineer, [], [], [0], ["The scene opens."], "canvas", [0], [], []);
+        var report = scene with { Title = "Record the observation", StoryCriterionIndexes = [1], EarlierTaskIndexes = [0] };
+        var result = SpecialistAgent.BindStoryTasks(new([scene, report]), story, []);
+        Assert.All(result.Items, t => Assert.Equal(story.ProposalKey, t.ParentProposalKey));
+        Assert.Equal(story.AcceptanceCriteria[0], result.Items[0].AcceptanceCriteria[0]);
+        Assert.Equal([result.Items[0].ProposalKey], result.Items[1].DependencyProposalKeys);
+        Assert.Equal([result.Items[1].ProposalKey], result.Coverage.Single(c => c.SourceKey == "criterion-1").ProposalKeys);
+        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(new([scene with { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Feature }]), story, []));
+        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(new([scene with { EarlierTaskIndexes = [0] }]), story, []));
+        var schema = SpecialistAgent.PlanningResponseSchema(typeof(SpecialistAgent.StoryTaskDrafts)).GetRawText();
+        foreach (var platformField in new[] { "parentProposalKey", "proposalKey", "criterionBindings", "requiredCapabilityKeys", VideoGameWorkItemTypeKeys.Feature })
+            Assert.DoesNotContain(platformField, schema);
+    }
+
     private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
     private static SpecialistAgent.ProgressiveScopeIndex Scope()
     {
@@ -99,10 +118,12 @@ public sealed partial class ProgressivePlanningTests
         var key = "roadmap-epic-1.story-1";
         client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.StorySlices([
             new("Rebound", "Prove the core loop", [], [0], [])]), Web));
-        detail = detail with { Items = detail.Items.Select(t => t with { ParentProposalKey = key }).ToArray() };
-        client.Responses.Enqueue(JsonSerializer.Serialize(detail, Web));
-        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(detail.Items.Select(t =>
-            new SpecialistAgent.PlanningDescription(t.ProposalKey, t.Description)).ToArray()), Web));
+        var drafts = new SpecialistAgent.StoryTaskDrafts(detail.Items.Select((t, i) => new SpecialistAgent.StoryTaskDraft(
+            t.Title, t.Description, t.WorkItemTypeKey, t.AccountableRoleKey, t.RequiredSpecializationKeys, t.PreferredSpecializationKeys,
+            i == 0 ? [0] : [], i == 0 ? [] : t.AcceptanceCriteria, t.BrowserVerification!, [], i == 0 ? [] : [0], [])).ToArray());
+        client.Responses.Enqueue(JsonSerializer.Serialize(drafts, Web));
+        client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(detail.Items.Select((t, i) =>
+            new SpecialistAgent.PlanningDescription($"{key}.task-{i + 1}", t.Description)).ToArray()), Web));
         var request = new SpecialistAgent.ProgressivePlanningRequest("Story", directions, outlineEvidence.GetProperty("scopeKey").GetString(),
             outlineEvidence.GetProperty("outlineDigest").GetString(), key, [], Adaptive: true, DraftBasis: new string('f',64));
         var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default);

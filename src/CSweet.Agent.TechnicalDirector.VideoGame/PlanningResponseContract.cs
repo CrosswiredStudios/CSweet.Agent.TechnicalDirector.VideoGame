@@ -92,7 +92,7 @@ public sealed partial class SpecialistAgent
                     Choices("accountableRoleKey", Constants(typeof(VideoGameRoleKeys)), "One exact accountable role; a role is not a skill or capability.");
                     Choices("workItemTypeKey", type == typeof(OutlineDraftPage)
                         ? [VideoGameWorkItemTypeKeys.Milestone, VideoGameWorkItemTypeKeys.Feature, VideoGameWorkItemTypeKeys.Content]
-                        : Constants(typeof(VideoGameWorkItemTypeKeys)), "Exact work item type for this phase.");
+                        : type == typeof(StoryTaskDrafts) ? ExecutableGameTypes : Constants(typeof(VideoGameWorkItemTypeKeys)), "Exact work item type for this phase.");
                     foreach (var field in new[] { "requiredSpecializationKeys", "preferredSpecializationKeys" })
                         Choices(field, Constants(typeof(VideoGameSpecializationKeys)), "Skills only. Use [] when empty. work.execution.run is a capability and cannot appear here.", true);
                     Choices("requiredCapabilityKeys", ["work.execution.run"], "Execution capability only; never place this value in a specialization field.", true);

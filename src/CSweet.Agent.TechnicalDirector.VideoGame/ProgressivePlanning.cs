@@ -161,6 +161,14 @@ public sealed partial class SpecialistAgent
             if (!request.Adaptive) ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
+            if (request.Adaptive && request.Phase == "Story" && request.StoryKey is { } requestedStory)
+            {
+                var epic = scope.Plan.DeliveryItems.SingleOrDefault(i => requestedStory.StartsWith(i.ProposalKey + ".story-", StringComparison.Ordinal));
+                var obligations = scope.Coverage.Where(c => epic != null && c.ProposalKeys.Contains(epic.ProposalKey)).ToArray();
+                var citations = obligations.SelectMany(c => c.Citations ?? [c.SourceKey]).ToHashSet(StringComparer.Ordinal);
+                messages = projectMessages.Append(new ChatMessage(ChatRole.User, "Accepted obligations and original passages for this increment: " +
+                    JsonSerializer.Serialize(new { obligations, passages = sources.Where(s => citations.Contains(s.SourceKey)) }, PlanningJson))).ToArray();
+            }
             messages = await ApplyRetainedPlanningDirectionAsync(scopeKey, outlineDigest, request, context, messages, token);
             messages = messages.Append(new ChatMessage(ChatRole.User, "Frozen shared technical constraints (project data): " +
                 JsonSerializer.Serialize(scope.Plan.TechnicalConstraints, PlanningJson))).ToArray();
@@ -200,7 +208,22 @@ public sealed partial class SpecialistAgent
                 var indexKey = baseIndexKey;
                 var retained = await context.Platform.ReadOperatingStateAsync<ProgressiveStoryIndex>(indexKey, token);
                 var fresh = retained is null;
-                var index = retained?.Payload ?? await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
+                var index = retained?.Payload;
+                if (index is null && request.Adaptive)
+                {
+                    var drafts = await ReadPlanningPageAsync<StoryTaskDrafts>(Generate, messages, "next increment task index",
+                        "Plan the requested Story as dependency-closed executable deliverables. Choose one qualified author for each. " +
+                        "Select storyCriterionIndexes from the numbered accepted criteria. Cover each at least once. Add only distinct task-specific acceptance in additionalCriteria. " +
+                        "interactionCriteria indexes refer to the selected Story criteria in the order you give, followed by additionalCriteria. " +
+                        "Use earlierTaskIndexes for prerequisites in this response and priorTaskIndexes for prerequisites in the supplied prior tasks. " +
+                        "Keep routine independent review and QA on the implementation task. Supply [] for empty lists. " +
+                        JsonSerializer.Serialize(new { story.Title, story.Description, criteria = story.AcceptanceCriteria.Select((text, index) => new { index, text }),
+                            priorTasks = leaves.Select((t, index) => new { index, t.Title, t.Description }) }, PlanningJson),
+                        value => ValidateStoryRefinement(BindStoryTasks(value, story, leaves), story, scope.Plan, leaves, 200,
+                            requireVerification: true, partialIncrement: true), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
+                    index = BindStoryTasks(drafts, story, leaves);
+                }
+                index ??= await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
                     "Do not detail or recreate future Stories, milestones or existing tasks. Descriptions are short scope summaries; " +
                     "implementation briefs follow in separate pages. Keep one owner per coherent deliverable; do not split version selection, pinning and its lockfile into overlapping tickets. " +
