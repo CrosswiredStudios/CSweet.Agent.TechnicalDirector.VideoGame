@@ -29,6 +29,7 @@ public sealed partial class ProgressivePlanningTests
             var bound = SpecialistAgent.BindStoryTasks(new([scene, report], 0), story, [], stack);
             Assert.Equal(2, bound.Items.Count);
             Assert.Equal(stack.SetupCriterion, bound.Items[0].AcceptanceCriteria.Last());
+            Assert.StartsWith("From a clean checkout, launch", stack.SetupCriterion);
             Assert.Equal(lockfile is not null, stack.SetupCriterion.Contains("example.lock"));
             Assert.Equal(result.Items[1].AcceptanceCriteria, bound.Items[1].AcceptanceCriteria);
             Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(new([scene, report], 9), story, [], stack));
