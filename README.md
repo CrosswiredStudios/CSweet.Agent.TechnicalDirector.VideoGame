@@ -1,4 +1,6 @@
-# Technical Director 6.14.0
+# Technical Director 6.14.1
+
+A Phaser dependency-pin task now gets its own verification requirements. See the [6.14.1 release notes](releases/6.14.1.md).
 
 The Technical Director refines the selected Story using its approved passages. Code attaches the accepted criteria, parent, execution capability and dependency identities to the authored tasks. See the [6.14.0 release notes](releases/6.14.0.md).
 

@@ -110,7 +110,8 @@ public sealed partial class SpecialistAgent
         var issues = PlanValidationIssues(outline.DeliveryItems.Concat(priorLeaves).Concat(index.Items).ToArray(), partialIncrement);
         // Indexes retained from before browserVerification existed stay valid; the Producer records them as undeclared.
         if (requireVerification)
-            issues = [.. issues, .. BrowserVerificationIssues(index.Items), .. InteractionCriteriaIssues(index.Items)];
+            issues = [.. issues, .. BrowserVerificationIssues(index.Items)];
+        issues = [.. issues, .. InteractionCriteriaIssues(index.Items)];
         if (issues.Count > 0) throw new InvalidOperationException(string.Join("; ", issues));
     }
 

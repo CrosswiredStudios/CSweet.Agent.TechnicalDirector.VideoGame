@@ -104,6 +104,26 @@ public sealed class DependencyPinPlanningTests
     }
 
     [Fact]
+    public void Brickfall_dependency_pin_has_its_own_verification_on_fresh_and_resumed_indexes()
+    {
+        var original = PhaserExample();
+        var consumer = original.DeliveryItems.First(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer &&
+            x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task) with {
+            Title = "Technical validation and exact Phaser-candidate decision gate",
+            AcceptanceCriteria = ["Observe the running scene.", "Record what the player sees."],
+            BrowserVerification = GameBrowserVerification.Canvas, InteractionCriteria = [0, 1] };
+        var plan = original with { DeliveryItems = [consumer] };
+        var bound = SpecialistAgent.BindDependencyPins(plan, consumer.ParentProposalKey);
+        var pin = Assert.Single(bound.DeliveryItems, x => x.ProposalKey == "dependency-pin-phaser");
+        Assert.Empty(SpecialistAgent.InteractionCriteriaIssues(bound.DeliveryItems));
+        Assert.Empty(pin.InteractionCriteria ?? []);
+        Assert.Equal(GameBrowserVerification.None, pin.BrowserVerification);
+        Assert.Equal(consumer.InteractionCriteria, bound.DeliveryItems[0].InteractionCriteria);
+        Assert.Contains(pin.ProposalKey, bound.DeliveryItems[0].DependencyProposalKeys);
+        Assert.Equal(bound.DeliveryItems, SpecialistAgent.BindDependencyPins(bound, consumer.ParentProposalKey).DeliveryItems);
+    }
+
+    [Fact]
     public void Synthesized_pin_does_not_serialize_unrelated_engineering_work()
     {
         var original = PhaserExample();
