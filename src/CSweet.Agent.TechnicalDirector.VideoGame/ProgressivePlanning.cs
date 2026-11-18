@@ -215,7 +215,7 @@ public sealed partial class SpecialistAgent
                     var setup = leaves.Count == 0 ? stack : null;
                     var drafts = await ReadPlanningPageAsync<StoryTaskDrafts>(Generate, messages, "next increment task index",
                         "Plan the requested Story as dependency-closed executable deliverables. Choose one qualified author for each. " +
-                        (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the engineering task owning the initial project setup. Combine setup with the first runnable slice where practical. ") +
+                        (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the game-engineer deliverable owning initial runnable setup. It will be published as a Code task. Combine setup with the first runnable slice where practical. ") +
                         "Select storyCriterionIndexes from the numbered accepted criteria. Cover each at least once. Add only distinct task-specific acceptance in additionalCriteria. " +
                         "interactionCriteria indexes refer to the selected Story criteria in the order you give, followed by additionalCriteria. " +
                         "Use earlierTaskIndexes for prerequisites in this response and priorTaskIndexes for prerequisites in the supplied prior tasks. " +

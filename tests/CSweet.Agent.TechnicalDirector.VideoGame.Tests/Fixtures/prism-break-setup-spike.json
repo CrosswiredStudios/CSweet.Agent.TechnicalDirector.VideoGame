@@ -1,0 +1,73 @@
+{
+  "tasks": [
+    {
+      "title": "Sprint 1 project setup and bounded graybox stack-support code spike",
+      "description": "Own the clean static project setup and deliver a bounded framework-free Chromium graybox slice as the first runnable increment. Publish code to the assignment's authorized Story branch and record qualitative support evidence for Canvas 2D/requestAnimationFrame/JavaScript ES2022. This owns project setup, clean restore as a no-op because no package manager is used, browser scenario verification, and the first runnable slice under Technical Director review; it does not approve implementation, hiring, budget, release, or completed scope.",
+      "workItemTypeKey": "video-game.research-spike.v1",
+      "priorTaskIndexes": [],
+      "accountableRoleKey": "game-engineer",
+      "additionalCriteria": [
+        "The clean static project contains index.html, styles.css, game.js, and a browser scenario harness, uses only framework-free HTML5 Canvas 2D and requestAnimationFrame with JavaScript ES2022, and introduces no package.json, package-lock.json, pnpm-lock.yaml, yarn.lock, bundler, transpiler, external library, or build step.",
+        "The page is served locally over HTTP, uses a canvas element named game with fixed logical size 720x1280, preserves aspect ratio through CSS, and loads game.js without modules.",
+        "The running slice shows paddle mouse and keyboard control, click or space launch from an attached ball, circle/rectangle collisions against walls, paddle, and bricks, brick removal, lives, score/combo, quick restart after losing a life, and Web Audio oscillator hit/launch cues after first user gesture.",
+        "The running slice shows additive particles, flash, screen shake, hit-stop, and minimal accessibility controls sufficient to demonstrate reduced-motion and screen-effect intensity options.",
+        "A standalone browser scenario harness, launched from the Story target branch candidate commit, drives the above inputs through the running scene and emits observable events so QA can repeat the same run.",
+        "Standalone assertion scripts fail on missing required files, a canvas element not named game, an incorrect 720x1280 logical size, accidental package-lock or build tooling, or missing required scenario hooks."
+      ],
+      "earlierTaskIndexes": [],
+      "browserVerification": "canvas",
+      "interactionCriteria": [
+        0,
+        2,
+        3
+      ],
+      "storyCriterionIndexes": [
+        6
+      ],
+      "requiredSpecializationKeys": [],
+      "preferredSpecializationKeys": [
+        "gameplay-programming",
+        "runtime-architecture",
+        "engine-integration",
+        "build-diagnostics",
+        "automated-testing"
+      ]
+    },
+    {
+      "title": "Publish bounded Chromium web-runtime decision brief",
+      "description": "Publish a versioned platform artifact consolidating the accepted Chromium desktop decision for Prism Break. Record the framework-free Canvas 2D/requestAnimationFrame/ES2022 stack, review criteria, qualitative acceptance method, owner-waived performance constraints, next clean-slice constraints, and explicit non-approval boundaries.",
+      "workItemTypeKey": "video-game.research-spike.v1",
+      "priorTaskIndexes": [],
+      "accountableRoleKey": "game-technical-director",
+      "additionalCriteria": [
+        "The published artifact is versioned and references proposalKey roadmap-epic-1, commitment source keys commitment-0, commitment-20, commitment-29, and the recorded framework-free technical decision.",
+        "The artifact records the selected Chromium desktop stack: framework-free HTML5 Canvas 2D, requestAnimationFrame, JavaScript ES2022, no library or build step, optional modules only when served locally over HTTP.",
+        "The artifact states that the recorded framework-free static-file stack is the current technical foundation and that adopting an external engine, framework, library, build step, package manager, or package-lock file requires a later bounded Technical Director decision and a scope-compatible amendment.",
+        "The artifact records the Technical Director rationale that the stack is sufficient for 2D arcade collisions, particles, flash/shake/hit-stop, Web Audio oscillator cues, accessibility options, and quick restart, with qualitative Chromium desktop observation as the accepted PoC method and profiling/stress testing owner-waived.",
+        "The artifact defines next-slice constraints: static served page, canvas named game, 720x1280, aspect-preserving scaling, and no lockfile.",
+        "The artifact assigns future implementation and integration ownership to game-engineer under game-technical-director review and explicitly states that no implementation approval, hiring, budget, release, execution, or completed work is implied."
+      ],
+      "earlierTaskIndexes": [],
+      "browserVerification": "none",
+      "interactionCriteria": [],
+      "storyCriterionIndexes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8
+      ],
+      "requiredSpecializationKeys": [],
+      "preferredSpecializationKeys": [
+        "technical-feasibility",
+        "runtime-architecture",
+        "engine-integration",
+        "technical-decomposition"
+      ]
+    }
+  ],
+  "setupTaskIndex": 0
+}

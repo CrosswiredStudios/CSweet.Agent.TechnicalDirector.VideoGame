@@ -45,10 +45,12 @@ public sealed partial class SpecialistAgent
             var engineers = items.Select((item, index) => (item, index)).Where(x =>
                 x.item.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.item.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task).ToArray();
             var owner = draft.SetupTaskIndex ?? (engineers.Length == 1 ? engineers[0].index : -1);
-            if (!engineers.Any(x => x.index == owner))
-                throw new InvalidOperationException("Sprint 1 needs one engineering task to own project setup. Select it in setupTaskIndex.");
+            if (owner < 0 || owner >= items.Count || items[owner].AccountableRoleKey != VideoGameRoleKeys.Engineer)
+                throw new InvalidOperationException("Select the zero-based index of the game-engineer deliverable for runnable project setup in setupTaskIndex.");
             var item = items[owner];
-            items[owner] = item with { AcceptanceCriteria = item.AcceptanceCriteria.Append(setup.SetupCriterion).Distinct(StringComparer.Ordinal).ToArray() };
+            // Runnable setup is Code work. Its routing comes from the selected deliverable's purpose.
+            items[owner] = item with { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Task,
+                AcceptanceCriteria = item.AcceptanceCriteria.Append(setup.SetupCriterion).Distinct(StringComparer.Ordinal).ToArray() };
         }
         return new(items, [new("description", items.Select(i => i.ProposalKey).ToArray()),
             .. owners.Select((keys, i) => new ScopeCoverage("criterion-" + i, keys))]);

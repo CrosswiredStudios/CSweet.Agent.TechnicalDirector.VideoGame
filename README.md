@@ -1,3 +1,7 @@
+# Technical Director 6.15.4
+
+Victor binds the engineer's selected runnable setup to Code delivery. [Release notes](releases/6.15.4.md)
+
 # Technical Director 6.15.3
 
 Victor reuses an engineering task that explicitly commits an exact Phaser dependency pin and specifies the lockfile in its acceptance criteria. [Release notes](releases/6.14.2.md)

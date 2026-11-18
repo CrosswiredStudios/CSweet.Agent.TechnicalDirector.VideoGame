@@ -8,6 +8,22 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame.Tests;
 public sealed partial class ProgressivePlanningTests
 {
     [Fact]
+    public void Prism_break_binds_the_engineers_selected_setup_to_code_and_preserves_the_separate_research_spike()
+    {
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "prism-break-setup-spike.json"));
+        var drafts = JsonSerializer.Deserialize<SpecialistAgent.StoryTaskDrafts>(json, JsonSerializerOptions.Web)!;
+        var story = Scope().Plan.DeliveryItems[1] with { AcceptanceCriteria = Enumerable.Range(0, 9).Select(i => $"Story criterion {i}").ToArray() };
+        var stack = new SpecialistAgent.ProjectStack("Canvas 2D", "JavaScript", [], "Fits the game", "Launch the graybox.", null);
+        var result = SpecialistAgent.BindStoryTasks(drafts, story, [], stack);
+        Assert.Equal(VideoGameWorkItemTypeKeys.Task, result.Items[0].WorkItemTypeKey);
+        Assert.Equal(VideoGameRoleKeys.Engineer, result.Items[0].AccountableRoleKey);
+        Assert.Contains(stack.SetupCriterion, result.Items[0].AcceptanceCriteria);
+        Assert.Equal(VideoGameWorkItemTypeKeys.ResearchSpike, result.Items[1].WorkItemTypeKey);
+        Assert.DoesNotContain(stack.SetupCriterion, result.Items[1].AcceptanceCriteria);
+        Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(drafts with { SetupTaskIndex = 1 }, story, [], stack));
+    }
+
+    [Fact]
     public void Sprint_planning_preserves_technical_authority_over_engine_recommendations()
     {
         Assert.Contains("The Technical Director owns engine choices within the approved game scope", SpecialistAgent.PlanningAuthorityPolicy);
