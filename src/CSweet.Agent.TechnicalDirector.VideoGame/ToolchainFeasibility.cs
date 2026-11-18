@@ -21,6 +21,9 @@ public sealed partial class SpecialistAgent
         public string DecisionSummary => $"Technical Director chose {Engine} with {Language}" +
             (Libraries.Length == 0 ? "" : $" and {string.Join(", ", Libraries)}") + $". {Rationale}";
 
+        public IReadOnlyList<string> IncludeDecision(IReadOnlyList<string>? constraints) =>
+            constraints?.Contains(DecisionSummary) == true ? constraints : [.. constraints ?? [], DecisionSummary];
+
         [System.Text.Json.Serialization.JsonIgnore]
         public string SetupCriterion => $"From a clean checkout, launch the first runnable slice using {Engine} and {Language}. {Setup}" +
             (string.IsNullOrWhiteSpace(Lockfile) ? "" : $" Commit {Lockfile} and verify a clean dependency restore.");

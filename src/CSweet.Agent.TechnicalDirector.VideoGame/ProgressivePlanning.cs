@@ -157,8 +157,8 @@ public sealed partial class SpecialistAgent
                 (request.Adaptive
                     ? JsonSerializer.Serialize(sources.Select((s, sourceIndex) => new { sourceIndex, s.AuthorRole, s.Text }), PlanningJson)
                     : JsonSerializer.Serialize(sources, PlanningJson)))).ToArray();
-            var scope = request.Adaptive ? await ReadRoadmapAsync(context, Generate, messages, projectMessages, scopeKey, sources, request.Phase == "Outline", count => roadmapSourceCount = count, token) : await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
-                request.Phase == "Outline", token);
+            var scope = request.Adaptive ? await ReadRoadmapAsync(context, Generate, messages, projectMessages, scopeKey, sources, request.Phase == "Outline", count => roadmapSourceCount = count, token, stack) : await ReadOrGenerateScopeOutlineAsync(context, Generate, messages, scopeKey, sources,
+                request.Phase == "Outline", token, stack);
             if (!request.Adaptive) ValidateProgressiveOutline(scope, sources);
             var outlineDigest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(scope)));
             if (request.OutlineDigest is not null && request.OutlineDigest != outlineDigest) throw new InvalidOperationException("The frozen scope outline changed.");
@@ -284,7 +284,9 @@ public sealed partial class SpecialistAgent
                 detailed.Add(story.ProposalKey);
             }
             var output = scope.Plan with { DeliveryItems = [.. scope.Plan.DeliveryItems, .. leaves] };
-            if (stack is not null) output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [], stack.DecisionSummary] };
+            // A Story may refine a frozen outline that predates the project stack.
+            if (request.Phase == "Story" && stack != null)
+                output = output with { TechnicalConstraints = stack.IncludeDecision(output.TechnicalConstraints) };
             if (request.Adaptive) output = output with { DeliveryItems = output.DeliveryItems.Select(item => IsPlanningContainer(item) ? item : BindCriteria(cycle.ApprovedPackageDigest, stories[item.ParentProposalKey!], item)).ToArray() };
             var result = CompletePlanningProposal(cycle, output, partialIncrement: request.Adaptive);
             var payload = JsonNode.Parse(result.Artifact!.Payload.GetRawText())!.AsObject();

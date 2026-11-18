@@ -107,9 +107,10 @@ public sealed partial class ProgressivePlanningTests
     }
 
     [Theory]
-    [InlineData("Compact canvas", "package-lock.json")]
-    [InlineData("Native engine", null)]
-    public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation(string engine, string? lockfile)
+    [InlineData("Compact canvas", "package-lock.json", true)]
+    [InlineData("Native engine", null, true)]
+    [InlineData("Later choice", null, false)]
+    public async Task Adaptive_roadmap_and_selected_story_replay_without_model_generation(string engine, string? lockfile, bool stackAtOutline)
     {
         var runtime = StateRuntime(new Dictionary<string, AgentOperatingStateResponse>());
         var client = new Client();
@@ -129,7 +130,7 @@ public sealed partial class ProgressivePlanningTests
         client.Responses.Enqueue(JsonSerializer.Serialize(roadmap, Web));
         string[] docs = ["# History\n\nVerify rebound and scoring\n\nEach brick scores once"];
         var outline = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle,
-            new("Outline", directions, Adaptive: true), default);
+            new("Outline", directions, Adaptive: true), default, stack: stackAtOutline ? stack : null);
         Assert.True(outline.Artifact != null, outline.Content);
         Assert.Equal(2, client.Calls);
         var semantic = outline.Artifact!.Payload.GetProperty("progressivePlanning").GetProperty("scopeCoverage");
@@ -137,6 +138,8 @@ public sealed partial class ProgressivePlanningTests
         Assert.Equal("Score each brick once", semantic[1].GetProperty("statement").GetString());
         Assert.DoesNotContain("document-0:paragraph-0", semantic.GetRawText());
         var outlineEvidence = outline.Artifact!.Payload.GetProperty("progressivePlanning");
+        var published = outline.Artifact.Payload.Deserialize<GameTechnicalDeliveryProposalV1>()!;
+        Assert.Equal(stackAtOutline, published.TechnicalConstraints.Contains(stack.DecisionSummary));
         var key = "roadmap-epic-1.story-1";
         client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.StorySlices([
             new("Rebound", "Prove the core loop", [], [0], [])]), Web));
@@ -151,7 +154,7 @@ public sealed partial class ProgressivePlanningTests
         var ready = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], docs, cycle, request, default, stack: stack);
         Assert.True(ready.Artifact != null, ready.Content);
         var proposal = ready.Artifact!.Payload.Deserialize<GameTechnicalDeliveryProposalV1>()!;
-        Assert.Contains(stack.DecisionSummary, proposal.TechnicalConstraints);
+        Assert.Single(proposal.TechnicalConstraints, constraint => constraint == stack.DecisionSummary);
         var setup = Assert.Single(proposal.DeliveryItems, item => item.AcceptanceCriteria.Contains(stack.SetupCriterion));
         Assert.Equal(VideoGameRoleKeys.Engineer, setup.AccountableRoleKey);
         Assert.Equal(lockfile is not null, stack.SetupCriterion.Contains("package-lock.json"));

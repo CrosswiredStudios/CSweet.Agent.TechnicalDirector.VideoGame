@@ -139,7 +139,7 @@ public sealed partial class SpecialistAgent
     private async Task<ProgressiveScopeIndex> ReadRoadmapAsync(AgentRuntimeContext context,
         Func<IReadOnlyList<ChatMessage>, Type, CancellationToken, Task<ChatResponse>> generate,
         IReadOnlyList<ChatMessage> messages, IReadOnlyList<ChatMessage> projectMessages, string key,
-        IReadOnlyList<ScopeSource> sources, bool mayGenerate, Action<int> setRoadmapSourceCount, CancellationToken token)
+        IReadOnlyList<ScopeSource> sources, bool mayGenerate, Action<int> setRoadmapSourceCount, CancellationToken token, ProjectStack? stack)
     {
         var saved = await context.Platform.ReadOperatingStateAsync<ProgressiveScopeIndex>(key, token);
         if (saved is not null) return saved.Payload;
@@ -190,6 +190,8 @@ public sealed partial class SpecialistAgent
             $"Valid commitment indexes are 0..{obligations.Length - 1}. Return Epics and the three findings arrays.",
             value => BindRoadmap(value, obligations, constraintSources), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
         var roadmap = BindRoadmap(draft, obligations, constraintSources);
+        if (stack != null)
+            roadmap = roadmap with { Plan = roadmap.Plan with { TechnicalConstraints = stack.IncludeDecision(roadmap.Plan.TechnicalConstraints) } };
         var coverage = roadmap.Coverage.Select((owner, index) => owner with {
             Statement = obligations[index].Text,
             Citations = inventory.Commitments[index].SourceIndexes.Distinct().Select(i => sources[i].SourceKey).ToArray()

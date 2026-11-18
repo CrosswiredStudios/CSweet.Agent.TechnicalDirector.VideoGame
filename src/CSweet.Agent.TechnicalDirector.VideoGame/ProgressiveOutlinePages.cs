@@ -74,7 +74,7 @@ public sealed partial class SpecialistAgent
 
     private async Task<ProgressiveScopeIndex> ReadOrGenerateScopeOutlineAsync(AgentRuntimeContext context,
         Func<IReadOnlyList<ChatMessage>, Type, CancellationToken, Task<ChatResponse>> generate,
-        IReadOnlyList<ChatMessage> messages, string key, IReadOnlyList<ScopeSource> sources, bool mayGenerate, CancellationToken token)
+        IReadOnlyList<ChatMessage> messages, string key, IReadOnlyList<ScopeSource> sources, bool mayGenerate, CancellationToken token, ProjectStack? stack)
     {
         // Existing accepted single-record outlines retain their identity and remain readable.
         var legacy = await context.Platform.ReadOperatingStateAsync<ProgressiveScopeIndex>(key, token);
@@ -92,7 +92,11 @@ public sealed partial class SpecialistAgent
             "Use explicit feasibilityFindings, technicalConstraints and openFeasibilityDecisions arrays. Do not drop any accepted requirement. " +
             "Use the exact accepted source ledger supplied as project data.", ValidateOutlineManifest, MaximumPlanningPageCharacters, token);
         ValidateOutlineManifest(manifest);
-        if (saved is null) await SaveProgressiveStateAsync(manifestKey, manifest, context, token);
+        if (saved is null)
+        {
+            if (stack != null) manifest = manifest with { TechnicalConstraints = stack.IncludeDecision(manifest.TechnicalConstraints) };
+            manifest = (await SaveProgressiveStateAsync(manifestKey, manifest, context, token)).Payload;
+        }
         var digest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(manifest)));
         var completed = await context.Platform.ReadOperatingStateAsync<OutlineCompletion>(key + ":outline-completed", token);
         if (!mayGenerate && completed is null) throw new InvalidOperationException("The scope outline is incomplete; resume its Outline phase before Story refinement.");
