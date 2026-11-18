@@ -179,7 +179,7 @@ public sealed partial class SpecialistAgent
             "Group the complete approved product commitments into outcome Epics, including later content, systems, presentation and acceptance outcomes when the source actually requires them. " +
             "The roadmap spans the whole product; selecting a small first experiment must not shrink it to first-increment features. " +
             "Keep later Epics at outcome level without prewriting their Stories, Tasks or estimates. Choose the first experiment or deliverable using the game's actual uncertainty. " +
-            "The ownership map is planning metadata. Add scope-document work only for an approved deliverable or concrete production need; traceability alone does not justify a documentation milestone. " +
+            "Plan the first playable increment with the engineer who will initialize the project, restore its dependencies and launch a minimal slice. Scope a lockfile there only when required by the chosen package manager. The ownership map is planning metadata. Add scope-document work only for an approved deliverable or concrete production need; traceability alone does not justify a documentation milestone. " +
             "For document outcomes use a reviewable platform document revision as evidence. Reserve branch and commit evidence for actual repository work. " +
             "Each Epic needs a title, outcome, testable acceptanceCriteria, sourceIndexes selecting its directly owned commitments and prerequisiteIndexes " +
             "referring to Epics in your proposed array. For each owned commitment include acceptance criteria showing how the owner will deliver or enforce it. " +

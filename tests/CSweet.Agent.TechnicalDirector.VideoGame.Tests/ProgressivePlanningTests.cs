@@ -226,7 +226,7 @@ public sealed partial class ProgressivePlanningTests
     }
 
     [Fact]
-    public async Task Phaser_story_name_collision_binds_and_checkpoints_executable_pin_before_briefs_and_replays()
+    public async Task Story_replay_keeps_the_authored_tasks_when_an_engine_is_named()
     {
         var scope = Scope();
         // A future scope container legitimately uses the reserved-looking identity.
@@ -238,11 +238,7 @@ public sealed partial class ProgressivePlanningTests
         var story = scope.Plan.DeliveryItems[1];
         var bound = SpecialistAgent.BindStoryDependencyPins(detail, story, scope.Plan, []);
         SpecialistAgent.ValidateStoryRefinement(bound, story, scope.Plan, [], 13);
-        var pin = Assert.Single(bound.Items, x => x.ProposalKey == "dependency-pin-phaser-task");
-        Assert.Equal(VideoGameRoleKeys.Engineer, pin.AccountableRoleKey);
-        Assert.Equal(story.ProposalKey, pin.ParentProposalKey); Assert.Empty(pin.DependencyProposalKeys);
-        Assert.Contains("work.execution.run", pin.RequiredCapabilityKeys);
-        Assert.Contains(pin.ProposalKey, bound.Items.Single(x => x.ProposalKey == detail.Items[0].ProposalKey).DependencyProposalKeys);
+        Assert.Equal(detail.Items, bound.Items);
         Assert.Equal(detail.Coverage, bound.Coverage);
         var client = new Client(); EnqueueOutline(client, scope);
         var states = new Dictionary<string, AgentOperatingStateResponse>(); var runtime = StateRuntime(states);
@@ -257,7 +253,7 @@ public sealed partial class ProgressivePlanningTests
             evidence.GetProperty("outlineDigest").GetString(), story.ProposalKey, []);
         var failed = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
         Assert.Null(failed.Artifact);
-        Assert.Single(states.Keys, x => x.Contains(":bound:") && !x.Contains(":page:"));
+        Assert.DoesNotContain(states.Keys, x => x.Contains(":bound:"));
         var originals = states.ToDictionary(x => x.Key, x => x.Value.Payload.GetRawText());
         foreach (var page in bound.Items.Chunk(SpecialistAgent.PlanningPageSize))
             client.Responses.Enqueue(JsonSerializer.Serialize(new SpecialistAgent.PlanningDescriptionPage(page.Select(x =>
@@ -265,7 +261,7 @@ public sealed partial class ProgressivePlanningTests
                     SpecialistAgent.PlanningContractExample().DeliveryItems[2].Description + "\n" + x.Description : x.Description)).ToArray()), Web));
         var recovered = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle, request, default);
         Assert.True(recovered.Artifact is not null, recovered.Content);
-        Assert.Equal(pin.ProposalKey, Assert.Single(recovered.Artifact.Payload.GetProperty("engineeringPrerequisiteKeys").EnumerateArray()).GetString());
+        Assert.Empty(recovered.Artifact.Payload.GetProperty("engineeringPrerequisiteKeys").EnumerateArray());
         foreach (var original in originals) Assert.Equal(original.Value, states[original.Key].Payload.GetRawText());
         var calls = client.Calls;
         var replay = await agent.GenerateProgressivePlanningAsync(runtime.CreateContext(), client, [], ["First playable\n\nAll levels and polish"], cycle,

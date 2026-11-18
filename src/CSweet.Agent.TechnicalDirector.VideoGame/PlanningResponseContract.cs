@@ -8,17 +8,16 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 public sealed partial class SpecialistAgent
 {
     internal const string PlanningAuthorityPolicy = """
+        In Sprint 1 include an engineer-owned, runnable first slice. Scope project setup, a clean restore and any lockfile required by the selected package manager into that slice once. Check existing project evidence first.
         Before raising a blocker, identify the missing fact, its accountable role, the affected tasks,
         and the observable evidence that will close it. An implementation uncertainty within accepted scope
-        belongs in an engineer-owned task. Example: choosing an exact Phaser version within approved engine
+        belongs in an engineer-owned task. Example: choosing an exact dependency version within approved engine
         constraints, generating its lockfile, restoring dependencies and checking the installed version are
         engineering deliverables. The Director supplies constraints and review criteria; the engineer executes
         and commits; QA independently checks the integrated candidate. Dependent tasks wait for that result.
         Preparation, estimates and readiness for a safe prerequisite can proceed while dependent work waits.
         One coherent dependency selection/pin/lockfile deliverable needs one engineering ticket, not a second
-        prerequisite with the same outcome. Reuse its canonical proposalKey and accepted criteria. For an
-        unresolved Phaser pin use dependency-pin-phaser when no owner exists; retain an existing explicit
-        pin task instead of adding another. Only real consumers depend on it; independent work stays ready.
+        prerequisite with the same outcome. Preserve its accepted criteria. Only real consumers depend on it; independent work stays ready.
         Keep independent technical review and QA of changed source. Do not create separate tickets merely
         to repeat a check already required by that deliverable; distinct runtime/product validation stays assigned.
         In this production workflow each Code task already runs technical-review, independent quality and

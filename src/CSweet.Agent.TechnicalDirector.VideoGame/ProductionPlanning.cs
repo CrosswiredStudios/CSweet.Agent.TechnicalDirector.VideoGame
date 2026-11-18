@@ -22,7 +22,7 @@ public sealed partial class SpecialistAgent
         {
             if (sourceTurn.SpeakerOrganizationUserId != request.Counterpart.OrganizationUserId)
                 return AgentCoordinationTurnResult.Blocked("The Director must supply the feasibility review request.");
-            return await ReviewToolchainAsync(request, feasibility, context, AssessToolchainAsync, cancellationToken);
+            return await ReviewToolchainAsync(request, feasibility, context, AssessToolchainAsync, cancellationToken, ChooseStackAsync);
         }
         if (request.Transcript.LastOrDefault(x => x.Artifact is not null)?.Artifact is { Type: "platform.resource.requirement.v1" } resourceArtifact)
         {
@@ -58,6 +58,7 @@ public sealed partial class SpecialistAgent
         if (package.Status is not ("Accepted" or "Approved") || package.Version != cycle.ApprovedPackageVersion)
             return AgentCoordinationTurnResult.Blocked("Planning inputs are not accepted or their version changed.");
         var grounding = new List<string>();
+        (Guid Revision, string Text)? pitch = null;
         var adaptive = artifact.Payload.TryGetProperty("progressivePlanning", out var mode) &&
             mode.TryGetProperty("adaptive", out var enabled) && enabled.ValueKind == JsonValueKind.True;
         var ledger = new List<GameOutcomeSource>();
@@ -70,6 +71,7 @@ public sealed partial class SpecialistAgent
                 return AgentCoordinationTurnResult.Blocked("Every planning input must pin an accepted revision.");
             members.Add(new(document.Id, revision.Id, member.RequiredDocumentType, revision.ContentSha256));
             grounding.Add(revision.Content);
+            if (document.DocumentType == VideoGameArtifactTypeKeys.Vision) pitch = (revision.Id, revision.Content);
             if (adaptive) ledger.AddRange(GameOutcomeLedger.Read(cycle.WorkstreamId, cycle.TeamId, document.Id, revision.Id,
                 revision.ContentSha256, member.RequiredDocumentType, revision.Content));
         }
@@ -103,6 +105,7 @@ public sealed partial class SpecialistAgent
                 return AgentCoordinationTurnResult.Blocked("Structured role repair blocked: " + error.Message);
             }
         }
+        var stack = pitch.HasValue ? await ChooseStackAsync(cycle.WorkstreamId, pitch.Value.Revision, pitch.Value.Text, context, cancellationToken) : null;
         var progressivePlanning = artifact.Payload.TryGetProperty("progressivePlanning", out var progressive);
         var canonicalPlanning = CanonicalPlanningContext(board.Items, progressivePlanning);
         var provider = Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure a brokered LLM provider.");
@@ -126,7 +129,7 @@ public sealed partial class SpecialistAgent
                 repository setup facts; never claim pending provisioning is ready. Plan repository-dependent work
                 with explicit readiness dependencies. Missing hires or pending repository approval do not prevent planning. Do not invent completed work, approvals or estimates.
                 Return ONLY JSON with deliveryItems (array of objects), feasibilityFindings, technicalConstraints and openFeasibilityDecisions (each an array of strings), and dependencyPins (array of {package,exactVersion}; use [] when unresolved).
-                A resolved version pin must be a concrete exact version in dependencyPins. A promise to choose a pin at kickoff is unresolved. Missing Phaser pins become an executable engineering prerequisite whose integrated result gates dependent engineering; never ask a human to perform routine package locking.
+                A resolved version pin must be a concrete exact version in dependencyPins. A promise to choose a pin at kickoff is unresolved. Where an approved dependency requires version selection, scope it once with its engineer and declare its actual consumers.
                 Include actionable implementation briefs in descriptions. State each requirement once at its owning
                 task; use dependencies for shared work instead of repeating the whole brief in every item.
                 Keep criteria specific and testable. Preserve every distinct accepted requirement and criterion;
@@ -197,9 +200,10 @@ public sealed partial class SpecialistAgent
                 (progressivePlanning ? "" : "\nAccepted inputs:\n" + string.Join("\n\n", grounding)))
             , PlanningCoordinationMessage(request, cycle)
         ];
+        if (stack is not null) planningMessages = [.. planningMessages, new ChatMessage(ChatRole.User, "Project technical decision and Sprint 1 setup: " + JsonSerializer.Serialize(stack))];
         if (progressivePlanning)
             return await GenerateProgressivePlanningAsync(context, client, planningMessages, grounding, cycle,
-                progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken, adaptive ? ledger : null);
+                progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken, adaptive ? ledger : null, stack);
         var generated = await GenerateCheckpointedPlanningAsync(context, client, planningMessages, cancellationToken);
         if (generated.Output is not { } output) return AgentCoordinationTurnResult.Blocked(generated.Error!);
         output = output with { TechnicalConstraints = [.. output.TechnicalConstraints ?? [],

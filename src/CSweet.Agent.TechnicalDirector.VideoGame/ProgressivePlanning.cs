@@ -134,7 +134,7 @@ public sealed partial class SpecialistAgent
 
     internal async Task<AgentCoordinationTurnResult> GenerateProgressivePlanningAsync(AgentRuntimeContext context,
         IChatClient client, IReadOnlyList<ChatMessage> messages, IReadOnlyList<string> documents,
-        GameProductionPlanningCycleV1 cycle, ProgressivePlanningRequest request, CancellationToken token, IReadOnlyList<GameOutcomeSource>? ledger = null)
+        GameProductionPlanningCycleV1 cycle, ProgressivePlanningRequest request, CancellationToken token, IReadOnlyList<GameOutcomeSource>? ledger = null, ProjectStack? stack = null)
     {
         try
         {
@@ -212,17 +212,19 @@ public sealed partial class SpecialistAgent
                 var index = retained?.Payload;
                 if (index is null && request.Adaptive)
                 {
+                    var setup = leaves.Count == 0 ? stack : null;
                     var drafts = await ReadPlanningPageAsync<StoryTaskDrafts>(Generate, messages, "next increment task index",
                         "Plan the requested Story as dependency-closed executable deliverables. Choose one qualified author for each. " +
+                        (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the engineering task owning the initial project setup. Combine setup with the first runnable slice where practical. ") +
                         "Select storyCriterionIndexes from the numbered accepted criteria. Cover each at least once. Add only distinct task-specific acceptance in additionalCriteria. " +
                         "interactionCriteria indexes refer to the selected Story criteria in the order you give, followed by additionalCriteria. " +
                         "Use earlierTaskIndexes for prerequisites in this response and priorTaskIndexes for prerequisites in the supplied prior tasks. " +
                         "Keep routine independent review and QA on the implementation task. Supply [] for empty lists. " +
                         JsonSerializer.Serialize(new { story.Title, story.Description, criteria = story.AcceptanceCriteria.Select((text, index) => new { index, text }),
                             priorTasks = leaves.Select((t, index) => new { index, t.Title, t.Description }) }, PlanningJson),
-                        value => ValidateStoryRefinement(BindStoryTasks(value, story, leaves), story, scope.Plan, leaves, 200,
+                        value => ValidateStoryRefinement(BindStoryTasks(value, story, leaves, setup), story, scope.Plan, leaves, 200,
                             requireVerification: true, partialIncrement: true), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
-                    index = BindStoryTasks(drafts, story, leaves);
+                    index = BindStoryTasks(drafts, story, leaves, setup);
                 }
                 index ??= await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
@@ -306,11 +308,8 @@ public sealed partial class SpecialistAgent
     internal static ProgressiveStoryIndex BindStoryDependencyPins(ProgressiveStoryIndex index, GameProposedWorkItemV1 story,
         PlanningOutput outline, IReadOnlyList<GameProposedWorkItemV1> priorLeaves)
     {
-        var bound = BindDependencyPins(outline with { DeliveryItems = [.. outline.DeliveryItems, .. priorLeaves, .. index.Items] }, story.ProposalKey);
-        foreach (var prior in priorLeaves)
-            if (JsonSerializer.Serialize(prior) != JsonSerializer.Serialize(bound.DeliveryItems.Single(x => x.ProposalKey == prior.ProposalKey)))
-                throw new InvalidOperationException("A prerequisite cannot rewrite a retained prior increment.");
-        return index with { Items = bound.DeliveryItems.Where(x => !IsPlanningContainer(x) && x.ParentProposalKey == story.ProposalKey).ToArray() };
+        var bound = BindDependencyPins(outline with { DeliveryItems = index.Items });
+        return index with { Items = bound.DeliveryItems };
     }
 
     private sealed record CompletedProgressiveStory(string OutlineDigest, string IndexDigest, IReadOnlyList<string> ProposalKeys, bool HasBoundIndex = false);

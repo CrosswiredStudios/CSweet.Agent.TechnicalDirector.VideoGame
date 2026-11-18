@@ -7,6 +7,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 internal static class ImplementationBrief
 {
     internal const string Guidance = """
+        You own engine, language and library selection. Choose on fit to mechanics, game complexity, target platforms and maintenance cost. Coordinate one runnable Sprint 1 slice with the Producer, including project setup, reproducible restore and a lockfile if the selected toolchain uses one. An empty repository is expected.
         For web games, suggest Chromium-only browser verification. Do not add a cross-browser matrix
         or real-device certification to requirements, acceptance criteria, implementation briefs or QA
         tasks. Verify responsive behavior at appropriate Chromium viewports without claiming device

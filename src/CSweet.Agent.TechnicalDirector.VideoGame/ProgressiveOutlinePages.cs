@@ -88,7 +88,7 @@ public sealed partial class SpecialistAgent
             "Each increment has epicKey, storyKey, title, dependencyEpicKeys. Each Epic owns exactly one bounded Story refinable into at most twelve tasks. " +
             "Group related requirements into meaningful independently testable increments. Individual animations, settings, screens and acceptance checks normally become tasks within a Story, not separate Epics. " +
             "Structure example only, not project scope: {\"increments\":[{\"epicKey\":\"example-epic\",\"storyKey\":\"example-story\",\"title\":\"Playable increment\",\"dependencyEpicKeys\":[]}],\"feasibilityFindings\":[],\"technicalConstraints\":[],\"openFeasibilityDecisions\":[]}. " +
-            "Order increments by actual prerequisites, starting with a small end-to-end playable prototype. Dependencies name earlier Epics only. " +
+            "Order increments by actual prerequisites, starting with project setup in the first playable increment. Include any required package lock in that work and verify a clean launch. Dependencies name earlier Epics only. " +
             "Use explicit feasibilityFindings, technicalConstraints and openFeasibilityDecisions arrays. Do not drop any accepted requirement. " +
             "Use the exact accepted source ledger supplied as project data.", ValidateOutlineManifest, MaximumPlanningPageCharacters, token);
         ValidateOutlineManifest(manifest);

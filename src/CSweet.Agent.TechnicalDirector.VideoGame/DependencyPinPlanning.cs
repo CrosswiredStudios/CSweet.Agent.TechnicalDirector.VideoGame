@@ -10,89 +10,24 @@ public sealed partial class SpecialistAgent
         CSweet.Agent.SDK.VideoGame.Contracts.GameTechnicalDeliveryProposalV1 proposal)
     {
         var payload = JsonSerializer.SerializeToNode(proposal)!.AsObject();
-        // This declaration is derived from our deterministic task binder, not question prose.
-        // Keep the original decisions and frozen outline digest unchanged.
-        payload["engineeringPrerequisiteKeys"] = JsonSerializer.SerializeToNode(proposal.DeliveryItems
-            .Where(x => IsPhaserPinDeliverable(x) &&
-                x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task &&
-                x.DependencyProposalKeys.Count == 0 && proposal.DeliveryItems.Any(other => other.DependencyProposalKeys.Contains(x.ProposalKey)))
-            .Select(x => x.ProposalKey).ToArray());
+        // Authority to work through an open decision comes from an explicit scoped decision.
+        payload["engineeringPrerequisiteKeys"] = new System.Text.Json.Nodes.JsonArray();
         return payload;
     }
 
     internal sealed record DependencyPin(string Package, string ExactVersion);
 
-    // A narrow recognition rule reuses an explicitly scoped existing deliverable. Never merge
-    // tickets, change their criteria, or guess from a generic engine/version mention.
-    internal static bool IsPhaserPinDeliverable(GameProposedWorkItemV1 item) =>
-        item.ProposalKey == "dependency-pin-phaser" ||
-        item.Title.Contains("Phaser", StringComparison.OrdinalIgnoreCase) &&
-        (Regex.IsMatch(item.Title, @"\block(?:file)?\b", RegexOptions.IgnoreCase) &&
-         Regex.IsMatch(item.Title, @"\b(?:select|pin|commit|lock)\b", RegexOptions.IgnoreCase) ||
-         Regex.IsMatch(item.Title, @"^\s*(?:select|pin|commit|lock)\b.*\bdependency\s+pin\b", RegexOptions.IgnoreCase)) &&
-        item.AcceptanceCriteria.Any(x => x.Contains("exact", StringComparison.OrdinalIgnoreCase) &&
-            x.Contains("version", StringComparison.OrdinalIgnoreCase)) &&
-        item.AcceptanceCriteria.Any(x => x.Contains("lockfile", StringComparison.OrdinalIgnoreCase));
-
-    private static bool UsesPhaser(GameProposedWorkItemV1 item) =>
-        (item.Title + " " + item.Description + " " + string.Join(" ", item.AcceptanceCriteria)).Contains("Phaser", StringComparison.OrdinalIgnoreCase);
-
-    internal static PlanningOutput BindDependencyPins(PlanningOutput output, string? prerequisiteParentKey = null)
+    internal static PlanningOutput BindDependencyPins(PlanningOutput output)
     {
         if (output.DependencyPins.Count > 16 || output.DependencyPins.Any(x => x is null || string.IsNullOrWhiteSpace(x.Package) ||
             x.Package.Length > 100 || !Regex.IsMatch(x.ExactVersion ?? "", @"\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\z")) ||
             output.DependencyPins.Select(x => x.Package).Distinct(StringComparer.OrdinalIgnoreCase).Count() != output.DependencyPins.Count)
             throw new InvalidOperationException("dependencyPins requires unique package names and concrete exact versions; ranges and future kickoff actions are unresolved.");
         var items = output.DeliveryItems.ToList();
-        var engineers = items.Where(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task).ToArray();
-        if (engineers.Length == 0) return output;
-        var owners = engineers.Where(IsPhaserPinDeliverable).ToArray();
-        if (owners.Length > 1)
-            throw new InvalidOperationException("Multiple Phaser pin/lockfile deliverables overlap. Reconcile the proposal before publication: retain one canonical owner and every accepted criterion, rewire its real consumers, and keep independent QA. Do not silently merge or cancel published work.");
-        var mentionsPhaser = items.Any(x => (x.Title + " " + x.Description).Contains("Phaser", StringComparison.OrdinalIgnoreCase)) ||
-            (output.TechnicalConstraints ?? []).Any(x => x.Contains("Phaser", StringComparison.OrdinalIgnoreCase));
-        if (mentionsPhaser && !output.DependencyPins.Any(x => x.Package.Equals("phaser", StringComparison.OrdinalIgnoreCase)))
-        {
-            var existing = owners.SingleOrDefault() ?? items.SingleOrDefault(x => x.ProposalKey == "dependency-pin-phaser" && !IsPlanningContainer(x));
-            // A future/global engine constraint alone does not create executable work in an
-            // unrelated current increment. The pin is needed when an actual consumer is planned.
-            if (existing is null && !engineers.Any(UsesPhaser)) return output;
-            var key = existing?.ProposalKey ?? "dependency-pin-phaser";
-            if (existing is null)
-                for (var suffix = 0; items.Any(x => x.ProposalKey == key); suffix++)
-                    key = "dependency-pin-phaser-task" + (suffix == 0 ? "" : "-" + suffix);
-            if (existing is not null)
-            {
-                if (existing.AccountableRoleKey != VideoGameRoleKeys.Engineer || existing.WorkItemTypeKey != VideoGameWorkItemTypeKeys.Task)
-                    throw new InvalidOperationException($"Pin task '{key}' must assign the dependency and lockfile to a game engineer.");
-                if (existing.AcceptanceCriteria is not { Count: > 0 } || existing.AcceptanceCriteria.Any(string.IsNullOrWhiteSpace))
-                    throw new InvalidOperationException($"Pin task '{key}' needs nonblank acceptance criteria.");
-                // Graph validation checks prerequisites against both current and retained tasks.
-                if ((prerequisiteParentKey is null || existing.ParentProposalKey == prerequisiteParentKey) &&
-                    existing.RequiredCapabilityKeys is { Count: 0 })
-                    items[items.IndexOf(existing)] = existing with { RequiredCapabilityKeys = ["work.execution.run"] };
-            }
-            if (existing is null)
-            {
-                var prerequisite = (prerequisiteParentKey is null ? engineers[0] : engineers.First(x => x.ParentProposalKey == prerequisiteParentKey)) with { ProposalKey = key, Title = "Commit the exact Phaser dependency pin and lockfile",
-                    Description = "Resolve the exact Phaser version within the approved engine constraints. Reuse an existing approved exact pin when present. Commit package.json and its lockfile, restore dependencies and verify the resolved installed version. If the approved engine constraints conflict, request the actual missing decision. This is executable engineering work; no human kickoff is required and the pin is unresolved until this task is integrated.",
-                    AcceptanceCriteria = ["An exact Phaser version and reproducible lockfile are committed and integrated.", "A focused executed check proves the installed Phaser version matches the committed pin."],
-                    DependencyProposalKeys = [], RequiredCapabilityKeys = ["work.execution.run"],
-                    BrowserVerification = GameBrowserVerification.None, InteractionCriteria = null };
-                items.Add(prerequisite);
-            }
-            // With an existing explicit owner, its declared dependency graph already owns sequencing.
-            // A synthesized prerequisite gates only consumers that actually name Phaser, rather than
-            // serializing every engineering task (including unrelated assets and tooling).
-            if (existing is null)
-                items = items.Select(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task && x.ProposalKey != key &&
-                    UsesPhaser(x)
-                    ? x with { DependencyProposalKeys = x.DependencyProposalKeys.Append(key).Distinct(StringComparer.Ordinal).ToArray() } : x).ToList();
-        }
         if (output.DependencyPins.Count > 0)
         {
             var pins = JsonSerializer.Serialize(output.DependencyPins);
-            var pinInstruction = "\nConcrete dependency pins (dependency-pins.v1): " + pins + ". Commit and verify these exact versions and the lockfile; do not defer selection to a human kickoff.";
+            var pinInstruction = "\nConcrete dependency pins (dependency-pins.v1): " + pins + ". Use these project versions. The setup owner verifies the restore and records any lockfile required by the chosen workflow.";
             items = items.Select(x => x.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task
                 && !x.Description.Contains(pinInstruction, StringComparison.Ordinal)
                 ? x with { Description = x.Description + pinInstruction } : x).ToList();

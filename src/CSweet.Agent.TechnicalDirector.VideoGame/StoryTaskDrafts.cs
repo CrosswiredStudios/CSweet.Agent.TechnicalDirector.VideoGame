@@ -4,7 +4,7 @@ namespace CSweet.Agent.TechnicalDirector.VideoGame;
 
 public sealed partial class SpecialistAgent
 {
-    internal sealed record StoryTaskDrafts(IReadOnlyList<StoryTaskDraft> Tasks);
+    internal sealed record StoryTaskDrafts(IReadOnlyList<StoryTaskDraft> Tasks, int? SetupTaskIndex = null);
     internal sealed record StoryTaskDraft(string Title, string Description, string WorkItemTypeKey, string AccountableRoleKey,
         IReadOnlyList<string> RequiredSpecializationKeys, IReadOnlyList<string> PreferredSpecializationKeys,
         IReadOnlyList<int> StoryCriterionIndexes, IReadOnlyList<string> AdditionalCriteria,
@@ -15,7 +15,7 @@ public sealed partial class SpecialistAgent
         VideoGameWorkItemTypeKeys.ResearchSpike, VideoGameWorkItemTypeKeys.CreativeReview];
 
     internal static ProgressiveStoryIndex BindStoryTasks(StoryTaskDrafts draft, GameProposedWorkItemV1 story,
-        IReadOnlyList<GameProposedWorkItemV1> prior)
+        IReadOnlyList<GameProposedWorkItemV1> prior, ProjectStack? setup = null)
     {
         if (draft.Tasks is not { Count: > 0 and <= 200 }) throw new InvalidOperationException("Supply one to 200 executable tasks.");
         string Key(int ordinal) => $"{story.ProposalKey}.task-{ordinal + 1}";
@@ -39,6 +39,16 @@ public sealed partial class SpecialistAgent
                 task.RequiredSpecializationKeys, task.PreferredSpecializationKeys, ["work.execution.run"],
                 task.EarlierTaskIndexes.Select(Key).Concat(task.PriorTaskIndexes.Select(i => prior[i].ProposalKey)).ToArray())
                 { ParentProposalKey = story.ProposalKey, BrowserVerification = task.BrowserVerification, InteractionCriteria = task.InteractionCriteria });
+        }
+        if (setup is not null)
+        {
+            var engineers = items.Select((item, index) => (item, index)).Where(x =>
+                x.item.AccountableRoleKey == VideoGameRoleKeys.Engineer && x.item.WorkItemTypeKey == VideoGameWorkItemTypeKeys.Task).ToArray();
+            var owner = draft.SetupTaskIndex ?? (engineers.Length == 1 ? engineers[0].index : -1);
+            if (!engineers.Any(x => x.index == owner))
+                throw new InvalidOperationException("Sprint 1 needs one engineering task to own project setup. Select it in setupTaskIndex.");
+            var item = items[owner];
+            items[owner] = item with { AcceptanceCriteria = item.AcceptanceCriteria.Append(setup.SetupCriterion).Distinct(StringComparer.Ordinal).ToArray() };
         }
         return new(items, [new("description", items.Select(i => i.ProposalKey).ToArray()),
             .. owners.Select((keys, i) => new ScopeCoverage("criterion-" + i, keys))]);
