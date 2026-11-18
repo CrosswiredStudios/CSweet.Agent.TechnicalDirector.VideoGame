@@ -150,7 +150,7 @@ public sealed class WorkflowReviewAssignmentTests
         return agent;
     }
 
-    private static (WorkExecutionAssignment, WorkExecutionInputV1) Create(string stage, string role)
+    internal static (WorkExecutionAssignment, WorkExecutionInputV1) Create(string stage, string role)
     {
         var digest = new string('a', 64);
         var members = new[] { new ArtifactPackageMemberDigest(Guid.NewGuid(), Guid.NewGuid(), "brief", digest) };

@@ -1,6 +1,6 @@
-# Technical Director 6.15.4
+# Technical Director 6.15.5
 
-Victor binds the engineer's selected runnable setup to Code delivery. [Release notes](releases/6.15.4.md)
+Victor reviews each changed file and rechecks the current candidate against Sprint acceptance criteria. [Release notes](releases/6.15.5.md)
 
 # Technical Director 6.15.3
 

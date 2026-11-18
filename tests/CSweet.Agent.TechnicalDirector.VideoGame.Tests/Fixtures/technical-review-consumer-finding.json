@@ -1,0 +1,6 @@
+{
+  "path": "consumer.js",
+  "problem": "The changed file does not enforce that a ready event is emitted only when the audio context is running.",
+  "evidence": "The only visible implementation is `export function onReady(event) { return event.contextState; }`; it returns `event.contextState` unconditionally and contains no ready-event emission or running-state check.",
+  "correction": "Add a guard at the ready-event emission point so emission occurs only when the audio context state indicates running, or identify the separate emitter that already enforces this condition."
+}

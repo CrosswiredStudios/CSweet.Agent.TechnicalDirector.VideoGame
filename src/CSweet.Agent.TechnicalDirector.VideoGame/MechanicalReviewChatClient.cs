@@ -37,12 +37,14 @@ internal sealed class MechanicalReviewChatClient(IChatClient inner) : Delegating
     internal static IReadOnlyList<ChatMessage> Augment(IEnumerable<ChatMessage> messages)
     {
         var original = messages.ToArray();
+        var measurements = Measurements(original);
+        if (measurements == "[]") return original;
         return [.. original, new(ChatRole.System,
             "Use deterministic measurements for literal lengths and base64 validity; do not count long hashes by eye. " +
             "These measurements only describe supplied literals, not registry authenticity, command execution, whole-file validity or approval. " +
             "Keep real source/target, scope and independent QA checks. Consolidate equivalent findings about one root defect; " +
             "do not repeat the same defect as a lockfile, restoration and acceptance-criterion defect. " +
-            "Deterministic literal measurements: " + Measurements(original))];
+            "Deterministic literal measurements: " + measurements)];
     }
 
     internal static bool ContradictsEncodingMeasurement(ChatResponse response)
@@ -50,7 +52,8 @@ internal sealed class MechanicalReviewChatClient(IChatClient inner) : Delegating
         try
         {
             using var document = JsonDocument.Parse(response.Text);
-            if (!document.RootElement.TryGetProperty("blockingFindings", out var findings)) return false;
+            if (!document.RootElement.TryGetProperty("blockingFindings", out var findings) &&
+                !document.RootElement.TryGetProperty("additionalFindings", out findings)) return false;
             foreach (var finding in findings.EnumerateArray())
             {
                 var text = string.Join(" ", new[] { "problem", "evidence" }.Select(key =>
