@@ -188,7 +188,8 @@ public sealed partial class SpecialistAgent
                 {
                     var reusable = prior.DeliveryItems.Where(i => i.ParentProposalKey == request.StoryKey);
                     messages = messages.Append(new ChatMessage(ChatRole.User,
-                        "Earlier provisional work for the same Story. Retain applicable details and explicitly revisit assumptions changed by the current direction. " +
+                        "Earlier provisional work for the same Story. Apply the Producer's corrections directly to the returned task briefs and criteria. " +
+                        "Each ticket should deliver or verify part of the approved Story. Editing this draft is the planners' responsibility. Retain applicable details. " +
                         JsonSerializer.Serialize(reusable, PlanningJson))).ToArray();
                 }
             }

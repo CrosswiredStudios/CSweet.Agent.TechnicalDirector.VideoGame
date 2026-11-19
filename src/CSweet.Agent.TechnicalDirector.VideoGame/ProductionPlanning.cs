@@ -207,7 +207,10 @@ public sealed partial class SpecialistAgent
                 (progressivePlanning ? "" : "\nAccepted inputs:\n" + string.Join("\n\n", grounding)))
             , PlanningCoordinationMessage(request, cycle)
         ];
-        if (stack is not null) planningMessages = [.. planningMessages, new ChatMessage(ChatRole.User, "Project technical decision and Sprint 1 setup: " + JsonSerializer.Serialize(stack))];
+        if (stack is not null) planningMessages = [.. planningMessages, new ChatMessage(ChatRole.User,
+            "Use the selected engine, language, libraries and applicable lockfile. The setup notes are implementation suggestions. " +
+            "Use the approved Story and the Producer's current revision request to scope each ticket. Include the setup and verification steps that serve its outcome. " +
+            JsonSerializer.Serialize(stack))];
         if (progressivePlanning)
             return await GenerateProgressivePlanningAsync(context, client, planningMessages, grounding, cycle,
                 progressive.Deserialize<ProgressivePlanningRequest>(PlanningJson)!, cancellationToken, adaptive ? ledger : null, stack);

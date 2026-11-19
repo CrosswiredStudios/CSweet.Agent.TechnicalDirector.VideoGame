@@ -1,4 +1,8 @@
-# Technical Director 6.15.5
+# Technical Director 6.15.6
+
+Victor plans the first runnable setup against the approved Story. The engineer gets the selected stack, any required lockfile, and the Story's verification steps. [Release notes](releases/6.15.6.md)
+
+## 6.15.5
 
 Victor reviews each changed file and rechecks the current candidate against Sprint acceptance criteria. [Release notes](releases/6.15.5.md)
 

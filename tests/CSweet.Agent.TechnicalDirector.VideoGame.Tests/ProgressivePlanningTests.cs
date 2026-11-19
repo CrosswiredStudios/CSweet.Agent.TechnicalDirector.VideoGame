@@ -41,12 +41,15 @@ public sealed partial class ProgressivePlanningTests
         var result = SpecialistAgent.BindStoryTasks(new([scene, report]), story, []);
         foreach (var lockfile in new string?[] { "example.lock", null })
         {
-            var stack = new SpecialistAgent.ProjectStack("Independent engine", "Example language", [], "Fits the game", "Launch the demo.", lockfile);
+            var stack = new SpecialistAgent.ProjectStack("Independent engine", "Example language", [], "Fits the game",
+                "Launch the demo. Add the soundtrack planned for a later Story.", lockfile);
             var bound = SpecialistAgent.BindStoryTasks(new([scene, report], 0), story, [], stack);
             Assert.Equal(2, bound.Items.Count);
             Assert.Equal(stack.SetupCriterion, bound.Items[0].AcceptanceCriteria.Last());
             Assert.StartsWith("From a clean checkout, launch", stack.SetupCriterion);
             Assert.Equal(lockfile is not null, stack.SetupCriterion.Contains("example.lock"));
+            Assert.DoesNotContain(bound.Items[0].AcceptanceCriteria, c => c.Contains("soundtrack"));
+            Assert.Contains("The scene opens.", bound.Items[0].AcceptanceCriteria);
             Assert.Equal(result.Items[1].AcceptanceCriteria, bound.Items[1].AcceptanceCriteria);
             Assert.Throws<InvalidOperationException>(() => SpecialistAgent.BindStoryTasks(new([scene, report], 9), story, [], stack));
         }

@@ -25,7 +25,7 @@ public sealed partial class SpecialistAgent
             constraints?.Contains(DecisionSummary) == true ? constraints : [.. constraints ?? [], DecisionSummary];
 
         [System.Text.Json.Serialization.JsonIgnore]
-        public string SetupCriterion => $"From a clean checkout, launch the first runnable slice using {Engine} and {Language}. {Setup}" +
+        public string SetupCriterion => $"From a clean checkout, launch the approved Story's runnable slice using {Engine} and {Language}." +
             (string.IsNullOrWhiteSpace(Lockfile) ? "" : $" Commit {Lockfile} and verify a clean dependency restore.");
     }
 
@@ -38,7 +38,7 @@ public sealed partial class SpecialistAgent
             using var client = context.CreateChatClient(new AgentLlmSelection(
                 Settings.GetGuid("llmProviderId") ?? throw new InvalidOperationException("Configure the technical planning provider."), Settings.GetString("llmModel")));
             return await AgentModelJson.ReadAsync(client, [
-                new(ChatRole.System, "As Technical Director, choose the engine (including a framework-free implementation), language and libraries on merit. Compare plausible alternatives against the game's mechanics, complexity, platforms and maintenance cost. Respect explicit mandatory constraints. A pitch recommendation is advisory. Record your decision and its main tradeoff briefly. In setup, name only the steps the assigned engineer needs for a small runnable first slice and how to verify it. Name a lockfile only when the chosen package workflow uses one. Missing project files are expected. Return JSON with engine, language, libraries (array), rationale, setup and lockfile (nullable)."),
+                new(ChatRole.System, "As Technical Director, choose the engine (including a framework-free implementation), language and libraries on merit. Compare plausible alternatives against the game's mechanics, complexity, platforms and maintenance cost. Respect explicit mandatory constraints. A pitch recommendation is advisory. Record your decision and its main tradeoff briefly. In setup, describe how to bootstrap, launch and verify a clean checkout. Gabriel and Victor scope product features when planning each Story. Name a lockfile only when the chosen package workflow uses one. Missing project files are expected. Return JSON with engine, language, libraries (array), rationale, setup and lockfile (nullable)."),
                 new(ChatRole.User, pitch)], new AgentModelJsonRequest<ProjectStack>("project technical choice")
                 {
                     Schema = PlanningResponseSchema(typeof(ProjectStack)),
