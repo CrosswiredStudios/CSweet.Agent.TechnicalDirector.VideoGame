@@ -24,7 +24,12 @@ public sealed partial class SpecialistAgent
     }
     internal sealed record ScopeSource(string SourceKey, string Text) { public string? AuthorRole { get; init; } }
     internal sealed record ProgressiveScopeIndex(PlanningOutput Plan, IReadOnlyList<ScopeCoverage> Coverage);
-    internal sealed record ProgressiveStoryIndex(IReadOnlyList<GameProposedWorkItemV1> Items, IReadOnlyList<ScopeCoverage> Coverage);
+    internal sealed record ProgressiveStoryIndex(IReadOnlyList<GameProposedWorkItemV1> Items, IReadOnlyList<ScopeCoverage> Coverage)
+    {
+        // Older saved indexes are hash-bound without this property.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public IReadOnlyDictionary<string, string[]>? TaskConstraints { get; init; }
+    }
     private sealed record ProgressiveBriefPage(string IndexDigest, IReadOnlyDictionary<string, string> Descriptions);
 
     internal static string ProgressiveScopeKey(GameProductionPlanningCycleV1 cycle, string directionsDigest) =>
@@ -171,8 +176,9 @@ public sealed partial class SpecialistAgent
                     JsonSerializer.Serialize(new { obligations, passages = sources.Where(s => citations.Contains(s.SourceKey)) }, PlanningJson))).ToArray();
             }
             messages = await ApplyRetainedPlanningDirectionAsync(scopeKey, outlineDigest, request, context, messages, token);
+            var constraintCatalog = scope.Plan.TechnicalConstraints ?? [];
             messages = messages.Append(new ChatMessage(ChatRole.User, "Frozen shared technical constraints (project data): " +
-                JsonSerializer.Serialize(scope.Plan.TechnicalConstraints, PlanningJson))).ToArray();
+                JsonSerializer.Serialize(constraintCatalog.Select((text, index) => new { index, text }), PlanningJson))).ToArray();
             var assessment = await ReviewPlanningQuestionsAsync(scope, scopeKey, outlineDigest, request, context, Generate, messages, token);
             if (assessment.AmendmentRequired)
                 return AgentCoordinationTurnResult.Blocked("Planning direction requires an explicit scope amendment: " + assessment.Rationale);
@@ -198,8 +204,9 @@ public sealed partial class SpecialistAgent
             if (detailed.Any(key => !stories.ContainsKey(key)) || request.Phase == "Story" && (request.StoryKey is null || !stories.ContainsKey(request.StoryKey)))
                 throw new InvalidOperationException("Only Stories from the exact published outline can be refined.");
             var leaves = new List<GameProposedWorkItemV1>();
+            var taskConstraints = new Dictionary<string, string[]>(StringComparer.Ordinal);
             foreach (var story in scope.Plan.DeliveryItems.Where(x => detailed.Contains(x.ProposalKey)))
-                leaves.AddRange(await LoadCompletedProgressiveStoryAsync(scopeKey, outlineDigest, story.ProposalKey, context, token, request.Adaptive ? request.AcceptedBases?.GetValueOrDefault(story.ProposalKey) : null));
+                leaves.AddRange(await LoadCompletedProgressiveStoryAsync(scopeKey, outlineDigest, story.ProposalKey, context, token, taskConstraints, request.Adaptive ? request.AcceptedBases?.GetValueOrDefault(story.ProposalKey) : null));
             if (request.Phase == "Story" && !detailed.Contains(request.StoryKey!))
             {
                 var story = stories[request.StoryKey!];
@@ -219,15 +226,16 @@ public sealed partial class SpecialistAgent
                         "If one result can be accepted while another is unfinished, split them even when they are sequential. Keep each result's focused test with it. " +
                         "Record only prerequisites whose output the task consumes, naming that result in the brief. Leave independent tasks ready in parallel. Choose one qualified author for each. " +
                         (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the game-engineer deliverable owning initial runnable setup. It will be published as a Code task. Keep restore, lockfile and the minimum runnable proof together. Verify the selected versions by restoring the committed lockfile from a clean checkout and launching a rendered frame before expanding behavior. Split later independently demonstrable behaviors. ") +
+                        "Select technicalConstraintIndexes only for rules that govern how this task is implemented or verified. Use [] if none apply. Later features and roadmap commitments belong with their owners. " +
                         "Select storyCriterionIndexes from the numbered accepted criteria. Cover each at least once. Add only distinct task-specific acceptance in additionalCriteria. " +
                         "interactionCriteria indexes refer to the selected Story criteria in the order you give, followed by additionalCriteria. " +
                         "Use earlierTaskIndexes for prerequisites in this response and priorTaskIndexes for prerequisites in the supplied prior tasks. " +
                         "Keep routine independent review and QA on the implementation task. Supply [] for empty lists. " +
                         JsonSerializer.Serialize(new { story.Title, story.Description, criteria = story.AcceptanceCriteria.Select((text, index) => new { index, text }),
                             priorTasks = leaves.Select((t, index) => new { index, t.Title, t.Description }) }, PlanningJson),
-                        value => ValidateStoryRefinement(BindStoryTasks(value, story, leaves, setup), story, scope.Plan, leaves, 200,
+                        value => ValidateStoryRefinement(BindStoryTasks(value, story, leaves, setup, constraintCatalog), story, scope.Plan, leaves, 200,
                             requireVerification: true, partialIncrement: true), MaximumPlanningPageCharacters, token, includeRejectedDraft: true);
-                    index = BindStoryTasks(drafts, story, leaves, setup);
+                    index = BindStoryTasks(drafts, story, leaves, setup, constraintCatalog);
                 }
                 index ??= await ReadPlanningPageAsync<ProgressiveStoryIndex>(Generate, messages, "next increment task index",
                     "Refine ONLY the requested Story into a concise dependency-closed index of small tasks. Return items and coverage. " +
@@ -284,6 +292,8 @@ public sealed partial class SpecialistAgent
                 var completed = index.Items.Select(x => x with { Description = leaves.Single(leaf => leaf.ProposalKey == x.ProposalKey).Description }).ToArray();
                 await SaveProgressiveStateAsync(baseIndexKey + ":completed", new CompletedProgressiveStory(outlineDigest, indexDigest,
                     completed.Select(x => x.ProposalKey).ToArray(), hasBoundIndex), context, token);
+                if (index.TaskConstraints is { } selected)
+                    foreach (var entry in selected) taskConstraints.Add(entry.Key, entry.Value);
                 detailed.Add(story.ProposalKey);
             }
             var output = scope.Plan with { DeliveryItems = [.. scope.Plan.DeliveryItems, .. leaves] };
@@ -294,7 +304,7 @@ public sealed partial class SpecialistAgent
             var result = CompletePlanningProposal(cycle, output, partialIncrement: request.Adaptive);
             var payload = JsonNode.Parse(result.Artifact!.Payload.GetRawText())!.AsObject();
             payload["progressivePlanning"] = JsonSerializer.SerializeToNode(new { adaptive = request.Adaptive, phase = request.Phase, scopeKey, outlineDigest,
-                directionsDigest = request.DirectionsDigest, detailedStoryKeys = detailed.Order().ToArray(), scopeCoverage = scope.Coverage,
+                directionsDigest = request.DirectionsDigest, detailedStoryKeys = detailed.Order().ToArray(), scopeCoverage = scope.Coverage, taskConstraints,
                 reviewedDirectionsDigest = request.ReviewDirectionsDigest ?? request.DirectionsDigest,
                 reviewedAuthorityQuestions = assessment.Questions.Where(x => x.Disposition == "authority")
                     .Select(x => scope.Plan.OpenFeasibilityDecisions![x.Index]).ToArray() }, PlanningJson);
@@ -324,7 +334,7 @@ public sealed partial class SpecialistAgent
     private static string ProgressiveStoryKey(string scopeKey, string story) => scopeKey + ":story:" +
         Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(story)))[..16];
     private static async Task<IReadOnlyList<GameProposedWorkItemV1>> LoadCompletedProgressiveStoryAsync(string scopeKey, string outlineDigest,
-        string story, AgentRuntimeContext context, CancellationToken token, string? basis = null)
+        string story, AgentRuntimeContext context, CancellationToken token, Dictionary<string, string[]> taskConstraints, string? basis = null)
     {
         var baseKey = ProgressiveStoryKey(scopeKey, story);
         if (basis != null) baseKey = AdaptiveDraftKey(baseKey, basis);
@@ -346,6 +356,8 @@ public sealed partial class SpecialistAgent
         }
         if (items.Any(x => x.ParentProposalKey != story) || EngineeringBriefIssues(items).Count > 0)
             throw new InvalidOperationException("A completed increment has invalid retained implementation briefs.");
+        if (index.Payload.TaskConstraints is { } selected)
+            foreach (var entry in selected) taskConstraints.Add(entry.Key, entry.Value);
         return items;
     }
     private static async Task<AgentOperatingState<T>> SaveProgressiveStateAsync<T>(string key, T value, AgentRuntimeContext context, CancellationToken token) where T : class

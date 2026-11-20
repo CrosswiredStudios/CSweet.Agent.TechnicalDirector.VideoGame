@@ -1,6 +1,6 @@
-# Technical Director 6.15.7
+# Technical Director 6.15.8
 
-Victor plans the first runnable setup against the approved Story. The engineer gets the selected stack, any required lockfile, and the Story's verification steps. [Release notes](releases/6.15.7.md)
+Victor selects applicable technical constraints during Story refinement and reviews each PR against the ticket’s acceptance criteria. [Release notes](releases/6.15.8.md)
 
 ## 6.15.5
 

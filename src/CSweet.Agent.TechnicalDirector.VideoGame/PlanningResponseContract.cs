@@ -77,8 +77,9 @@ public sealed partial class SpecialistAgent
                 if (obj["properties"] is JsonObject properties)
                 {
                     properties.Remove("criterionBindings");
+                    properties.Remove("taskConstraints");
                     if (obj["required"] is JsonArray required)
-                        foreach (var field in required.Where(n => n?.ToString() == "criterionBindings").ToArray()) required.Remove(field);
+                        foreach (var field in required.Where(n => n?.ToString() is "criterionBindings" or "taskConstraints").ToArray()) required.Remove(field);
                     void Choices(string name, IReadOnlyCollection<string> choices, string description, bool array = false)
                     {
                         if (properties[name] is not JsonObject) return;

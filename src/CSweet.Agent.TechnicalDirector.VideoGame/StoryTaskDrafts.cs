@@ -9,17 +9,22 @@ public sealed partial class SpecialistAgent
         IReadOnlyList<string> RequiredSpecializationKeys, IReadOnlyList<string> PreferredSpecializationKeys,
         IReadOnlyList<int> StoryCriterionIndexes, IReadOnlyList<string> AdditionalCriteria,
         string BrowserVerification, IReadOnlyList<int> InteractionCriteria,
-        IReadOnlyList<int> EarlierTaskIndexes, IReadOnlyList<int> PriorTaskIndexes);
+        IReadOnlyList<int> EarlierTaskIndexes, IReadOnlyList<int> PriorTaskIndexes)
+    {
+        public IReadOnlyList<int> TechnicalConstraintIndexes { get; init; } = [];
+    }
 
     internal static readonly string[] ExecutableGameTypes = [VideoGameWorkItemTypeKeys.Task, VideoGameWorkItemTypeKeys.Bug,
         VideoGameWorkItemTypeKeys.ResearchSpike, VideoGameWorkItemTypeKeys.CreativeReview];
 
     internal static ProgressiveStoryIndex BindStoryTasks(StoryTaskDrafts draft, GameProposedWorkItemV1 story,
-        IReadOnlyList<GameProposedWorkItemV1> prior, ProjectStack? setup = null)
+        IReadOnlyList<GameProposedWorkItemV1> prior, ProjectStack? setup = null, IReadOnlyList<string>? technicalConstraints = null)
     {
         if (draft.Tasks is not { Count: > 0 and <= 200 }) throw new InvalidOperationException("Supply one to 200 executable tasks.");
         string Key(int ordinal) => $"{story.ProposalKey}.task-{ordinal + 1}";
         var items = new List<GameProposedWorkItemV1>();
+        var constraints = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var catalog = technicalConstraints ?? [];
         var owners = story.AcceptanceCriteria.Select(_ => new List<string>()).ToArray();
         foreach (var task in draft.Tasks)
         {
@@ -29,6 +34,8 @@ public sealed partial class SpecialistAgent
             if (task.AdditionalCriteria is null || task.AdditionalCriteria.Any(string.IsNullOrWhiteSpace) ||
                 task.RequiredSpecializationKeys is null || task.PreferredSpecializationKeys is null)
                 throw new InvalidOperationException($"Task {ordinal} needs specialization and additional criteria arrays with valid entries.");
+            ValidateIndexes(task.TechnicalConstraintIndexes, catalog.Count, ordinal, "technicalConstraintIndexes");
+            constraints[Key(ordinal)] = task.TechnicalConstraintIndexes.Select(i => catalog[i]).ToArray();
             ValidateIndexes(task.StoryCriterionIndexes, owners.Length, ordinal, "storyCriterionIndexes");
             ValidateIndexes(task.EarlierTaskIndexes, ordinal, ordinal, "earlierTaskIndexes");
             ValidateIndexes(task.PriorTaskIndexes, prior.Count, ordinal, "priorTaskIndexes");
@@ -48,12 +55,13 @@ public sealed partial class SpecialistAgent
             if (owner < 0 || owner >= items.Count || items[owner].AccountableRoleKey != VideoGameRoleKeys.Engineer)
                 throw new InvalidOperationException("Select the zero-based index of the game-engineer deliverable for runnable project setup in setupTaskIndex.");
             var item = items[owner];
+            constraints[item.ProposalKey] = constraints[item.ProposalKey].Append(setup.DecisionSummary).Distinct(StringComparer.Ordinal).ToArray();
             // Runnable setup is Code work. Its routing comes from the selected deliverable's purpose.
             items[owner] = item with { WorkItemTypeKey = VideoGameWorkItemTypeKeys.Task,
                 AcceptanceCriteria = item.AcceptanceCriteria.Append(setup.SetupCriterion).Distinct(StringComparer.Ordinal).ToArray() };
         }
         return new(items, [new("description", items.Select(i => i.ProposalKey).ToArray()),
-            .. owners.Select((keys, i) => new ScopeCoverage("criterion-" + i, keys))]);
+            .. owners.Select((keys, i) => new ScopeCoverage("criterion-" + i, keys))]) { TaskConstraints = constraints };
 
         static void ValidateIndexes(IReadOnlyList<int>? values, int count, int ordinal, string field)
         {

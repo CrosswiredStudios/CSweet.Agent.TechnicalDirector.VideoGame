@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 
@@ -71,7 +72,37 @@ internal sealed class MechanicalReviewChatClient(IChatClient inner) : Delegating
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var input = Augment(messages);
+        var input = Augment(messages).ToArray();
+        // The SDK binds judgments by position. Give the provider the same cardinality the validator enforces.
+        // The first user message is the SDK's structured review input, including on schema corrections.
+        if (options?.ResponseFormat is ChatResponseFormatJson { Schema: { } schema } format &&
+            input.Length >= 2 && input[0].Role == ChatRole.System && input[1].Role == ChatRole.User)
+        {
+            var guidance = "Review this ticket's changed behavior, its requirements and declared verification. " +
+                "Use applicable constraints to check how the change is implemented. Missing later roadmap deliverables " +
+                "do not establish a defect in this ticket. Report concrete defects introduced by the patch, including violations of applicable constraints.";
+            if (schema.GetProperty("properties").TryGetProperty("criteria", out _))
+            {
+                using var evidence = JsonDocument.Parse(input[1].Text!);
+                var data = evidence.RootElement;
+                var criteria = data.GetProperty("reference").GetProperty("planning").GetProperty("acceptanceCriteria").GetArrayLength();
+                var findings = data.GetProperty("findings").GetArrayLength();
+                var bounded = JsonNode.Parse(schema.GetRawText())!.AsObject();
+                void SetLength(string name, int length)
+                {
+                    var array = bounded["properties"]![name]!;
+                    array["minItems"] = length;
+                    array["maxItems"] = length;
+                }
+                SetLength("criteria", criteria);
+                SetLength("resolutions", findings);
+                options = options.Clone();
+                options.ResponseFormat = ChatResponseFormat.ForJsonSchema(JsonSerializer.SerializeToElement(bounded), format.SchemaName);
+                guidance += $" Return exactly {criteria} criterion judgments, one per entry in reference.planning.acceptanceCriteria in order, " +
+                    $"and exactly {findings} finding resolutions. Constraints, notes and receipts supply evidence and never create extra grading rows.";
+            }
+            input[0] = new(ChatRole.System, input[0].Text + " " + guidance);
+        }
         var response = await base.GetResponseAsync(input, options, cancellationToken);
         if (!ContradictsEncodingMeasurement(response)) return response;
         response = await base.GetResponseAsync([.. input, new(ChatRole.Assistant, response.Text), new(ChatRole.System,
