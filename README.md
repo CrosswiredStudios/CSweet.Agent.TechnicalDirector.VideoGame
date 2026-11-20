@@ -1,6 +1,6 @@
-# Technical Director 6.15.6
+# Technical Director 6.15.7
 
-Victor plans the first runnable setup against the approved Story. The engineer gets the selected stack, any required lockfile, and the Story's verification steps. [Release notes](releases/6.15.6.md)
+Victor plans the first runnable setup against the approved Story. The engineer gets the selected stack, any required lockfile, and the Story's verification steps. [Release notes](releases/6.15.7.md)
 
 ## 6.15.5
 

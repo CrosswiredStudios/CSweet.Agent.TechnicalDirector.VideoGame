@@ -215,8 +215,10 @@ public sealed partial class SpecialistAgent
                 {
                     var setup = leaves.Count == 0 ? stack : null;
                     var drafts = await ReadPlanningPageAsync<StoryTaskDrafts>(Generate, messages, "next increment task index",
-                        "Plan the requested Story as dependency-closed executable deliverables. Choose one qualified author for each. " +
-                        (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the game-engineer deliverable owning initial runnable setup. It will be published as a Code task. Combine setup with the first runnable slice where practical. ") +
+                        "Plan the requested Story as dependency-closed executable deliverables. Split recursively until each task has one independently verifiable outcome. " +
+                        "If one result can be accepted while another is unfinished, split them even when they are sequential. Keep each result's focused test with it. " +
+                        "Record only prerequisites whose output the task consumes, naming that result in the brief. Leave independent tasks ready in parallel. Choose one qualified author for each. " +
+                        (setup is null ? "" : "Set setupTaskIndex to the zero-based index of the game-engineer deliverable owning initial runnable setup. It will be published as a Code task. Keep restore, lockfile and the minimum runnable proof together. Verify the selected versions by restoring the committed lockfile from a clean checkout and launching a rendered frame before expanding behavior. Split later independently demonstrable behaviors. ") +
                         "Select storyCriterionIndexes from the numbered accepted criteria. Cover each at least once. Add only distinct task-specific acceptance in additionalCriteria. " +
                         "interactionCriteria indexes refer to the selected Story criteria in the order you give, followed by additionalCriteria. " +
                         "Use earlierTaskIndexes for prerequisites in this response and priorTaskIndexes for prerequisites in the supplied prior tasks. " +
