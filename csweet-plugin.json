@@ -19,7 +19,7 @@
   },
   "id": "com.csweet.video-game-technical-director",
   "name": "Victor Lin",
-  "version": "6.15.8",
+  "version": "6.15.9",
   "publisher": {
     "id": "com.csweet",
     "name": "C-Sweet"
@@ -965,6 +965,12 @@
       "scope": "workstream",
       "modelVisible": false,
       "purpose": "Discover approved project compute and coordinate an exact-source test application and review link for the project manager and CEO."
+    },
+    {
+      "name": "compute.start.v1",
+      "scope": "organization",
+      "purpose": "Start an authorized retained workspace when a task needs it.",
+      "modelVisible": false
     },
     {
       "name": "compute.stop.v1",

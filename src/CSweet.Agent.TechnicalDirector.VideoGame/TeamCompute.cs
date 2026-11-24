@@ -19,19 +19,10 @@ public sealed partial class SpecialistAgent
             IReadOnlyList<EligibleToolchainAdapter> certified = [];
             try { certified = await context.Platform.ReadEligibleToolchainsAsync(new(RequiredOperations: ["build"]), ct); }
             catch (PlatformCapabilityException error) when (error.Code is PlatformCapabilityErrorCode.Denied or PlatformCapabilityErrorCode.NotFound) { }
-            Guid? environmentId = null;
-            if (options is { State: "Ready", TemplateId: { } template } && options.WorkstreamId == setup.WorkstreamId &&
-                options.Features.Contains("docker-apps-v1") && options.CachedImages.Contains("csweet/python:3.12"))
-            {
-                var desired = $"project-test:{setup.WorkstreamId:N}";
-                var environment = await context.Platform.Compute.ProvisionAsync(new(setup.WorkstreamId, desired, desired,
-                    new("linux", "x64", template, new(2, 2048, 20480), options.MaximumLifetimeSeconds)), ct);
-                environmentId = environment.Id;
-            }
             var key = $"technical-director:compute:{setup.WorkstreamId:N}";
             var selected = new TeamComputeOptions(options, certified, "compute-test",
                 "Sprint implementation proceeds without certified packaging. Choose a source-compatible Docker or static recipe from reported guest features and cached images; exact-source build, HTTP and independent QA evidence are required. Certified recipes remain available for separately agreed packaging.",
-                environmentId);
+                null);
             var previous = await context.Platform.ReadOperatingStateAsync<TeamComputeOptions>(key, ct);
             if (previous is not null && JsonSerializer.Serialize(previous.Payload) == JsonSerializer.Serialize(selected)) return;
             await new RevisionSafeProjectState(context.Platform).MergeAsync<TeamComputeOptions>(key,
