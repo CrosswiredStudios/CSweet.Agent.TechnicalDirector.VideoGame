@@ -1,4 +1,4 @@
-# Technical Director 6.15.9
+# Technical Director 6.15.10
 
 Ordinary assignments use the agent runtime. A deployment or an exact-candidate test can request its own Office VM. The reviewed `compute.start.v1` capability lets that task resume a retained workspace with its existing disk.
 
